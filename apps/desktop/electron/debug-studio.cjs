@@ -7,7 +7,7 @@ let debugStudioWindow = null;
 
 /**
  * Create and return the Agent Debug Studio window.
- * This is a separate BrowserWindow from the main TinadecCode window.
+ * This is a separate BrowserWindow from the main TinadecOffice window.
  */
 async function createDebugStudioWindow() {
   if (debugStudioWindow && !debugStudioWindow.isDestroyed()) {

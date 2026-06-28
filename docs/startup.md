@@ -1,4 +1,4 @@
-﻿# TinadecCode Local Startup Guide
+﻿﻿# TinadecOffice Local Startup Guide
 
 This document standardizes the local startup flow for Core, Gateway, and Desktop.
 
@@ -7,7 +7,7 @@ This document standardizes the local startup flow for Core, Gateway, and Desktop
 - **Tinadec Core** runs at `http://127.0.0.1:48731`.
   It is the only state authority for projects, sessions, messages, approvals, model routes, extensions, agents, task graphs, context packs, and supervision findings.
   User chat turns are routed through the built-in Meeting Agent (`agent_meeting`) on the `planner` model route; other planning and execution agents are dispatched by Core rather than addressed directly from the input box.
-- **TinadecCode Gateway** runs at `http://127.0.0.1:48730`.
+- **TinadecOffice Gateway** runs at `http://127.0.0.1:48730`.
   It is a thin Elysia proxy/BFF. Desktop and browser-based development clients should call Gateway, not Core directly.
 - **Desktop/Vite UI** runs at `http://127.0.0.1:5173` in development.
   The UI reads agent data from Gateway `/api/v1/agents`, which proxies Core.
@@ -62,7 +62,7 @@ If Vite is already running and only Core/Gateway changed, restart Core and Gatew
 For local manual debugging, background logs should go under `output/logs`.
 
 ```powershell
-$logDir = 'D:\github\TinadecCode\output\logs'
+$logDir = 'D:\github\TinadecOffice\output\logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 Start-Process -FilePath powershell `
@@ -74,7 +74,7 @@ Start-Process -FilePath powershell `
     '-ExecutionPolicy',
     'Bypass',
     '-Command',
-    "Set-Location 'D:\github\TinadecCode'; Remove-Item Env:Version -ErrorAction SilentlyContinue; Remove-Item Env:Ice-Version -ErrorAction SilentlyContinue; dotnet run --project src/TinadecCore/TinadecCore.csproj --urls http://127.0.0.1:48731"
+    "Set-Location 'D:\github\TinadecOffice'; Remove-Item Env:Version -ErrorAction SilentlyContinue; Remove-Item Env:Ice-Version -ErrorAction SilentlyContinue; dotnet run --project src/TinadecCore/TinadecCore.csproj --urls http://127.0.0.1:48731"
   )
 
 Start-Process -FilePath powershell `
@@ -86,7 +86,7 @@ Start-Process -FilePath powershell `
     '-ExecutionPolicy',
     'Bypass',
     '-Command',
-    "Set-Location 'D:\github\TinadecCode'; `$env:TINADEC_GATEWAY_PORT='48730'; npm run dev -w @tinadec/code"
+    "Set-Location 'D:\github\TinadecOffice'; `$env:TINADEC_GATEWAY_PORT='48730'; npm run dev -w @tinadec/code"
   )
 ```
 
@@ -185,7 +185,7 @@ npm run build --workspaces --if-present
 
 ## Native Codex Rust Glue
 
-TinadecCode keeps `Core = general agent runtime` and `Code = programming-domain layer`. Rust is an implementation source, not a layering rule.
+TinadecOffice keeps `Core = general agent runtime` and `Code = programming-domain layer`. Rust is an implementation source, not a layering rule.
 
 The native workspace lives under `native/`:
 

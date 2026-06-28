@@ -11,7 +11,7 @@ public sealed class PromptContextServiceTests
     public async Task PreviewForMeetingAgentIncludesDefaultFragmentsAndContextPackSummary()
     {
         var store = CreateStore();
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Prompt context");
         var message = store.AddMessage(session.Id, "user", "Plan a small change.");
         var snapshot = store.CreateOrchestrationRun(session.Id, message.Id, message.Content);
@@ -86,7 +86,7 @@ public sealed class PromptContextServiceTests
     public async Task ComplexTaskTriggersPromptContextEngineerPlan()
     {
         var store = CreateStore();
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Prompt context");
         var userContent = "Create a long-term multi-stage implementation roadmap.";
         var message = store.AddMessage(session.Id, "user", userContent);

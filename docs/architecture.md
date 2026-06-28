@@ -1,19 +1,19 @@
-# TinadecCode Architecture
+# TinadecOffice Architecture
 
-TinadecCode is split into four product responsibilities:
+TinadecOffice is split into four product responsibilities:
 
 - `src/TinadecCore`: portable C# Core framework and runtime. It owns agents, runs, task graphs, context packs, supervision, approvals, model routes, events, secrets, permissions, capability discovery, SQLite persistence, and **Agent Debug Studio tracing**.
 - `native/glue/*`: Codex Rust glue. Core treats Codex as the mature kernel/tool capability source and calls it through stable adapters instead of reimplementing file search, patch, sandbox, and related primitives.
-- `apps/gateway`: TinadecCode Elysia BFF/API layer. It exposes `/api/v1/*` (including `/api/v1/debug/*`), OpenAPI docs at `/docs`, and proxies to the Core runtime.
-- `apps/desktop`: TinadecCode Desktop, built with Electron + Vue. The renderer receives only the `window.tinadec.*` preload API and talks to TinadecCode over HTTP/SSE. Includes the **Agent Debug Studio** as a separate BrowserWindow.
+- `apps/gateway`: TinadecOffice Elysia BFF/API layer. It exposes `/api/v1/*` (including `/api/v1/debug/*`), OpenAPI docs at `/docs`, and proxies to the Core runtime.
+- `apps/desktop`: TinadecOffice Desktop, built with Electron + Vue. The renderer receives only the `window.tinadec.*` preload API and talks to TinadecOffice over HTTP/SSE. Includes the **Agent Debug Studio** as a separate BrowserWindow.
 
 Core is the only state authority. Gateway and Desktop must not keep session state, approval decisions, model routing state, tool policy state, or provider lifecycle state.
 
-TinadecCode intentionally studies sibling projects such as VS Code, Codex, t3code, OpenCode, OpenHarness, Open-ClaudeCode, openclaw, pi, DeepSeek-TUI, and The Zeroth Docs. The reference map in [`docs/reference-project-map.md`](reference-project-map.md) records what to absorb and what to reject so those influences strengthen, rather than flatten, the Core/Tool/Desktop split.
+TinadecOffice intentionally studies sibling projects such as VS Code, Codex, t3code, OpenCode, OpenHarness, Open-ClaudeCode, openclaw, pi, DeepSeek-TUI, and The Zeroth Docs. The reference map in [`docs/reference-project-map.md`](reference-project-map.md) records what to absorb and what to reject so those influences strengthen, rather than flatten, the Core/Tool/Desktop split.
 
 ## Default Ports
 
-- TinadecCode Elysia API: `http://127.0.0.1:48730`
+- TinadecOffice Elysia API: `http://127.0.0.1:48730`
 - TinadecCore runtime: `http://127.0.0.1:48731`
 - Vite renderer: `http://127.0.0.1:5173`
 
@@ -67,7 +67,7 @@ The local environment currently contains `Version=V7.24.42SP3`, which breaks MSB
 
 ## Agent Debug Studio
 
-TinadecCode includes an **Agent Debug Studio** — a dedicated debugging tool designed for Agent systems. See [`docs/agent-debug-studio-plan.md`](agent-debug-studio-plan.md) for the full implementation plan.
+TinadecOffice includes an **Agent Debug Studio** — a dedicated debugging tool designed for Agent systems. See [`docs/agent-debug-studio-plan.md`](agent-debug-studio-plan.md) for the full implementation plan.
 
 ### Architecture
 

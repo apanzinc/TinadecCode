@@ -6,6 +6,6 @@ with sync_playwright() as p:
     page.goto('http://localhost:5173')
     page.wait_for_load_state('networkidle')
     page.wait_for_timeout(2000)
-    page.screenshot(path='d:/github/TinadecCode/ui_screenshot.png', full_page=False)
+    page.screenshot(path='d:/github/TinadecOffice/ui_screenshot.png', full_page=False)
     print('Screenshot saved to ui_screenshot.png')
     browser.close()

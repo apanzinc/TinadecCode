@@ -217,7 +217,7 @@ public sealed class PromptContextService(
         IReadOnlyList<string> warnings)
     {
         var builder = new StringBuilder();
-        builder.AppendLine($"TinadecCode prompt context for {agentId}.");
+        builder.AppendLine($"TinadecOffice prompt context for {agentId}.");
         builder.AppendLine($"Active agent mode: {mode}.");
         builder.AppendLine();
 
@@ -378,7 +378,7 @@ public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime mod
     private static string BuildPlannerSystemPrompt(PromptContextPlanningInput input)
     {
         return $"""
-            You are TinadecCode's Prompt Context Engineer Agent.
+            You are TinadecOffice's Prompt Context Engineer Agent.
             Select and rank prompt fragments for {input.AgentId} without inventing hidden policy.
             Return a concise optimization summary. Do not include the final system prompt.
             """;

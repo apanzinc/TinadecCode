@@ -1,5 +1,5 @@
 /**
- * Background management composable for TinadecCode Desktop
+ * Background management composable for TinadecOffice Desktop
  * Handles background settings persistence, file selection, and DOM application
  */
 

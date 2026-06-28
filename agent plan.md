@@ -1,8 +1,8 @@
-# TinadecCode 双层智能体编排 v1
+# TinadecOffice 双层智能体编排 v1
 
 ## 架构基准
 
-TinadecCode 的产品定位是图形化代理工作台，而不是聊天框桌面壳。核心交互对象是会话、任务图、审批、证据、执行体、上下文包和工作区。C# Core 是唯一智能体状态与策略中枢；Elysia 只做薄网关、OpenAPI 与事件代理；Electron/Vue 只做安全 UI 壳层，不持有业务真相。
+TinadecOffice 的产品定位是图形化代理工作台，而不是聊天框桌面壳。核心交互对象是会话、任务图、审批、证据、执行体、上下文包和工作区。C# Core 是唯一智能体状态与策略中枢；Elysia 只做薄网关、OpenAPI 与事件代理；Electron/Vue 只做安全 UI 壳层，不持有业务真相。
 
 当前 MVP 继续沿用 Electron + Vue、Elysia Gateway、C# Agent Core 的三层结构。所有会话状态、模型路由、审批、扩展、智能体配置、任务图与运行事件都必须落在 Core。Gateway 不维护第二套 session/task/agent 状态，Renderer 不接触密钥、文件系统或 shell 能力。
 

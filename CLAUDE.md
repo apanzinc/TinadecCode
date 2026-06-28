@@ -1,10 +1,10 @@
-# TinadecCode Claude Guidance
+# TinadecOffice Claude Guidance
 
 This file is the Claude-specific entry point for AI agents. It intentionally points back to the shared project memory so Claude, Codex, and other agents follow the same architecture rules.
 
 ## Project Context
 
-TinadecCode is a Windows-first intelligent agent desktop workbench built around a universal agent harness. It implements a four-layer architecture:
+TinadecOffice is a Windows-first intelligent agent desktop workbench built around a universal agent harness. It implements a four-layer architecture:
 
 1. **Desktop Layer** (UI Presentation): Electron + Vue 3 + Vite, port 5173
 2. **Gateway Layer** (BFF/API): Elysia TypeScript, port 48730  
@@ -48,7 +48,7 @@ Remove-Item Env:Ice-Version -ErrorAction SilentlyContinue
 
 ### Key Configuration Files
 - `package.json`: npm workspace configuration
-- `TinadecCode.slnx`: .NET solution file
+- `TinadecOffice.slnx`: .NET solution file
 - `native/Cargo.toml`: Rust workspace configuration
 - `apps/gateway/package.json`: Gateway dependencies
 - `apps/desktop/package.json`: Desktop dependencies
@@ -56,7 +56,7 @@ Remove-Item Env:Ice-Version -ErrorAction SilentlyContinue
 ## Architecture Patterns and Design Principles
 
 ### Layered Architecture Pattern
-TinadecCode follows a strict four-layer architecture:
+TinadecOffice follows a strict four-layer architecture:
 1. **Presentation Layer** (Desktop): UI rendering and user interaction
 2. **API Gateway Layer** (Gateway): Request routing and proxy
 3. **Business Logic Layer** (Core): Agent orchestration and state management

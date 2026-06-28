@@ -118,7 +118,7 @@ function getMainWindow() {
 }
 
 /**
- * Tag a BrowserWindow as the main TinadecCode window so getMainWindow() can
+ * Tag a BrowserWindow as the main TinadecOffice window so getMainWindow() can
  * reliably find it even when the Debug Studio window is also open.
  * @param {BrowserWindow} win
  */

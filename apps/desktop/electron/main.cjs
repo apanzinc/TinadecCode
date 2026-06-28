@@ -27,7 +27,7 @@ async function createWindow() {
     minWidth: 1120,
     minHeight: 720,
     backgroundColor: '#0d1117',
-    title: 'TinadecCode',
+    title: 'TinadecOffice',
     frame: false,
     autoHideMenuBar: true,
     show: false,
@@ -40,7 +40,7 @@ async function createWindow() {
     }
   });
 
-  // Tag this window as the main TinadecCode window so panelWindow.cjs
+  // Tag this window as the main TinadecOffice window so panelWindow.cjs
   // can reliably distinguish it from the Debug Studio window.
   tagMainWindow(win);
 

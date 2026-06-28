@@ -1,17 +1,17 @@
-# TinadecCode Agent Harness Product Model
+# TinadecOffice Agent Harness Product Model
 
-This document defines TinadecCode's product layers, responsibility boundaries, and long-term direction. It is not a design for a single feature. It is the shared product model that Core, the Tool layer, and the Desktop UI should follow as the system evolves.
+This document defines TinadecOffice's product layers, responsibility boundaries, and long-term direction. It is not a design for a single feature. It is the shared product model that Core, the Tool layer, and the Desktop UI should follow as the system evolves.
 
 ## Core Thesis
 
-TinadecCode is not simply a code editor with a chat box. It is a desktop workbench centered on general-purpose agent orchestration:
+TinadecOffice is not simply a code editor with a chat box. It is a desktop workbench centered on general-purpose agent orchestration:
 
 - **Core** is the universal agent orchestration model and reusable agent harness.
 - **Tool layer** is the capability layer that provides discoverable, approval-aware, executable tools.
 - **Code** is a built-in tool suite inside the Tool layer, focused on code, projects, and developer environments.
 - **Desktop** is the UI presentation layer that turns Core state and Tool-layer capabilities into an understandable, controllable product experience.
 
-These three layers should stay distinct. Core should not become a backend written only for the TinadecCode Desktop shell. The Tool layer should not own orchestration state. Desktop should not hide session state, approvals, routing, or tool policy in local frontend state.
+These three layers should stay distinct. Core should not become a backend written only for the TinadecOffice Desktop shell. The Tool layer should not own orchestration state. Desktop should not hide session state, approvals, routing, or tool policy in local frontend state.
 
 ## Three Product Layers
 
@@ -28,7 +28,7 @@ Core owns:
 - Approval gates, risk modeling, traces, debug APIs, and auditable event streams.
 - Stable APIs for tool layers, UI shells, and external harness consumers.
 
-Core is meant to be general. It should drive TinadecCode, but it should also be reusable by other product shells, CLIs, IDE extensions, or automation runtimes. In other words, Core should describe how agent work is organized, not how a particular page is rendered.
+Core is meant to be general. It should drive TinadecOffice, but it should also be reusable by other product shells, CLIs, IDE extensions, or automation runtimes. In other words, Core should describe how agent work is organized, not how a particular page is rendered.
 
 ### Tool Layer: Capability Provider
 
@@ -87,7 +87,7 @@ The key boundary is state writeback. Tool outputs from the Tool layer and intera
 
 ## Dual-Layer Agent Orchestration
 
-TinadecCode's agent model has two layers:
+TinadecOffice's agent model has two layers:
 
 - **Planning layer**: active agents that understand intent, plan tasks, select tools, compress context, supervise quality, and propose evolution.
 - **Execution layer**: passive agents that complete concrete task nodes under explicit permission boundaries and tool constraints.
@@ -123,4 +123,4 @@ This order prevents the product from becoming a frontend state collage, and it p
 
 ## One-Sentence Product Positioning
 
-TinadecCode is a desktop agent workbench: Core provides the universal agent harness, the Tool layer provides executable capabilities, Code is the code tool suite inside that layer, and Desktop presents orchestration, tools, and risk control as an operable UI.
+TinadecOffice is a desktop agent workbench: Core provides the universal agent harness, the Tool layer provides executable capabilities, Code is the code tool suite inside that layer, and Desktop presents orchestration, tools, and risk control as an operable UI.

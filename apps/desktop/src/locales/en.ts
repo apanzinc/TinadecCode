@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'TinadecCode',
+    name: 'TinadecOffice',
     connected: 'Connected',
     disconnected: 'Disconnected',
     minimize: 'Minimize',
@@ -360,7 +360,7 @@ retry: 'Retry',
     versionDesktop: 'Desktop',
     versionCode: 'Code',
     versionCore: 'Core',
-    decoupleHint: 'TinadecCode uses a decoupled architecture: Desktop handles UI and system integration, Code manages the editor and file operations, and Core orchestrates agents and model routing. Each component iterates and releases independently.',
+    decoupleHint: 'TinadecOffice uses a decoupled architecture: Desktop handles UI and system integration, Code manages the editor and file operations, and Core orchestrates agents and model routing. Each component iterates and releases independently.',
     planningLayer: 'Planning Layer',
     executionLayer: 'Execution Layer',
     enableAgent: 'Enable Agent',

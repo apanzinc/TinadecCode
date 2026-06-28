@@ -95,7 +95,7 @@ const app = new Elysia({ adapter: node() })
     path: '/docs',
     documentation: {
       info: {
-        title: 'TinadecCode API',
+        title: 'TinadecOffice API',
         version: '0.1.0'
       }
     }
@@ -706,4 +706,4 @@ const app = new Elysia({ adapter: node() })
   })
   .listen({ port, hostname: '127.0.0.1' });
 
-console.log(`TinadecCode API listening on http://127.0.0.1:${port}`);
+console.log(`TinadecOffice API listening on http://127.0.0.1:${port}`);

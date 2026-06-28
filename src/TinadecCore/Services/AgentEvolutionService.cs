@@ -280,7 +280,7 @@ public sealed class AgentEvolutionService(
         var lines = proposals.Select(p =>
             $"- {p.Name} ({p.Layer}/{p.AgentType}): {p.Description}. Tools: {string.Join(", ", p.SuggestedTools)}. Confidence: {p.ConfidenceScore:F2}");
         return $"""
-            You are TinadecCode's Evolution Agent. Review these agent proposals and identify any that should be rejected.
+            You are TinadecOffice's Evolution Agent. Review these agent proposals and identify any that should be rejected.
             Return one line per proposal: "ACCEPT <name>" or "REJECT <name> <reason>".
 
             Proposals:

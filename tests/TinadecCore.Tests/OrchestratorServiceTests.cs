@@ -82,7 +82,7 @@ public sealed class OrchestratorServiceTests
         Assert.Contains("prompt_fragment_ids", payloadText);
         Assert.Contains("prompt_estimated_tokens", payloadText);
         Assert.Contains("prompt_warning_count", payloadText);
-        Assert.DoesNotContain("TinadecCode prompt context", payloadText);
+        Assert.DoesNotContain("TinadecOffice prompt context", payloadText);
         Assert.DoesNotContain("Meeting Agent Default", payloadText);
     }
 

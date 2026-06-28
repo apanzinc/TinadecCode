@@ -3,7 +3,7 @@ import { basenameFromPath, toneForStatus } from './format';
 
 describe('format helpers', () => {
   it('extracts a project name from Windows paths', () => {
-    expect(basenameFromPath('D:\\github\\TinadecCode\\')).toBe('TinadecCode');
+    expect(basenameFromPath('D:\\github\\TinadecOffice\\')).toBe('TinadecOffice');
   });
 
   it('maps pending work to a warning tone', () => {

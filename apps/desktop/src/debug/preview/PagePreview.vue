@@ -529,7 +529,7 @@ const filteredCatalog = computed(() => {
           <template v-else-if="settingsSection === 'about'">
             <h3 class="settings-section-title">关于</h3>
             <UiCard class="settings-card">
-              <div class="settings-row"><UiLabel>应用</UiLabel><span>TinadecCode</span></div>
+              <div class="settings-row"><UiLabel>应用</UiLabel><span>TinadecOffice</span></div>
               <div class="settings-row"><UiLabel>版本</UiLabel><span>0.4.2</span></div>
               <div class="settings-row"><UiLabel>运行时</UiLabel><span>{{ data.readiness?.runtime ?? 'TinadecCore 0.4.2' }}</span></div>
               <div class="settings-row"><UiLabel>平台</UiLabel><span>{{ data.doctor?.platform ?? 'win32-x64' }}</span></div>

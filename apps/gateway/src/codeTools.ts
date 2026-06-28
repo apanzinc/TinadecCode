@@ -113,7 +113,7 @@ const PROJECT_TEMPLATES: ProjectTemplate[] = [
     package_manager: 'flutter',
     description: 'Tiny Flutter app skeleton.',
     files: (projectName) => [
-      { path: 'pubspec.yaml', content: `name: ${identifierName(projectName)}\ndescription: A TinadecCode Flutter starter.\npublish_to: none\nversion: 0.1.0+1\nenvironment:\n  sdk: ">=3.5.0 <4.0.0"\ndependencies:\n  flutter:\n    sdk: flutter\n` },
+      { path: 'pubspec.yaml', content: `name: ${identifierName(projectName)}\ndescription: A TinadecOffice Flutter starter.\npublish_to: none\nversion: 0.1.0+1\nenvironment:\n  sdk: ">=3.5.0 <4.0.0"\ndependencies:\n  flutter:\n    sdk: flutter\n` },
       { path: 'lib/main.dart', content: `import 'package:flutter/material.dart';\n\nvoid main() => runApp(const App());\n\nclass App extends StatelessWidget {\n  const App({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return const MaterialApp(home: Scaffold(body: Center(child: Text('Hello from ${projectName}'))));\n  }\n}\n` }
     ]
   },
@@ -126,7 +126,7 @@ const PROJECT_TEMPLATES: ProjectTemplate[] = [
     files: (projectName) => {
       const moduleName = identifierName(projectName);
       return [
-        { path: 'pyproject.toml', content: `[project]\nname = "${projectName}"\nversion = "0.1.0"\ndescription = "TinadecCode Python starter"\nrequires-python = ">=3.11"\n` },
+        { path: 'pyproject.toml', content: `[project]\nname = "${projectName}"\nversion = "0.1.0"\ndescription = "TinadecOffice Python starter"\nrequires-python = ">=3.11"\n` },
         { path: `src/${moduleName}/__init__.py`, content: `__all__ = ["main"]\n` },
         { path: `src/${moduleName}/__main__.py`, content: `def main() -> None:\n    print("Hello from ${projectName}")\n\n\nif __name__ == "__main__":\n    main()\n` }
       ];
@@ -161,7 +161,7 @@ const PROJECT_TEMPLATES: ProjectTemplate[] = [
     package_manager: 'nimble',
     description: 'Nimble command-line starter.',
     files: (projectName) => [
-      { path: `${projectName}.nimble`, content: `version       = "0.1.0"\nauthor        = "TinadecCode"\ndescription   = "TinadecCode Nim starter"\nlicense       = "MIT"\nsrcDir        = "src"\nbin           = @["${projectName}"]\n` },
+      { path: `${projectName}.nimble`, content: `version       = "0.1.0"\nauthor        = "TinadecOffice"\ndescription   = "TinadecOffice Nim starter"\nlicense       = "MIT"\nsrcDir        = "src"\nbin           = @["${projectName}"]\n` },
       { path: `src/${projectName}.nim`, content: `echo "Hello from ${projectName}"\n` }
     ]
   },

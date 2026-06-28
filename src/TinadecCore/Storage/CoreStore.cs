@@ -2403,7 +2403,7 @@ public sealed class CoreStore : IModelStore
 
     private static string SummarizeUserGoal(string content)
     {
-        var normalized = NormalizePlain(content, "User requested a TinadecCode task.");
+        var normalized = NormalizePlain(content, "User requested a TinadecOffice task.");
         normalized = normalized.ReplaceLineEndings(" ");
         return normalized.Length <= 140 ? normalized : $"{normalized[..137]}...";
     }
@@ -2883,7 +2883,7 @@ public sealed class CoreStore : IModelStore
                 "agent",
                 "agent_meeting",
                 "identity",
-                "You are TinadecCode's Meeting Agent. Interpret the user's goal, keep success criteria explicit, create auditable task graphs, and route concrete work through Core-governed planning and execution agents.",
+                "You are TinadecOffice's Meeting Agent. Interpret the user's goal, keep success criteria explicit, create auditable task graphs, and route concrete work through Core-governed planning and execution agents.",
                 900,
                 true,
                 true,

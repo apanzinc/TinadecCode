@@ -1,4 +1,4 @@
-﻿namespace TinadecCore.Tests;
+﻿﻿namespace TinadecCore.Tests;
 
 public sealed class ArchitectureBoundaryTests
 {
@@ -7,7 +7,7 @@ public sealed class ArchitectureBoundaryTests
     {
         var root = FindRepoRoot();
         var project = File.ReadAllText(Path.Combine(root, "src", "TinadecCore", "TinadecCore.csproj"));
-        var solution = File.ReadAllText(Path.Combine(root, "TinadecCode.slnx"));
+        var solution = File.ReadAllText(Path.Combine(root, "TinadecOffice.slnx"));
 
         Assert.Contains("Microsoft.NET.Sdk.Web", project);
         Assert.Contains("src/TinadecCore/TinadecCore.csproj", solution);
@@ -32,7 +32,7 @@ public sealed class ArchitectureBoundaryTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "TinadecCode.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "TinadecOffice.slnx")))
             {
                 return directory.FullName;
             }
@@ -40,6 +40,6 @@ public sealed class ArchitectureBoundaryTests
             directory = directory.Parent;
         }
 
-        throw new DirectoryNotFoundException("Could not find TinadecCode repository root.");
+        throw new DirectoryNotFoundException("Could not find TinadecOffice repository root.");
     }
 }

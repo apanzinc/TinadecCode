@@ -455,7 +455,7 @@ export function createMockApi(scenario: Ref<ScenarioId>) {
           fragments: data().promptFragments,
           context_pack_ids: ['ctx-001', 'ctx-002'],
           estimated_tokens: 4096,
-          system_prompt: '你是 TinadecCode 的智能体...',
+          system_prompt: '你是 TinadecOffice 的智能体...',
           warnings: [],
         } as PromptContextPreviewDto,
         scenario.value,

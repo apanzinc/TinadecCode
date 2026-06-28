@@ -369,7 +369,7 @@ public sealed class CoreCapabilityAdapterTests
         Assert.True(result.Data.ContainsKey("fragment_ids"));
         Assert.True(result.Data.ContainsKey("estimated_tokens"));
         Assert.False(result.Data.ContainsKey("system_prompt"));
-        Assert.DoesNotContain("TinadecCode prompt context", result.Data.Values.Select(value => value?.ToString()));
+        Assert.DoesNotContain("TinadecOffice prompt context", result.Data.Values.Select(value => value?.ToString()));
     }
 
     private sealed class RecordingCodeToolClient : ICodeToolClient

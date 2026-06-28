@@ -1,5 +1,5 @@
 /**
- * Background customization types for TinadecCode Desktop
+ * Background customization types for TinadecOffice Desktop
  * Supports image, video, and HTML backgrounds with opacity/blur controls
  */
 

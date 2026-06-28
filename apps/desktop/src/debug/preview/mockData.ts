@@ -1116,7 +1116,7 @@ export function mockHarnessManifest(): HarnessManifestDto {
 
 export function mockPromptFragments(): PromptFragmentDto[] {
   return [
-    { id: 'pf-001', key: 'system.base', title: '系统基础提示', scope: 'global', target_agent_id: null, category: 'system', content: '你是 TinadecCode 的智能体，负责协助开发者完成软件工程任务。', priority: 100, enabled: true, is_builtin: true, created_at: iso(-60 * 24 * 30), updated_at: iso(-60 * 24 * 10) },
+    { id: 'pf-001', key: 'system.base', title: '系统基础提示', scope: 'global', target_agent_id: null, category: 'system', content: '你是 TinadecOffice 的智能体，负责协助开发者完成软件工程任务。', priority: 100, enabled: true, is_builtin: true, created_at: iso(-60 * 24 * 30), updated_at: iso(-60 * 24 * 10) },
     { id: 'pf-002', key: 'agent.meeting.role', title: '会议智能体角色', scope: 'agent', target_agent_id: 'agent-meeting', category: 'role', content: '你是会议智能体，负责分析用户意图、拆解任务并调度其他智能体。', priority: 90, enabled: true, is_builtin: true, created_at: iso(-60 * 24 * 30), updated_at: iso(-60 * 24 * 9) },
     { id: 'pf-003', key: 'agent.code_writer.guard', title: '代码编写安全约束', scope: 'agent', target_agent_id: 'agent-code-writer', category: 'guard', content: '在应用补丁前必须读取目标文件；禁止删除超过 50 行的代码块而不提供替换。', priority: 80, enabled: true, is_builtin: true, created_at: iso(-60 * 24 * 20), updated_at: iso(-60 * 24 * 2) },
     { id: 'pf-004', key: 'context.compress.policy', title: '上下文压缩策略', scope: 'global', target_agent_id: null, category: 'policy', content: '当 token 超过预算 80% 时触发压缩，保留最近 5 轮对话与关键证据。', priority: 70, enabled: true, is_builtin: false, created_at: iso(-60 * 24 * 15), updated_at: iso(-60 * 24 * 5) },
@@ -1497,7 +1497,7 @@ export class TaskGraph {
 `
   }
   if (filename.endsWith('.md')) {
-    return `# TinadecCode
+    return `# TinadecOffice
 
 > 智能体驱动的软件工程桌面应用
 

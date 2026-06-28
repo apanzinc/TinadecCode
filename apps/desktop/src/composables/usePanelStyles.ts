@@ -1,5 +1,5 @@
 /**
- * Panel styles management composable for TinadecCode Desktop
+ * Panel styles management composable for TinadecOffice Desktop
  * Handles panel opacity, blur effects, and visual styling
  */
 

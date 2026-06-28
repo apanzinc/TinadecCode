@@ -1,4 +1,4 @@
-# TinadecCode Git 模块状态与路线图
+# TinadecOffice Git 模块状态与路线图
 
 **文档版本**：2.2  
 **更新日期**：2026-06-26  
@@ -131,7 +131,7 @@
 
 ## 3. 当前项目状态全面总结
 
-`TinadecCode` 的 Git 模块已经从 MVP 阶段迈入**“生产可用”阶段**。核心工作流 `status → diff → stage → commit → push → pull → branch → fetch → merge → rebase → resolve-conflict` 已全部在 Gateway 层实现，并通过 Core approval 机制保证安全；Desktop 层提供了三栏面板、真实分支列表、冲突解决、分支管理操作菜单、一键批准执行、AI 提交信息生成、AI 变更风险分析、diff 视图切换等交互体验。P0/P1 级别的功能完整性、分支管理、冲突解决、approval 上下文校验、一键执行效率、AI diff 上下文与风险分析已交付。
+`TinadecOffice` 的 Git 模块已经从 MVP 阶段迈入**“生产可用”阶段**。核心工作流 `status → diff → stage → commit → push → pull → branch → fetch → merge → rebase → resolve-conflict` 已全部在 Gateway 层实现，并通过 Core approval 机制保证安全；Desktop 层提供了三栏面板、真实分支列表、冲突解决、分支管理操作菜单、一键批准执行、AI 提交信息生成、AI 变更风险分析、diff 视图切换等交互体验。P0/P1 级别的功能完整性、分支管理、冲突解决、approval 上下文校验、一键执行效率、AI diff 上下文与风险分析已交付。
 
 当前主要短板集中在**高级撤销操作（reset/revert/cherry-pick/stash）、commit graph 可视化、真正的 hunk 级 stage/unstage、分支 ahead/behind 视觉提示增强**等方面。后续补齐后，Git 模块将具备与 JetBrains / VS Code 基础 Git 能力相媲美的完整体验。
 

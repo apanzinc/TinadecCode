@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'TinadecCode',
+    name: 'TinadecOffice',
     connected: '已连接',
     disconnected: '未连接',
     minimize: '最小化',
@@ -360,7 +360,7 @@ retry: '重试',
     versionDesktop: 'Desktop',
     versionCode: 'Code',
     versionCore: 'Core',
-    decoupleHint: 'TinadecCode 采用解耦架构：Desktop 负责界面与系统集成，Code 负责编辑器与文件操作，Core 负责智能体调度与模型路由。三者独立迭代、独立发布。',
+    decoupleHint: 'TinadecOffice 采用解耦架构：Desktop 负责界面与系统集成，Code 负责编辑器与文件操作，Core 负责智能体调度与模型路由。三者独立迭代、独立发布。',
     planningLayer: '规划层',
     executionLayer: '执行层',
     enableAgent: '启用智能体',

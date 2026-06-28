@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+﻿﻿using System.Text.Json.Nodes;
 using TinadecCore.Services;
 using TinadecCore.Storage;
 using Tinadec.Contracts.Models;
@@ -14,7 +14,7 @@ public sealed class CoreStoreTests
         var store = new CoreStore(db);
         store.Initialize();
 
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "MVP");
         var message = store.AddMessage(session.Id, "user", "hello");
         var approval = store.CreateApproval(new CreateApprovalRequest(session.Id, "shell", "npm test", "npm test", project.Path));
@@ -80,7 +80,7 @@ public sealed class CoreStoreTests
         var store = new CoreStore(db);
         store.Initialize();
 
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Agent runtime");
         var message = store.AddMessage(session.Id, "user", "implement the two-layer agent runtime");
 
@@ -117,7 +117,7 @@ public sealed class CoreStoreTests
             null,
             false));
 
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Agent runtime");
         var message = store.AddMessage(session.Id, "user", "plan and validate the change");
 
@@ -287,7 +287,7 @@ public sealed class CoreStoreTests
         var store = new CoreStore(db);
         store.Initialize();
 
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Workflow runtime");
         var message = store.AddMessage(session.Id, "user", "search code and prepare validation");
         var snapshot = store.CreateOrchestrationRun(session.Id, message.Id, message.Content);
@@ -309,7 +309,7 @@ public sealed class CoreStoreTests
         var store = new CoreStore(db);
         store.Initialize();
 
-        var project = store.CreateProject("TinadecCode", Environment.CurrentDirectory);
+        var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "Git workflow runtime");
         var message = store.AddMessage(session.Id, "user", "prepare a git commit and push explanation for this branch");
         var snapshot = store.CreateOrchestrationRun(session.Id, message.Id, message.Content);

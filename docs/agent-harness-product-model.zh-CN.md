@@ -1,17 +1,17 @@
-# TinadecCode 智能体 Harness 产品模型
+# TinadecOffice 智能体 Harness 产品模型
 
-本文定义 TinadecCode 的产品分层、职责边界和长期演进方向。它不是某个单点功能设计，而是后续 Core、Tool layer 和 Desktop UI 协作时应共同遵守的产品模型。
+本文定义 TinadecOffice 的产品分层、职责边界和长期演进方向。它不是某个单点功能设计，而是后续 Core、Tool layer 和 Desktop UI 协作时应共同遵守的产品模型。
 
 ## 核心判断
 
-TinadecCode 不是“一个带聊天框的代码编辑器”。它的本质是一个以通用智能体编排为中心的桌面工作台：
+TinadecOffice 不是“一个带聊天框的代码编辑器”。它的本质是一个以通用智能体编排为中心的桌面工作台：
 
 - **Core** 是通用智能体编排模型，也是可复用的 agent harness。
 - **Tool layer** 是工具层，为 harness 提供可发现、可审批、可执行的工具能力。
 - **Code** 是 Tool layer 里的一个内置工具套件，专注于代码、项目和开发环境能力。
 - **Desktop** 是 UI 呈现层，把 Core 的编排状态和 Tool layer 的工具能力组织成可理解、可操作的产品体验。
 
-这三层应保持清晰分工。Core 不应被写成只服务 TinadecCode Desktop 的业务后端；Tool layer 不应持有编排状态；Desktop 不应把状态、审批、路由和工具策略藏在前端局部状态里。
+这三层应保持清晰分工。Core 不应被写成只服务 TinadecOffice Desktop 的业务后端；Tool layer 不应持有编排状态；Desktop 不应把状态、审批、路由和工具策略藏在前端局部状态里。
 
 ## 三层产品职责
 
@@ -28,7 +28,7 @@ Core 的产品职责包括：
 - 审批门、风险模型、trace、debug API 和可审计事件流。
 - 面向不同工具层、UI 或外部 harness consumer 的稳定 API。
 
-Core 的设计目标是通用性。它应能驱动 TinadecCode，也应能被其它产品外壳、CLI、IDE 插件或自动化 runtime 复用。换句话说，Core 应表达“agent work 如何被组织”，而不是表达“某个页面如何展示”。
+Core 的设计目标是通用性。它应能驱动 TinadecOffice，也应能被其它产品外壳、CLI、IDE 插件或自动化 runtime 复用。换句话说，Core 应表达“agent work 如何被组织”，而不是表达“某个页面如何展示”。
 
 ### Tool Layer：工具层与能力提供者
 
@@ -87,7 +87,7 @@ Desktop 的核心价值不是保存状态，而是降低 Core 和 Tool layer 的
 
 ## 双层智能体编排模型
 
-TinadecCode 的智能体模型分为两层：
+TinadecOffice 的智能体模型分为两层：
 
 - **Planning layer**：主动智能体，负责理解意图、规划任务、分配工具、压缩上下文、监督质量和提出演进建议。
 - **Execution layer**：被动智能体，负责在明确任务节点、权限边界和工具约束下完成具体工作。
@@ -123,4 +123,4 @@ TinadecCode 的智能体模型分为两层：
 
 ## 一句话产品定位
 
-TinadecCode 是一个桌面智能体工作台：Core 提供通用 agent harness，Tool layer 提供可执行工具能力，Code 是其中的代码工具套件，Desktop 把编排、工具和风险控制呈现为可操作的 UI。
+TinadecOffice 是一个桌面智能体工作台：Core 提供通用 agent harness，Tool layer 提供可执行工具能力，Code 是其中的代码工具套件，Desktop 把编排、工具和风险控制呈现为可操作的 UI。

@@ -1,6 +1,6 @@
 # Codex Rust Upstream
 
-TinadecCode uses Codex Rust as a mature upstream capability source while keeping TinadecCore as the product-level agent runtime and state owner.
+TinadecOffice uses Codex Rust as a mature upstream capability source while keeping TinadecCore as the product-level agent runtime and state owner.
 
 ## Layering Rule
 

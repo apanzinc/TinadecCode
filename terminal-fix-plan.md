@@ -1,4 +1,4 @@
-# TinadecCode终端功能修复计划
+# TinadecOffice终端功能修复计划
 
 ## Context
 
@@ -25,7 +25,7 @@
 
 **1.1 检查node-pty加载状态**
 ```powershell
-cd d:\github\agent\TinadecCode\apps\desktop
+cd d:\github\agent\TinadecOffice\apps\desktop
 node -e "try { require('node-pty'); console.log('OK'); } catch(e) { console.error('FAILED:', e.message); }"
 ```
 
@@ -47,7 +47,7 @@ window.tinadec.terminal.getShells().then(s => console.log('shells:', s));
 **文件**：无需修改文件，执行命令
 
 ```powershell
-cd d:\github\agent\TinadecCode\apps\desktop
+cd d:\github\agent\TinadecOffice\apps\desktop
 
 # 清理缓存
 rm -rf node_modules/.cache
@@ -69,7 +69,7 @@ npm install -g windows-build-tools
 
 ### 修复2：增强terminalManager.cjs的错误处理和fallback
 
-**文件**：`d:\github\agent\TinadecCode\apps\desktop\electron\terminalManager.cjs`
+**文件**：`d:\github\agent\TinadecOffice\apps\desktop\electron\terminalManager.cjs`
 
 **修改点**：
 
@@ -131,7 +131,7 @@ function createSpawnFallback(entry, shell, args, cwd, cols, rows, env) {
 
 ### 修复3：增强useTerminal.ts错误处理
 
-**文件**：`d:\github\agent\TinadecCode\apps\desktop\src\composables\useTerminal.ts`
+**文件**：`d:\github\agent\TinadecOffice\apps\desktop\src\composables\useTerminal.ts`
 
 **修改点**：
 
@@ -163,7 +163,7 @@ return {
 
 ### 修复4：增强TerminalPanel.vue错误反馈
 
-**文件**：`d:\github\agent\TinadecCode\apps\desktop\src\components\TerminalPanel.vue`
+**文件**：`d:\github\agent\TinadecOffice\apps\desktop\src\components\TerminalPanel.vue`
 
 **修改点**：
 
@@ -232,7 +232,7 @@ async function handleNewTerminal(shellId?: string): Promise<void> {
 
 ### 修复5：确保shell检测健壮性
 
-**文件**：`d:\github\agent\TinadecCode\apps\desktop\electron\terminalManager.cjs`
+**文件**：`d:\github\agent\TinadecOffice\apps\desktop\electron\terminalManager.cjs`
 
 **修改点**：在getAvailableShells函数末尾添加默认shell
 ```javascript
@@ -259,7 +259,7 @@ function getAvailableShells() {
 
 ### 1. 编译验证
 ```powershell
-cd d:\github\agent\TinadecCode\apps\desktop
+cd d:\github\agent\TinadecOffice\apps\desktop
 npm run rebuild:native
 node -e "require('node-pty') && console.log('node-pty: OK')"
 ```

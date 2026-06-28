@@ -38,7 +38,7 @@ public sealed class OpenAiCompatibleClient(HttpClient httpClient)
             string.IsNullOrWhiteSpace(settings.Model))
         {
             return CreateResponse(
-                "TinadecCode Core is running. Add an OpenAI-compatible base URL and model to enable live model responses.",
+                "TinadecOffice Core is running. Add an OpenAI-compatible base URL and model to enable live model responses.",
                 new ModelUsageDto(0, 0, 0),
                 ModelFinishReason.Unknown,
                 settings,
@@ -247,7 +247,7 @@ public sealed class OpenAiCompatibleClient(HttpClient httpClient)
             yield return new ModelStreamChunkDto(
                 string.Empty, string.Empty, string.Empty, providerInstanceId, settings.Model,
                 ModelStreamChunkKind.Delta,
-                "TinadecCode Core is running. Add an OpenAI-compatible base URL and model to enable live model responses.",
+                "TinadecOffice Core is running. Add an OpenAI-compatible base URL and model to enable live model responses.",
                 null, null, ModelFinishReason.Stop, null, false, false, null, null);
             yield break;
         }

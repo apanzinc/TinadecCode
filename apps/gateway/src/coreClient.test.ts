@@ -47,7 +47,7 @@ test('Code tools expose programming-domain execution contracts', async () => {
     assert.deepEqual(search?.data.argument_keys, ['query']);
   }
 
-  const patch = await executeCodeTool('apply_patch', { cwd: 'D:/github/TinadecCode' });
+  const patch = await executeCodeTool('apply_patch', { cwd: 'D:/github/TinadecOffice' });
   assert.equal(patch?.requires_approval, true);
   assert.equal(patch?.status, 'blocked');
 
