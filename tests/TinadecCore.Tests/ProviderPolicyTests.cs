@@ -30,7 +30,8 @@ public sealed class ProviderPolicyTests
         using var fixture = CliFixture.Create("sleep 10");
         var runtime = new CliProviderRuntime(TimeSpan.FromMilliseconds(150));
 
-        var result = await runtime.GenerateAsync(CreateCliContext(fixture), null, CreateMessages(), CancellationToken.None);
+        var result =
+            await runtime.GenerateAsync(CreateCliContext(fixture), null, CreateMessages(), CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorCategory.Timeout, result.ErrorCategory);
@@ -56,7 +57,8 @@ public sealed class ProviderPolicyTests
         });
         var runtime = new OpenAiCompatibleProviderRuntime(new OpenAiCompatibleClient(new HttpClient(handler)));
 
-        var result = await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
+        var result =
+            await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorMapper.IsRetryable(result.ErrorCategory!.Value), result.IsRetryable);
@@ -76,7 +78,8 @@ public sealed class ProviderPolicyTests
             new OpenAiCompatibleClient(new HttpClient(handler)),
             maxRetryAttempts: 2);
 
-        var result = await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
+        var result =
+            await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorCategory.ProviderUnavailable, result.ErrorCategory);
@@ -101,9 +104,10 @@ public sealed class ProviderPolicyTests
         var runtime = new OpenAiCompatibleProviderRuntime(
             new OpenAiCompatibleClient(new HttpClient(handler)),
             store,
-            maxRetryAttempts: 1);
+            1);
 
-        var result = await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
+        var result =
+            await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
         var saved = store.GetStoredModelProviderInstance("provider-openai");
 
         Assert.Equal("failed", result.Status);
@@ -137,9 +141,10 @@ public sealed class ProviderPolicyTests
         var runtime = new OpenAiCompatibleProviderRuntime(
             new OpenAiCompatibleClient(new HttpClient(handler)),
             store,
-            maxRetryAttempts: 2);
+            2);
 
-        var result = await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
+        var result =
+            await runtime.GenerateAsync(CreateHttpContext(), "secret", CreateMessages(), CancellationToken.None);
         var saved = store.GetStoredModelProviderInstance("provider-openai");
 
         Assert.Equal("executed", result.Status);
@@ -234,9 +239,11 @@ public sealed class ProviderPolicyTests
         return new StringContent(value, Encoding.UTF8, "application/json");
     }
 
-    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle) : HttpMessageHandler
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return handle(request);
         }
@@ -244,7 +251,8 @@ public sealed class ProviderPolicyTests
 
     private sealed class DelayedHttpMessageHandler(TimeSpan delay) : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             await Task.Delay(delay, cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK)
@@ -279,7 +287,8 @@ public sealed class ProviderPolicyTests
             {
                 var scriptPath = Path.Combine(root, "fake-cli.cmd");
                 File.WriteAllText(scriptPath, ConvertToWindowsScript(unixScript));
-                return new CliFixture(root, workspace, Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe", $"/c \"{scriptPath}\"");
+                return new CliFixture(root, workspace, Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+                    $"/c \"{scriptPath}\"");
             }
 
             var shellScriptPath = Path.Combine(root, "fake-cli.sh");
@@ -289,18 +298,13 @@ public sealed class ProviderPolicyTests
 
         public void Dispose()
         {
-            if (Directory.Exists(Root))
-            {
-                Directory.Delete(Root, recursive: true);
-            }
+            if (Directory.Exists(Root)) Directory.Delete(Root, true);
         }
 
         private static string ConvertToWindowsScript(string unixScript)
         {
             if (unixScript.Contains("sleep 10", StringComparison.Ordinal))
-            {
                 return "@echo off\r\ntype nul >nul\r\nping -n 11 127.0.0.1 >nul\r\n";
-            }
 
             return "@echo off\r\ntype nul >nul\r\n";
         }

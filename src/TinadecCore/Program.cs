@@ -26,7 +26,8 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins("http://127.0.0.1:48730", "http://localhost:48730", "http://127.0.0.1:5173", "http://localhost:5173")
+            .WithOrigins("http://127.0.0.1:48730", "http://localhost:48730", "http://127.0.0.1:5173",
+                "http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -112,7 +113,8 @@ app.MapGet("/api/v1/readiness", (RuntimeReadinessService readiness) => Results.O
 
 app.MapGet("/api/v1/model-readiness", (ModelReadinessService readiness) => Results.Ok(readiness.Check()));
 
-app.MapGet("/api/v1/model-catalog-readiness", (ModelCatalogReadinessService readiness) => Results.Ok(readiness.Check()));
+app.MapGet("/api/v1/model-catalog-readiness",
+    (ModelCatalogReadinessService readiness) => Results.Ok(readiness.Check()));
 
 app.MapGet("/api/v1/tool-layer-readiness", (ToolLayerReadinessService readiness) => Results.Ok(readiness.Check()));
 
@@ -121,11 +123,12 @@ app.MapGet("/api/v1/projects", (CoreStore coreStore) => Results.Ok(coreStore.Lis
 app.MapPost("/api/v1/projects", (CreateProjectRequest request, CoreStore coreStore, EventHub events) =>
 {
     if (string.IsNullOrWhiteSpace(request.Path) || !Directory.Exists(request.Path))
-    {
-        return Results.BadRequest(new TinadecError("PROJECT_PATH_INVALID", "The selected project path does not exist."));
-    }
+        return Results.BadRequest(new TinadecError("PROJECT_PATH_INVALID",
+            "The selected project path does not exist."));
 
-    var name = string.IsNullOrWhiteSpace(request.Name) ? Path.GetFileName(request.Path.TrimEnd(Path.DirectorySeparatorChar)) : request.Name.Trim();
+    var name = string.IsNullOrWhiteSpace(request.Name)
+        ? Path.GetFileName(request.Path.TrimEnd(Path.DirectorySeparatorChar))
+        : request.Name.Trim();
     var project = coreStore.CreateProject(name, request.Path);
     Publish(events, coreStore.AppendNewEvent("project.created", null, new JsonObject
     {
@@ -167,9 +170,7 @@ app.MapPost("/api/v1/sessions/{sessionId}/messages", async (
     CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Content))
-    {
         return Results.BadRequest(new TinadecError("MESSAGE_EMPTY", "Message content is required."));
-    }
 
     var userMessage = coreStore.AddMessage(sessionId, "user", request.Content.Trim());
     Publish(events, coreStore.AppendNewEvent("message.created", sessionId, new JsonObject
@@ -183,7 +184,8 @@ app.MapPost("/api/v1/sessions/{sessionId}/messages", async (
 
     var modelCompletion = await orchestrator.CompleteRunWithModelAsync(orchestration, cancellationToken);
     return modelCompletion.AssistantMessage is null
-        ? Results.Json(new TinadecError("MODEL_INVOCATION_FAILED", "Model invocation failed."), statusCode: StatusCodes.Status502BadGateway)
+        ? Results.Json(new TinadecError("MODEL_INVOCATION_FAILED", "Model invocation failed."),
+            statusCode: StatusCodes.Status502BadGateway)
         : Results.Ok(modelCompletion.AssistantMessage);
 });
 
@@ -198,9 +200,7 @@ app.MapPost("/api/v1/sessions/{sessionId}/invoke-stream", async (
     CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Content))
-    {
         return Results.BadRequest(new TinadecError("MESSAGE_EMPTY", "Message content is required."));
-    }
 
     var userMessage = coreStore.AddMessage(sessionId, "user", request.Content.Trim());
     Publish(events, coreStore.AppendNewEvent("message.created", sessionId, new JsonObject
@@ -273,9 +273,7 @@ app.MapPost("/api/v1/runs/{runId}/tools/{toolId}/execute", async (
 {
     var response = await toolExecution.ExecuteAsync(runId, toolId, request, cancellationToken);
     if (response is null)
-    {
         return Results.NotFound(new TinadecError("TOOL_EXECUTION_NOT_FOUND", "Run or tool was not found."));
-    }
 
     return string.Equals(response.Status, "approval_required", StringComparison.OrdinalIgnoreCase)
         ? Results.Accepted($"/api/v1/approvals/{response.Approval?.Id}", response)
@@ -289,16 +287,11 @@ app.MapGet("/api/v1/events", async (HttpContext context, string? sessionId, Core
     context.Response.ContentType = "text/event-stream";
 
     foreach (var envelope in coreStore.ListEvents(sessionId).TakeLast(50))
-    {
         await WriteSseAsync(context.Response, envelope, context.RequestAborted);
-    }
 
     await foreach (var envelope in events.Subscribe(context.RequestAborted))
     {
-        if (!string.IsNullOrWhiteSpace(sessionId) && envelope.SessionId != sessionId)
-        {
-            continue;
-        }
+        if (!string.IsNullOrWhiteSpace(sessionId) && envelope.SessionId != sessionId) continue;
 
         await WriteSseAsync(context.Response, envelope, context.RequestAborted);
     }
@@ -322,28 +315,26 @@ app.MapPost("/api/v1/approvals", (CreateApprovalRequest request, CoreStore coreS
     return Results.Created($"/api/v1/approvals/{approval.Id}", approval);
 });
 
-app.MapPost("/api/v1/approvals/{approvalId}/decision", (string approvalId, DecideApprovalRequest request, CoreStore coreStore, EventHub events) =>
-{
-    var normalized = request.Decision.Trim().ToLowerInvariant();
-    if (normalized is not ("approved" or "rejected"))
+app.MapPost("/api/v1/approvals/{approvalId}/decision",
+    (string approvalId, DecideApprovalRequest request, CoreStore coreStore, EventHub events) =>
     {
-        return Results.BadRequest(new TinadecError("APPROVAL_DECISION_INVALID", "Decision must be approved or rejected."));
-    }
+        var normalized = request.Decision.Trim().ToLowerInvariant();
+        if (normalized is not ("approved" or "rejected"))
+            return Results.BadRequest(new TinadecError("APPROVAL_DECISION_INVALID",
+                "Decision must be approved or rejected."));
 
-    var approval = coreStore.DecideApproval(approvalId, normalized);
-    if (approval is null)
-    {
-        return Results.NotFound(new TinadecError("APPROVAL_NOT_FOUND", "Approval request was not found."));
-    }
+        var approval = coreStore.DecideApproval(approvalId, normalized);
+        if (approval is null)
+            return Results.NotFound(new TinadecError("APPROVAL_NOT_FOUND", "Approval request was not found."));
 
-    Publish(events, coreStore.AppendNewEvent($"approval.{normalized}", approval.SessionId, new JsonObject
-    {
-        ["approval_id"] = approval.Id,
-        ["kind"] = approval.Kind
-    }, ["approval.decide"]));
+        Publish(events, coreStore.AppendNewEvent($"approval.{normalized}", approval.SessionId, new JsonObject
+        {
+            ["approval_id"] = approval.Id,
+            ["kind"] = approval.Kind
+        }, ["approval.decide"]));
 
-    return Results.Ok(approval);
-});
+        return Results.Ok(approval);
+    });
 
 app.MapPost("/api/v1/tools/shell", (CreateApprovalRequest request, CoreStore coreStore, EventHub events) =>
 {
@@ -373,7 +364,8 @@ app.MapGet("/api/v1/model-providers", (IModelManagementService modelManagement) 
     return Results.Ok(modelManagement.ListProviders());
 });
 
-app.MapPost("/api/v1/model-providers", (SaveModelProviderInstanceRequest request, IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
+app.MapPost("/api/v1/model-providers", (SaveModelProviderInstanceRequest request,
+    IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
 {
     var saved = modelManagement.CreateProvider(request);
 
@@ -387,13 +379,13 @@ app.MapPost("/api/v1/model-providers", (SaveModelProviderInstanceRequest request
     return Results.Created($"/api/v1/model-providers/{saved.Id}", saved);
 });
 
-app.MapPut("/api/v1/model-providers/{providerInstanceId}", (string providerInstanceId, SaveModelProviderInstanceRequest request, IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
+app.MapPut("/api/v1/model-providers/{providerInstanceId}", (string providerInstanceId,
+    SaveModelProviderInstanceRequest request, IModelManagementService modelManagement, CoreStore coreStore,
+    EventHub events) =>
 {
     var saved = modelManagement.UpdateProvider(providerInstanceId, request);
     if (saved is null)
-    {
         return Results.NotFound(new TinadecError("MODEL_PROVIDER_NOT_FOUND", "Model provider instance was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("model.provider.saved", null, new JsonObject
     {
@@ -405,13 +397,12 @@ app.MapPut("/api/v1/model-providers/{providerInstanceId}", (string providerInsta
     return Results.Ok(saved);
 });
 
-app.MapDelete("/api/v1/model-providers/{providerInstanceId}", (string providerInstanceId, IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
+app.MapDelete("/api/v1/model-providers/{providerInstanceId}", (string providerInstanceId,
+    IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
 {
     var deleted = modelManagement.DeleteProvider(providerInstanceId);
     if (deleted is null)
-    {
         return Results.NotFound(new TinadecError("MODEL_PROVIDER_NOT_FOUND", "Model provider instance was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("model.provider.deleted", null, new JsonObject
     {
@@ -428,13 +419,12 @@ app.MapGet("/api/v1/model-routes", (IModelManagementService modelManagement) =>
     return Results.Ok(modelManagement.ListRoutes());
 });
 
-app.MapPut("/api/v1/model-routes/{purpose}", (string purpose, SaveModelRouteRequest request, IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
+app.MapPut("/api/v1/model-routes/{purpose}", (string purpose, SaveModelRouteRequest request,
+    IModelManagementService modelManagement, CoreStore coreStore, EventHub events) =>
 {
     var saved = modelManagement.SaveRoute(purpose, request);
     if (saved is null)
-    {
         return Results.NotFound(new TinadecError("MODEL_PROVIDER_NOT_FOUND", "Model provider instance was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("model.route.updated", null, new JsonObject
     {
@@ -474,9 +464,7 @@ app.MapPost("/api/v1/market/sources/{sourceId}/refresh", (string sourceId, CoreS
 {
     var source = coreStore.RefreshExtensionSource(sourceId);
     if (source is null)
-    {
         return Results.NotFound(new TinadecError("EXTENSION_SOURCE_NOT_FOUND", "Extension source was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("market.source.refreshed", null, new JsonObject
     {
@@ -549,9 +537,7 @@ app.MapPost("/api/v1/extensions/{extensionId}/enable", (string extensionId, Core
 {
     var extension = coreStore.SetExtensionEnabled(extensionId, true);
     if (extension is null)
-    {
         return Results.NotFound(new TinadecError("EXTENSION_NOT_FOUND", "Installed extension was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("extension.enabled", null, new JsonObject
     {
@@ -567,9 +553,7 @@ app.MapPost("/api/v1/extensions/{extensionId}/disable", (string extensionId, Cor
 {
     var extension = coreStore.SetExtensionEnabled(extensionId, false);
     if (extension is null)
-    {
         return Results.NotFound(new TinadecError("EXTENSION_NOT_FOUND", "Installed extension was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("extension.disabled", null, new JsonObject
     {
@@ -586,16 +570,18 @@ app.MapPost("/api/v1/extensions/{extensionId}/update", (string extensionId, Core
     var extension = coreStore.SetExtensionEnabled(extensionId, false);
     return extension is null
         ? Results.NotFound(new TinadecError("EXTENSION_NOT_FOUND", "Installed extension was not found."))
-        : Results.Ok(extension with { Status = "update_available", StatusMessage = "Update check completed. No newer version is bundled in this MVP slice." });
+        : Results.Ok(extension with
+        {
+            Status = "update_available",
+            StatusMessage = "Update check completed. No newer version is bundled in this MVP slice."
+        });
 });
 
 app.MapDelete("/api/v1/extensions/{extensionId}", (string extensionId, CoreStore coreStore, EventHub events) =>
 {
     var deleted = coreStore.DeleteInstalledExtension(extensionId);
     if (!deleted)
-    {
         return Results.NotFound(new TinadecError("EXTENSION_NOT_FOUND", "Installed extension was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("extension.uninstalled", null, new JsonObject
     {
@@ -615,45 +601,51 @@ app.MapGet("/api/v1/mcp/servers/{serverId}/tools", (string serverId, CoreStore c
         : Results.Ok(server.Tools);
 });
 
-app.MapPost("/api/v1/mcp/servers/{serverId}/reload", async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
-{
-    var server = coreStore.ReloadMcpServer(serverId);
-    if (server is null)
+app.MapPost("/api/v1/mcp/servers/{serverId}/reload",
+    async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
     {
-        return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
-    }
+        var server = coreStore.ReloadMcpServer(serverId);
+        if (server is null)
+            return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
 
-    // 先优雅关闭旧进程，再重新连接（spec: reload = disconnect + connect）
-    try { await gateway.DisconnectAsync(serverId); } catch { /* best effort */ }
-    try
-    {
-        await gateway.ConnectAsync(serverId);
-    }
-    catch { /* connect 失败由 report 回调更新状态 */ }
+        // 先优雅关闭旧进程，再重新连接（spec: reload = disconnect + connect）
+        try { await gateway.DisconnectAsync(serverId); }
+        catch
+        {
+            /* best effort */
+        }
 
-    return Results.Ok(coreStore.ListMcpServers().FirstOrDefault(s => s.Id == serverId));
-});
+        try
+        {
+            await gateway.ConnectAsync(serverId);
+        }
+        catch
+        {
+            /* connect 失败由 report 回调更新状态 */
+        }
 
-app.MapPost("/api/v1/mcp/servers/{serverId}/connect", async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
-{
-    var server = coreStore.ListMcpServers().FirstOrDefault(item => item.Id == serverId);
-    if (server is null)
-    {
-        return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
-    }
+        return Results.Ok(coreStore.ListMcpServers().FirstOrDefault(s => s.Id == serverId));
+    });
 
-    try
+app.MapPost("/api/v1/mcp/servers/{serverId}/connect",
+    async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
     {
-        var result = await gateway.ConnectAsync(serverId);
-        return result is null
-            ? Results.StatusCode(502)
-            : Results.Ok(result);
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(detail: ex.Message, statusCode: 502, title: "MCP_CONNECT_FAILED");
-    }
-});
+        var server = coreStore.ListMcpServers().FirstOrDefault(item => item.Id == serverId);
+        if (server is null)
+            return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
+
+        try
+        {
+            var result = await gateway.ConnectAsync(serverId);
+            return result is null
+                ? Results.StatusCode(502)
+                : Results.Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem(ex.Message, statusCode: 502, title: "MCP_CONNECT_FAILED");
+        }
+    });
 
 app.MapPost("/api/v1/mcp/servers/{serverId}/disconnect", async (string serverId, McpGatewayClient gateway) =>
 {
@@ -666,61 +658,54 @@ app.MapPost("/api/v1/mcp/servers/{serverId}/disconnect", async (string serverId,
     }
     catch (Exception ex)
     {
-        return Results.Problem(detail: ex.Message, statusCode: 502, title: "MCP_DISCONNECT_FAILED");
+        return Results.Problem(ex.Message, statusCode: 502, title: "MCP_DISCONNECT_FAILED");
     }
 });
 
-app.MapGet("/api/v1/mcp/servers/{serverId}/status", async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
-{
-    var server = coreStore.ListMcpServers().FirstOrDefault(item => item.Id == serverId);
-    if (server is null)
+app.MapGet("/api/v1/mcp/servers/{serverId}/status",
+    async (string serverId, CoreStore coreStore, McpGatewayClient gateway) =>
     {
-        return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
-    }
+        var server = coreStore.ListMcpServers().FirstOrDefault(item => item.Id == serverId);
+        if (server is null)
+            return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
 
-    // 查询 Gateway 运行时状态
-    try
-    {
-        var runtimeStatus = await gateway.GetStatusAsync(serverId);
-        return Results.Ok(new
+        // 查询 Gateway 运行时状态
+        try
         {
-            server.Id,
-            server.Name,
-            server.Transport,
-            dbStatus = server.Status,
-            runtimeState = runtimeStatus?.State ?? "unknown",
-            runtimeTools = runtimeStatus?.Tools ?? Array.Empty<string>(),
-            server.UpdatedAt,
-        });
-    }
-    catch
-    {
-        return Results.Ok(new
+            var runtimeStatus = await gateway.GetStatusAsync(serverId);
+            return Results.Ok(new
+            {
+                server.Id,
+                server.Name,
+                server.Transport,
+                dbStatus = server.Status,
+                runtimeState = runtimeStatus?.State ?? "unknown",
+                runtimeTools = runtimeStatus?.Tools ?? Array.Empty<string>(),
+                server.UpdatedAt
+            });
+        }
+        catch
         {
-            server.Id,
-            server.Name,
-            server.Transport,
-            dbStatus = server.Status,
-            runtimeState = "unreachable",
-            runtimeTools = Array.Empty<string>(),
-            server.UpdatedAt,
-        });
-    }
-});
+            return Results.Ok(new
+            {
+                server.Id,
+                server.Name,
+                server.Transport,
+                dbStatus = server.Status,
+                runtimeState = "unreachable",
+                runtimeTools = Array.Empty<string>(),
+                server.UpdatedAt
+            });
+        }
+    });
 
 app.MapPost("/api/v1/mcp/servers/{serverId}/report", (string serverId, McpReportRequest report, CoreStore coreStore) =>
 {
     var server = coreStore.UpdateMcpServerStatus(serverId, report.Status, report.StatusMessage);
-    if (server is null)
-    {
-        return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
-    }
+    if (server is null) return Results.NotFound(new TinadecError("MCP_SERVER_NOT_FOUND", "MCP server was not found."));
 
     // 如果 report 含 tools 列表，更新 tools
-    if (report.Tools is not null)
-    {
-        coreStore.UpdateMcpServerTools(serverId, report.Tools);
-    }
+    if (report.Tools is not null) coreStore.UpdateMcpServerTools(serverId, report.Tools);
 
     return Results.Ok(coreStore.ListMcpServers().FirstOrDefault(s => s.Id == serverId));
 });
@@ -783,30 +768,30 @@ app.MapPost("/api/v1/prompt-fragments", (SavePromptFragmentRequest request, Core
     }
 });
 
-app.MapPut("/api/v1/prompt-fragments/{fragmentId}", (string fragmentId, SavePromptFragmentRequest request, CoreStore coreStore, EventHub events) =>
-{
-    try
+app.MapPut("/api/v1/prompt-fragments/{fragmentId}",
+    (string fragmentId, SavePromptFragmentRequest request, CoreStore coreStore, EventHub events) =>
     {
-        var fragment = coreStore.UpdatePromptFragment(fragmentId, request);
-        if (fragment is null)
+        try
         {
-            return Results.NotFound(new TinadecError("PROMPT_FRAGMENT_NOT_FOUND", "Prompt fragment was not found."));
+            var fragment = coreStore.UpdatePromptFragment(fragmentId, request);
+            if (fragment is null)
+                return Results.NotFound(new TinadecError("PROMPT_FRAGMENT_NOT_FOUND",
+                    "Prompt fragment was not found."));
+
+            Publish(events, coreStore.AppendNewEvent("prompt.fragment.updated", null, new JsonObject
+            {
+                ["fragment_id"] = fragment.Id,
+                ["enabled"] = fragment.Enabled,
+                ["priority"] = fragment.Priority
+            }, ["prompt.fragment"]));
+
+            return Results.Ok(fragment);
         }
-
-        Publish(events, coreStore.AppendNewEvent("prompt.fragment.updated", null, new JsonObject
+        catch (InvalidOperationException ex)
         {
-            ["fragment_id"] = fragment.Id,
-            ["enabled"] = fragment.Enabled,
-            ["priority"] = fragment.Priority
-        }, ["prompt.fragment"]));
-
-        return Results.Ok(fragment);
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.BadRequest(new TinadecError("PROMPT_FRAGMENT_READ_ONLY", ex.Message));
-    }
-});
+            return Results.BadRequest(new TinadecError("PROMPT_FRAGMENT_READ_ONLY", ex.Message));
+        }
+    });
 
 app.MapDelete("/api/v1/prompt-fragments/{fragmentId}", (string fragmentId, CoreStore coreStore, EventHub events) =>
 {
@@ -814,9 +799,7 @@ app.MapDelete("/api/v1/prompt-fragments/{fragmentId}", (string fragmentId, CoreS
     {
         var deleted = coreStore.DeletePromptFragment(fragmentId);
         if (!deleted)
-        {
             return Results.NotFound(new TinadecError("PROMPT_FRAGMENT_NOT_FOUND", "Prompt fragment was not found."));
-        }
 
         Publish(events, coreStore.AppendNewEvent("prompt.fragment.deleted", null, new JsonObject
         {
@@ -835,9 +818,7 @@ app.MapPost("/api/v1/prompt-fragments/{fragmentId}/clone", (string fragmentId, C
 {
     var fragment = coreStore.ClonePromptFragment(fragmentId);
     if (fragment is null)
-    {
         return Results.NotFound(new TinadecError("PROMPT_FRAGMENT_NOT_FOUND", "Prompt fragment was not found."));
-    }
 
     Publish(events, coreStore.AppendNewEvent("prompt.fragment.cloned", null, new JsonObject
     {
@@ -865,41 +846,37 @@ app.MapPost("/api/v1/prompt-context/preview", async (
 
 app.MapGet("/api/v1/agents", (CoreStore coreStore) => Results.Ok(coreStore.ListAgentProfiles()));
 
-app.MapPut("/api/v1/agents/{agentId}", (string agentId, SaveAgentProfileRequest request, CoreStore coreStore, EventHub events) =>
-{
-    var agent = coreStore.SaveAgentProfile(agentId, request);
-    if (agent is null)
+app.MapPut("/api/v1/agents/{agentId}",
+    (string agentId, SaveAgentProfileRequest request, CoreStore coreStore, EventHub events) =>
     {
-        return Results.NotFound(new TinadecError("AGENT_NOT_FOUND", "Agent profile was not found."));
-    }
+        var agent = coreStore.SaveAgentProfile(agentId, request);
+        if (agent is null) return Results.NotFound(new TinadecError("AGENT_NOT_FOUND", "Agent profile was not found."));
 
-    Publish(events, coreStore.AppendNewEvent("agent.profile.updated", null, new JsonObject
+        Publish(events, coreStore.AppendNewEvent("agent.profile.updated", null, new JsonObject
+        {
+            ["agent_id"] = agent.Id,
+            ["layer"] = agent.Layer,
+            ["mode"] = agent.Mode,
+            ["enabled"] = agent.Enabled
+        }, ["agent.profile"]));
+
+        return Results.Ok(agent);
+    });
+
+app.MapPut("/api/v1/agents/{agentId}/mode",
+    (string agentId, UpdateAgentModeRequest request, CoreStore coreStore, EventHub events) =>
     {
-        ["agent_id"] = agent.Id,
-        ["layer"] = agent.Layer,
-        ["mode"] = agent.Mode,
-        ["enabled"] = agent.Enabled
-    }, ["agent.profile"]));
+        var agent = coreStore.UpdateAgentMode(agentId, request.Mode);
+        if (agent is null) return Results.NotFound(new TinadecError("AGENT_NOT_FOUND", "Agent profile was not found."));
 
-    return Results.Ok(agent);
-});
+        Publish(events, coreStore.AppendNewEvent("agent.mode.updated", null, new JsonObject
+        {
+            ["agent_id"] = agent.Id,
+            ["mode"] = agent.Mode
+        }, ["agent.profile"]));
 
-app.MapPut("/api/v1/agents/{agentId}/mode", (string agentId, UpdateAgentModeRequest request, CoreStore coreStore, EventHub events) =>
-{
-    var agent = coreStore.UpdateAgentMode(agentId, request.Mode);
-    if (agent is null)
-    {
-        return Results.NotFound(new TinadecError("AGENT_NOT_FOUND", "Agent profile was not found."));
-    }
-
-    Publish(events, coreStore.AppendNewEvent("agent.mode.updated", null, new JsonObject
-    {
-        ["agent_id"] = agent.Id,
-        ["mode"] = agent.Mode
-    }, ["agent.profile"]));
-
-    return Results.Ok(agent);
-});
+        return Results.Ok(agent);
+    });
 
 app.MapGet("/api/v1/agent-candidates", (CoreStore coreStore) => Results.Ok(coreStore.ListAgentCandidates()));
 
@@ -934,13 +911,15 @@ app.MapPost("/api/v1/agent-evolution/proposals/{candidateId}/reject", (
     AgentEvolutionService evolution) =>
 {
     var rejected = evolution.RejectProposal(candidateId, request?.Reason);
-    return rejected ? Results.Ok(new { status = "rejected", candidate_id = candidateId })
+    return rejected
+        ? Results.Ok(new { status = "rejected", candidate_id = candidateId })
         : Results.NotFound(new TinadecError("CANDIDATE_NOT_FOUND", "Agent candidate was not found."));
 });
 
 // --- 提示词工程 API：版本化 + A/B 测试 + 效果追踪 ---
-app.MapGet("/api/v1/prompt-fragments/{fragmentId}/versions", (string fragmentId, PromptFragmentVersioningService versioning) =>
-    Results.Ok(versioning.ListVersions(fragmentId)));
+app.MapGet("/api/v1/prompt-fragments/{fragmentId}/versions",
+    (string fragmentId, PromptFragmentVersioningService versioning) =>
+        Results.Ok(versioning.ListVersions(fragmentId)));
 
 app.MapPost("/api/v1/prompt-fragments/{fragmentId}/versions", (
     string fragmentId,
@@ -958,12 +937,14 @@ app.MapPost("/api/v1/prompt-fragments/{fragmentId}/rollback", (
 {
     var fragment = versioning.RollbackToVersion(fragmentId, request.TargetVersion);
     return fragment is null
-        ? Results.NotFound(new TinadecError("FRAGMENT_OR_VERSION_NOT_FOUND", "Fragment or target version was not found."))
+        ? Results.NotFound(new TinadecError("FRAGMENT_OR_VERSION_NOT_FOUND",
+            "Fragment or target version was not found."))
         : Results.Ok(fragment);
 });
 
-app.MapGet("/api/v1/prompt-fragments/{fragmentId}/effectiveness", (string fragmentId, PromptFragmentVersioningService versioning) =>
-    Results.Ok(versioning.GetEffectiveness(fragmentId)));
+app.MapGet("/api/v1/prompt-fragments/{fragmentId}/effectiveness",
+    (string fragmentId, PromptFragmentVersioningService versioning) =>
+        Results.Ok(versioning.GetEffectiveness(fragmentId)));
 
 app.MapGet("/api/v1/prompt-fragments/effectiveness", (PromptFragmentVersioningService versioning) =>
     Results.Ok(versioning.ListEffectiveness()));
@@ -991,10 +972,11 @@ app.MapPost("/api/v1/prompt-fragments/{fragmentId}/compare", (
 app.MapDebugApi();
 app.MapSimulationApi();
 
-app.MapGet("/api/v1/debug/ws", async (HttpContext context, DebugWebSocketHandler handler, CancellationToken cancellationToken) =>
-{
-    await handler.HandleAsync(context, cancellationToken);
-});
+app.MapGet("/api/v1/debug/ws",
+    async (HttpContext context, DebugWebSocketHandler handler, CancellationToken cancellationToken) =>
+    {
+        await handler.HandleAsync(context, cancellationToken);
+    });
 
 app.Run();
 
@@ -1007,9 +989,6 @@ static async Task WriteSseAsync(HttpResponse response, EventEnvelope envelope, C
     await response.Body.FlushAsync(cancellationToken);
 }
 
-static void Publish(EventHub hub, EventEnvelope envelope)
-{
-    hub.Publish(envelope);
-}
+static void Publish(EventHub hub, EventEnvelope envelope) => hub.Publish(envelope);
 
 public partial class Program;

@@ -80,15 +80,15 @@ public sealed class LocalHttpProviderRuntimeTests
                 template.ConnectionKind,
                 template.DefaultBaseUrl,
                 template.DefaultModel,
-                ApiKey: null,
-                ClearApiKey: false,
-                BinaryPath: null,
-                HomePath: null,
-                ServerUrl: null,
-                LaunchArgs: null,
-                Capabilities: ["chat", "route:chat"],
-                Enabled: true),
-            encryptedApiKey: null);
+                null,
+                false,
+                null,
+                null,
+                null,
+                null,
+                ["chat", "route:chat"],
+                true),
+            null);
         store.SaveModelRoute("chat", saved.Id, saved.Model);
 
         var context = new ModelRouteResolver(store).Resolve("chat");
@@ -109,13 +109,13 @@ public sealed class LocalHttpProviderRuntimeTests
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = JsonContent("""
-                    {
-                      "choices": [
-                        { "message": { "role": "assistant", "content": "OpenAI local response" }, "finish_reason": "stop" }
-                      ],
-                      "usage": { "prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3 }
-                    }
-                    """)
+                                      {
+                                        "choices": [
+                                          { "message": { "role": "assistant", "content": "OpenAI local response" }, "finish_reason": "stop" }
+                                        ],
+                                        "usage": { "prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3 }
+                                      }
+                                      """)
             };
         });
         var runtime = CreateRuntime(handler);
@@ -249,7 +249,8 @@ public sealed class LocalHttpProviderRuntimeTests
 
     private static ModelProviderTemplateDto GetTemplate(string driver)
     {
-        return Assert.Single(ModelProviderCatalog.ListTemplates(), template => template.Driver.Equals(driver, StringComparison.OrdinalIgnoreCase));
+        return Assert.Single(ModelProviderCatalog.ListTemplates(),
+            template => template.Driver.Equals(driver, StringComparison.OrdinalIgnoreCase));
     }
 
     private static CoreStore CreateStore()
@@ -262,7 +263,8 @@ public sealed class LocalHttpProviderRuntimeTests
 
     private static LocalHttpProviderRuntime CreateRuntime(HttpMessageHandler handler)
     {
-        return new LocalHttpProviderRuntime(new HttpClient(handler), new OpenAiCompatibleClient(new HttpClient(handler)));
+        return new LocalHttpProviderRuntime(new HttpClient(handler),
+            new OpenAiCompatibleClient(new HttpClient(handler)));
     }
 
     private static MessageDto[] CreateMessages()
@@ -273,7 +275,8 @@ public sealed class LocalHttpProviderRuntimeTests
         ];
     }
 
-    private static ResolvedModelInvocationContextDto CreateContext(string driver, string baseUrl, string connectionKind = "http")
+    private static ResolvedModelInvocationContextDto CreateContext(string driver, string baseUrl,
+        string connectionKind = "http")
     {
         return new ResolvedModelInvocationContextDto(
             "planner",
@@ -293,25 +296,31 @@ public sealed class LocalHttpProviderRuntimeTests
         return new StringContent(value, Encoding.UTF8, "application/json");
     }
 
-    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handle) : HttpMessageHandler
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handle)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(handle(request));
         }
     }
 
-    private sealed class AsyncStubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle) : HttpMessageHandler
+    private sealed class AsyncStubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return handle(request);
         }
     }
 
-    private sealed class ThrowingHttpMessageHandler(Func<HttpRequestMessage, Exception> createException) : HttpMessageHandler
+    private sealed class ThrowingHttpMessageHandler(Func<HttpRequestMessage, Exception> createException)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return Task.FromException<HttpResponseMessage>(createException(request));
         }

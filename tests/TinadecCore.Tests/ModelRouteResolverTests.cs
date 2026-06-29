@@ -20,8 +20,8 @@ public sealed class ModelRouteResolverTests
     {
         var store = CreateStore();
         store.DeleteModelProviderInstance("openai_default");
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
 
         var resolved = new ModelRouteResolver(store).Resolve(ChatPurpose);
 
@@ -39,9 +39,9 @@ public sealed class ModelRouteResolverTests
             OpenAiPrimaryProviderId,
             "OpenAI Primary",
             "gpt-5.4",
-            priority: 10,
+            10,
             healthMetadata: [$"health:unhealthy", $"cooldown_until:{FixedNow.AddMinutes(5):O}", "failure_count:3"]);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var resolved = new ModelRouteResolver(store).Resolve(ChatPurpose);
@@ -54,8 +54,8 @@ public sealed class ModelRouteResolverTests
     public void Resolve_ExcludesDisabledProviderEvenWhenItHasHighestPriority()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 1, enabled: false);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 1, false);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var resolved = new ModelRouteResolver(store).Resolve(ChatPurpose);
@@ -73,9 +73,13 @@ public sealed class ModelRouteResolverTests
             OpenAiPrimaryProviderId,
             "OpenAI Primary",
             "gpt-5.4",
-            priority: 10,
-            healthMetadata: [$"health:cooldown", $"cooldown_started_at:{FixedNow.AddMinutes(-1):O}", $"cooldown_until:{FixedNow.AddMinutes(9):O}"]);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+            10,
+            healthMetadata:
+            [
+                $"health:cooldown", $"cooldown_started_at:{FixedNow.AddMinutes(-1):O}",
+                $"cooldown_until:{FixedNow.AddMinutes(9):O}"
+            ]);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var resolved = new ModelRouteResolver(store).Resolve(ChatPurpose);
@@ -87,8 +91,8 @@ public sealed class ModelRouteResolverTests
     public void Resolve_UsesProviderIdTieBreakerForEqualPriorityProviders()
     {
         var store = CreateStore();
-        SaveProvider(store, LocalHttpProviderId, "Local HTTP", "local-chat", priority: 10, connectionKind: "local-http");
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 10);
+        SaveProvider(store, LocalHttpProviderId, "Local HTTP", "local-chat", 10, connectionKind: "local-http");
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 10);
         store.SaveModelRoute(ChatPurpose, LocalHttpProviderId, "local-chat");
 
         var resolved = new ModelRouteResolver(store).Resolve(ChatPurpose);
@@ -110,7 +114,8 @@ public sealed class ModelRouteResolverTests
         var store = CreateStore();
         store.DeleteModelProviderInstance("openai_default");
 
-        var exception = Assert.Throws<InvalidOperationException>(() => new ModelRouteResolver(store).Resolve(ChatPurpose));
+        var exception =
+            Assert.Throws<InvalidOperationException>(() => new ModelRouteResolver(store).Resolve(ChatPurpose));
         Assert.Contains(ChatPurpose, exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -119,14 +124,14 @@ public sealed class ModelRouteResolverTests
     {
         var db = CreateDatabasePath();
         var store = CreateStore(db);
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
 
         var recordFailure = typeof(CoreStore).GetMethod(
             "RecordModelProviderFailure",
             BindingFlags.Instance | BindingFlags.Public,
-            binder: null,
-            types: [typeof(string), typeof(ProviderErrorCategory), typeof(DateTimeOffset)],
-            modifiers: null);
+            null,
+            [typeof(string), typeof(ProviderErrorCategory), typeof(DateTimeOffset)],
+            null);
         Assert.NotNull(recordFailure);
         recordFailure.Invoke(store, [OpenAiPrimaryProviderId, ProviderErrorCategory.Timeout, FixedNow]);
 
@@ -140,7 +145,7 @@ public sealed class ModelRouteResolverTests
     public void ListModelProviderInstancesShowsActiveCooldownStatusAfterFailure()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
 
         store.RecordModelProviderFailure(OpenAiPrimaryProviderId, ProviderErrorCategory.Timeout, DateTimeOffset.UtcNow);
 
@@ -215,7 +220,7 @@ public sealed class ModelRouteResolverTests
     public void RecordModelProviderSuccessClearsCooldownAndRestoresHealthyStatus()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
 
         store.RecordModelProviderFailure(OpenAiPrimaryProviderId, ProviderErrorCategory.Timeout, DateTimeOffset.UtcNow);
         var afterFailure = store.GetStoredModelProviderInstance(OpenAiPrimaryProviderId)!;
@@ -227,14 +232,15 @@ public sealed class ModelRouteResolverTests
         Assert.Equal(ProviderHealthStatus.Healthy, afterSuccess.HealthStatus);
         Assert.Null(afterSuccess.CooldownUntil);
         Assert.Equal(0, afterSuccess.FailureCount);
-        Assert.Equal("health:healthy", afterSuccess.Capabilities.First(c => c.StartsWith("health:", StringComparison.OrdinalIgnoreCase)));
+        Assert.Equal("health:healthy",
+            afterSuccess.Capabilities.First(c => c.StartsWith("health:", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
     public void RecordModelProviderSuccessIsNoOpForAlreadyHealthyProvider()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
 
         var before = store.GetStoredModelProviderInstance(OpenAiPrimaryProviderId)!;
         Assert.Equal(ProviderHealthStatus.Healthy, before.HealthStatus);
@@ -275,10 +281,7 @@ public sealed class ModelRouteResolverTests
             "no-api-key"
         };
 
-        if (healthMetadata is not null)
-        {
-            capabilities.AddRange(healthMetadata);
-        }
+        if (healthMetadata is not null) capabilities.AddRange(healthMetadata);
 
         var baseUrl = connectionKind.Equals("local-http", StringComparison.OrdinalIgnoreCase)
             ? "http://127.0.0.1:11434/v1"
@@ -293,13 +296,13 @@ public sealed class ModelRouteResolverTests
                 baseUrl,
                 model,
                 null,
-                ClearApiKey: false,
-                BinaryPath: null,
-                HomePath: null,
-                ServerUrl: null,
-                LaunchArgs: null,
-                Capabilities: capabilities,
-                Enabled: enabled),
-            encryptedApiKey: null);
+                false,
+                null,
+                null,
+                null,
+                null,
+                capabilities,
+                enabled),
+            null);
     }
 }

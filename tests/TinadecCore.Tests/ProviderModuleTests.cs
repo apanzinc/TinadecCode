@@ -74,14 +74,14 @@ public sealed class ProviderModuleTests
         public ProviderCapabilityDto GetCapabilities()
         {
             return new ProviderCapabilityDto(
-                SupportsStreaming: false,
-                SupportsTools: true,
-                SupportsJsonMode: true,
-                SupportsSystemPrompt: true,
-                MaxContextTokens: 128000,
-                RequiresWorkspace: false,
-                CredentialKind: "test",
-                HealthStatus: ProviderHealthStatus.Healthy);
+                false,
+                true,
+                true,
+                true,
+                128000,
+                false,
+                "test",
+                ProviderHealthStatus.Healthy);
         }
     }
 
@@ -96,7 +96,8 @@ public sealed class ProviderModuleTests
 
         public ProviderCapabilityDto GetCapabilities()
         {
-            return new ProviderCapabilityDto(false, false, false, false, null, false, "test", ProviderHealthStatus.Unknown);
+            return new ProviderCapabilityDto(false, false, false, false, null, false, "test",
+                ProviderHealthStatus.Unknown);
         }
     }
 
@@ -132,7 +133,9 @@ public sealed class ProviderModuleTests
             IReadOnlyList<MessageDto> messages,
             CancellationToken cancellationToken = default,
             IReadOnlyList<ModelToolSpecDto>? tools = null)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class FixedRouteResolver(string connectionKind) : IModelRouteResolver

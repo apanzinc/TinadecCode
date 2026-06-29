@@ -40,10 +40,7 @@ public static class DebugApiController
         int? offset,
         AgentTracing tracing)
     {
-        if (!tracing.Options.Enabled)
-        {
-            return Results.Ok(new { traces = Array.Empty<object>(), total_count = 0 });
-        }
+        if (!tracing.Options.Enabled) return Results.Ok(new { traces = Array.Empty<object>(), total_count = 0 });
 
         var records = ReadTraceFile(tracing.Options.TraceFilePath);
         var traceGroups = records
@@ -82,17 +79,13 @@ public static class DebugApiController
     private static IResult GetTrace(string traceId, AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.NotFound(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var records = ReadTraceFile(tracing.Options.TraceFilePath);
         var traceRecords = records.Where(r => r.TraceId == traceId).ToList();
 
         if (traceRecords.Count == 0)
-        {
             return Results.NotFound(new { code = "TRACE_NOT_FOUND", message = $"Trace '{traceId}' was not found." });
-        }
 
         var rootSpan = BuildSpanTree(traceRecords, null);
         var resource = traceRecords.FirstOrDefault()?.Resource;
@@ -112,10 +105,7 @@ public static class DebugApiController
         int? limit,
         AgentTracing tracing)
     {
-        if (!tracing.Options.Enabled)
-        {
-            return Results.Ok(new { spans = Array.Empty<object>(), total_count = 0 });
-        }
+        if (!tracing.Options.Enabled) return Results.Ok(new { spans = Array.Empty<object>(), total_count = 0 });
 
         var records = ReadTraceFile(tracing.Options.TraceFilePath);
         var filtered = records
@@ -205,7 +195,7 @@ public static class DebugApiController
             process_name = process.ProcessName,
             working_set_bytes = process.WorkingSet64,
             private_bytes = process.PrivateMemorySize64,
-            gc_heap_bytes = GC.GetTotalMemory(forceFullCollection: false),
+            gc_heap_bytes = GC.GetTotalMemory(false),
             thread_count = process.Threads.Count,
             handle_count = process.HandleCount,
             cpu_time_ms = process.TotalProcessorTime.TotalMilliseconds,

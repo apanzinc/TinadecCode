@@ -25,7 +25,8 @@ public sealed class OpenAiCompatibleClientTests
     [Fact]
     public async Task BuildsBearerAuthorizedChatCompletionRequest()
     {
-        var settings = new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
         var messages = new[]
         {
             new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)
@@ -47,29 +48,31 @@ public sealed class OpenAiCompatibleClientTests
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent("""
-                {
-                  "id": "chatcmpl_1",
-                  "object": "chat.completion",
-                  "created": 1710000000,
-                  "choices": [
-                    {
-                      "index": 0,
-                      "message": { "role": "assistant", "content": "Hello from the model" },
-                      "finish_reason": "stop"
-                    }
-                  ],
-                  "usage": {
-                    "prompt_tokens": 11,
-                    "completion_tokens": 7,
-                    "total_tokens": 18
-                  }
-                }
-                """)
+                                  {
+                                    "id": "chatcmpl_1",
+                                    "object": "chat.completion",
+                                    "created": 1710000000,
+                                    "choices": [
+                                      {
+                                        "index": 0,
+                                        "message": { "role": "assistant", "content": "Hello from the model" },
+                                        "finish_reason": "stop"
+                                      }
+                                    ],
+                                    "usage": {
+                                      "prompt_tokens": 11,
+                                      "completion_tokens": 7,
+                                      "total_tokens": 18
+                                    }
+                                  }
+                                  """)
         });
         var client = new OpenAiCompatibleClient(new HttpClient(handler));
-        var settings = new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
 
-        var response = await client.CreateAssistantResponseAsync(settings, "sk-test", CreateMessages(), "provider-openai", CancellationToken.None);
+        var response = await client.CreateAssistantResponseAsync(settings, "sk-test", CreateMessages(),
+            "provider-openai", CancellationToken.None);
 
         Assert.Equal("Hello from the model", response.TextContent);
         Assert.Equal(new ModelUsageDto(11, 7, 18), response.Usage);
@@ -88,17 +91,19 @@ public sealed class OpenAiCompatibleClientTests
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent("""
-                {
-                  "choices": [
-                    { "message": { "role": "assistant", "content": "Legacy content" }, "finish_reason": "length" }
-                  ]
-                }
-                """)
+                                  {
+                                    "choices": [
+                                      { "message": { "role": "assistant", "content": "Legacy content" }, "finish_reason": "length" }
+                                    ]
+                                  }
+                                  """)
         });
         var client = new OpenAiCompatibleClient(new HttpClient(handler));
-        var settings = new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.example.test/v1", "test-model", null, DateTimeOffset.UtcNow);
 
-        var content = await client.CreateAssistantReplyAsync(settings, "sk-test", CreateMessages(), CancellationToken.None);
+        var content =
+            await client.CreateAssistantReplyAsync(settings, "sk-test", CreateMessages(), CancellationToken.None);
 
         Assert.Equal("Legacy content", content);
     }
@@ -109,20 +114,21 @@ public sealed class OpenAiCompatibleClientTests
         var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent("""
-                {
-                  "choices": [
-                    { "message": { "role": "assistant", "content": "Runtime content" }, "finish_reason": "tool_calls" }
-                  ],
-                  "usage": { "prompt_tokens": 3, "completion_tokens": 4, "total_tokens": 7 }
-                }
-                """)
+                                  {
+                                    "choices": [
+                                      { "message": { "role": "assistant", "content": "Runtime content" }, "finish_reason": "tool_calls" }
+                                    ],
+                                    "usage": { "prompt_tokens": 3, "completion_tokens": 4, "total_tokens": 7 }
+                                  }
+                                  """)
         });
         var services = new ServiceCollection();
         services.AddSingleton(new OpenAiCompatibleClient(new HttpClient(handler)));
         services.AddSingleton<IModelProviderRuntime, OpenAiCompatibleProviderRuntime>();
 
         using var provider = services.BuildServiceProvider();
-        var runtime = Assert.Single(provider.GetServices<IModelProviderRuntime>(), item => item.Id == "openai-compatible");
+        var runtime = Assert.Single(provider.GetServices<IModelProviderRuntime>(),
+            item => item.Id == "openai-compatible");
 
         var result = await runtime.GenerateAsync(CreateContext(), "sk-test", CreateMessages(), CancellationToken.None);
 
@@ -190,15 +196,20 @@ public sealed class OpenAiCompatibleClientTests
             new OpenAiCompatibleClient(new HttpClient()), null, 3);
 
         var openAiContext = new ResolvedModelInvocationContextDto(
-            "openai-compatible", null, null, "https://api.openai.com/v1", "gpt-4", null, "openai-compatible", "http", "openai-compatible", false);
+            "openai-compatible", null, null, "https://api.openai.com/v1", "gpt-4", null, "openai-compatible", "http",
+            "openai-compatible", false);
         var deepSeekContext = new ResolvedModelInvocationContextDto(
-            "deepseek", null, null, "https://api.deepseek.com/v1", "deepseek-chat", null, "deepseek", "http", "deepseek", false);
+            "deepseek", null, null, "https://api.deepseek.com/v1", "deepseek-chat", null, "deepseek", "http",
+            "deepseek", false);
         var pollinationsContext = new ResolvedModelInvocationContextDto(
-            "pollinations", null, null, "https://gen.pollinations.ai/v1", "openai", null, "pollinations", "public-api", "pollinations", false);
+            "pollinations", null, null, "https://gen.pollinations.ai/v1", "openai", null, "pollinations", "public-api",
+            "pollinations", false);
         var lmStudioContext = new ResolvedModelInvocationContextDto(
-            "lmstudio", null, null, "http://localhost:1234/v1", "default", null, "lmstudio", "local-server", "lmstudio", false);
+            "lmstudio", null, null, "http://localhost:1234/v1", "default", null, "lmstudio", "local-server", "lmstudio",
+            false);
         var anthropicContext = new ResolvedModelInvocationContextDto(
-            "anthropic", null, null, "https://api.anthropic.com/v1", "claude-sonnet-4-6", null, "anthropic", "http", "anthropic", false);
+            "anthropic", null, null, "https://api.anthropic.com/v1", "claude-sonnet-4-6", null, "anthropic", "http",
+            "anthropic", false);
         var cliContext = new ResolvedModelInvocationContextDto(
             "codex-cli", null, null, "", "gpt-5.4", null, "codex-cli", "cli", "codex-cli", false);
 
@@ -233,15 +244,19 @@ public sealed class OpenAiCompatibleClientTests
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
         var routeResolver = new FixedRouteResolver(new ResolvedModelInvocationContextDto(
-            "chat", null, provider, provider.BaseUrl!, provider.Model!, null, provider.Driver, provider.ConnectionKind, provider.Id, false));
+            "chat", null, provider, provider.BaseUrl!, provider.Model!, null, provider.Driver, provider.ConnectionKind,
+            provider.Id, false));
         var invocationRuntime = new ModelInvocationRuntime(
             routeResolver,
             new StubCredentialResolver(null),
-            [new StubProviderRuntime("openai-compatible", context =>
-                string.Equals(context.Driver, "pollinations", StringComparison.OrdinalIgnoreCase))]);
+            [
+                new StubProviderRuntime("openai-compatible", context =>
+                    string.Equals(context.Driver, "pollinations", StringComparison.OrdinalIgnoreCase))
+            ]);
 
         var result = await invocationRuntime.InvokeAsync(
-            "sess_1", "chat", [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)], CancellationToken.None);
+            "sess_1", "chat", [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)],
+            CancellationToken.None);
 
         Assert.Equal("executed", result.Status);
         Assert.Equal("Handled by openai-compatible", result.Content);
@@ -271,14 +286,16 @@ public sealed class OpenAiCompatibleClientTests
             DateTimeOffset.UtcNow,
             DateTimeOffset.UtcNow);
         var routeResolver = new FixedRouteResolver(new ResolvedModelInvocationContextDto(
-            "chat", null, provider, provider.BaseUrl!, provider.Model!, null, provider.Driver, provider.ConnectionKind, provider.Id, false));
+            "chat", null, provider, provider.BaseUrl!, provider.Model!, null, provider.Driver, provider.ConnectionKind,
+            provider.Id, false));
         var invocationRuntime = new ModelInvocationRuntime(
             routeResolver,
             new StubCredentialResolver(null),
             [new StubProviderRuntime("openai-compatible", _ => true)]);
 
         var result = await invocationRuntime.InvokeAsync(
-            "sess_1", "chat", [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)], CancellationToken.None);
+            "sess_1", "chat", [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)],
+            CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorCategory.AuthenticationFailed, result.ErrorCategory);
@@ -312,7 +329,10 @@ public sealed class OpenAiCompatibleClientTests
     }
 
     private sealed class StubRouteResolver(
-        string providerInstanceId, string driver, string connectionKind, string effectiveModel)
+        string providerInstanceId,
+        string driver,
+        string connectionKind,
+        string effectiveModel)
         : IModelRouteResolver
     {
         public ResolvedModelInvocationContextDto Resolve(string purpose)
@@ -325,19 +345,30 @@ public sealed class OpenAiCompatibleClientTests
 
     private sealed class FixedRouteResolver(ResolvedModelInvocationContextDto context) : IModelRouteResolver
     {
-        public ResolvedModelInvocationContextDto Resolve(string purpose) => context;
+        public ResolvedModelInvocationContextDto Resolve(string purpose)
+        {
+            return context;
+        }
     }
 
     private sealed class StubCredentialResolver(string? apiKey) : IModelCredentialResolver
     {
-        public string? ResolveApiKey(ResolvedModelInvocationContextDto context) => apiKey;
+        public string? ResolveApiKey(ResolvedModelInvocationContextDto context)
+        {
+            return apiKey;
+        }
     }
 
     private sealed class StubProviderRuntime(string id, Func<ResolvedModelInvocationContextDto, bool> canHandle)
         : IModelProviderRuntime
     {
         public string Id => id;
-        public bool CanHandle(ResolvedModelInvocationContextDto context) => canHandle(context);
+
+        public bool CanHandle(ResolvedModelInvocationContextDto context)
+        {
+            return canHandle(context);
+        }
+
         public Task<ModelInvocationResultDto> GenerateAsync(
             ResolvedModelInvocationContextDto context, string? apiKey,
             IReadOnlyList<MessageDto> messages, CancellationToken cancellationToken,
@@ -351,12 +382,16 @@ public sealed class OpenAiCompatibleClientTests
             ResolvedModelInvocationContextDto context, string? apiKey,
             IReadOnlyList<MessageDto> messages, CancellationToken cancellationToken = default,
             IReadOnlyList<ModelToolSpecDto>? tools = null)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
-    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handle) : HttpMessageHandler
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handle)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return Task.FromResult(handle(request));
         }

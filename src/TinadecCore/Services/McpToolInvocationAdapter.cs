@@ -27,9 +27,7 @@ public sealed class McpToolInvocationAdapter(HttpClient httpClient) : IToolInvoc
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(tool.ExecuteEndpoint))
-        {
             return Failed(tool.Id, "MCP tool has no execute endpoint.");
-        }
 
         // 将 CodeToolExecuteRequest.Arguments 转换为 MCP 的 { arguments: {...} }
         var mcpBody = new { arguments = request.Arguments ?? new Dictionary<string, object?>() };
@@ -53,13 +51,16 @@ public sealed class McpToolInvocationAdapter(HttpClient httpClient) : IToolInvoc
 
             if (!ok)
             {
-                var errorMsg = result.TryGetProperty("message", out var msgProp) ? msgProp.GetString() : "Unknown MCP error";
+                var errorMsg = result.TryGetProperty("message", out var msgProp)
+                    ? msgProp.GetString()
+                    : "Unknown MCP error";
                 return Failed(tool.Id, errorMsg ?? "Unknown MCP error");
             }
 
             // 提取 result 内容
             var resultData = result.TryGetProperty("result", out var resultProp) ? resultProp : default;
-            var outputText = resultData.TryGetProperty("content", out var contentProp) && contentProp.ValueKind == JsonValueKind.Array
+            var outputText = resultData.TryGetProperty("content", out var contentProp) &&
+                             contentProp.ValueKind == JsonValueKind.Array
                 ? string.Join("\n", contentProp.EnumerateArray().Select(item =>
                     item.TryGetProperty("text", out var textProp) ? textProp.GetString() ?? "" : ""))
                 : resultData.GetRawText();
@@ -79,12 +80,15 @@ public sealed class McpToolInvocationAdapter(HttpClient httpClient) : IToolInvoc
         }
     }
 
-    private static CodeToolExecuteResultDto Failed(string toolId, string message) => new(
-        toolId,
-        "failed",
-        message,
-        ["mcp.tool.failed"],
-        new Dictionary<string, object?>(),
-        false,
-        null);
+    private static CodeToolExecuteResultDto Failed(string toolId, string message)
+    {
+        return new CodeToolExecuteResultDto(
+            toolId,
+            "failed",
+            message,
+            ["mcp.tool.failed"],
+            new Dictionary<string, object?>(),
+            false,
+            null);
+    }
 }

@@ -11,17 +11,17 @@ public sealed class CliProviderRuntimeTests
     public async Task HappyPathReturnsSuccessfulTextResult()
     {
         using var fixture = CliFixture.Create("""
-            input=$(cat)
-            case "$input" in
-              *\"session_id\":\"sess_cli\"*) ;;
-              *) echo "missing session" >&2; exit 64 ;;
-            esac
-            case " $* " in
-              *" --run-id "*) ;;
-              *) echo "missing run" >&2; exit 64 ;;
-            esac
-            echo "Hello from Codex CLI"
-            """);
+                                              input=$(cat)
+                                              case "$input" in
+                                                *\"session_id\":\"sess_cli\"*) ;;
+                                                *) echo "missing session" >&2; exit 64 ;;
+                                              esac
+                                              case " $* " in
+                                                *" --run-id "*) ;;
+                                                *) echo "missing run" >&2; exit 64 ;;
+                                              esac
+                                              echo "Hello from Codex CLI"
+                                              """);
         var runtime = new CliProviderRuntime(TimeSpan.FromSeconds(10));
 
         var result = await runtime.GenerateAsync(
@@ -41,10 +41,10 @@ public sealed class CliProviderRuntimeTests
     public async Task NonzeroExitMapsToNormalizedErrorWithExitCode()
     {
         using var fixture = CliFixture.Create("""
-            cat >/dev/null
-            echo "temporary outage" >&2
-            exit 75
-            """);
+                                              cat >/dev/null
+                                              echo "temporary outage" >&2
+                                              exit 75
+                                              """);
         var runtime = new CliProviderRuntime(TimeSpan.FromSeconds(10));
 
         var result = await runtime.GenerateAsync(
@@ -65,14 +65,14 @@ public sealed class CliProviderRuntimeTests
     public async Task MissingWorkspaceFailsBeforeProcessStart()
     {
         using var fixture = CliFixture.Create("""
-            touch SHOULD_NOT_EXIST
-            echo "started"
-            """);
+                                              touch SHOULD_NOT_EXIST
+                                              echo "started"
+                                              """);
         var invalidWorkspace = Path.Combine(Path.GetTempPath(), $"tinadec-missing-{Guid.NewGuid():N}");
         var runtime = new CliProviderRuntime(TimeSpan.FromSeconds(10));
 
         var result = await runtime.GenerateAsync(
-            CreateContext(fixture, homePath: invalidWorkspace),
+            CreateContext(fixture, invalidWorkspace),
             null,
             CreateMessages(),
             CancellationToken.None);
@@ -88,10 +88,10 @@ public sealed class CliProviderRuntimeTests
     public async Task CancellationTerminatesProcessAndReturnsCancelled()
     {
         using var fixture = CliFixture.Create("""
-            cat >/dev/null
-            sleep 30
-            echo "too late"
-            """);
+                                              cat >/dev/null
+                                              sleep 30
+                                              echo "too late"
+                                              """);
         var runtime = new CliProviderRuntime(TimeSpan.FromMinutes(1));
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
 
@@ -112,10 +112,10 @@ public sealed class CliProviderRuntimeTests
     public async Task StderrSecretsAreRedactedFromErrorOutput()
     {
         using var fixture = CliFixture.Create("""
-            cat >/dev/null
-            echo "token=sk-test-secret bearer abc123 password=hunter2" >&2
-            exit 77
-            """);
+                                              cat >/dev/null
+                                              echo "token=sk-test-secret bearer abc123 password=hunter2" >&2
+                                              exit 77
+                                              """);
         var runtime = new CliProviderRuntime(TimeSpan.FromSeconds(10));
 
         var result = await runtime.GenerateAsync(
@@ -203,7 +203,8 @@ public sealed class CliProviderRuntimeTests
             {
                 var scriptPath = Path.Combine(root, "fake-cli.cmd");
                 File.WriteAllText(scriptPath, ConvertToWindowsScript(unixScript));
-                return new CliFixture(root, workspace, Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe", $"/c \"{scriptPath}\"");
+                return new CliFixture(root, workspace, Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+                    $"/c \"{scriptPath}\"");
             }
 
             var shellScriptPath = Path.Combine(root, "fake-cli.sh");
@@ -214,13 +215,9 @@ public sealed class CliProviderRuntimeTests
         public void Dispose()
         {
             for (var attempt = 0; attempt < 10; attempt++)
-            {
                 try
                 {
-                    if (Directory.Exists(Root))
-                    {
-                        Directory.Delete(Root, recursive: true);
-                    }
+                    if (Directory.Exists(Root)) Directory.Delete(Root, true);
 
                     return;
                 }
@@ -228,30 +225,22 @@ public sealed class CliProviderRuntimeTests
                 {
                     Thread.Sleep(100);
                 }
-            }
         }
 
         private static string ConvertToWindowsScript(string unixScript)
         {
             if (unixScript.Contains("Hello from Codex CLI", StringComparison.Ordinal))
-            {
-                return "@echo off\r\nfindstr /c:\"sess_cli\" >nul || (echo missing session 1>&2 & exit /b 64)\r\necho %* | findstr /c:\"--run-id\" >nul || (echo missing run 1>&2 & exit /b 64)\r\necho Hello from Codex CLI\r\n";
-            }
+                return
+                    "@echo off\r\nfindstr /c:\"sess_cli\" >nul || (echo missing session 1>&2 & exit /b 64)\r\necho %* | findstr /c:\"--run-id\" >nul || (echo missing run 1>&2 & exit /b 64)\r\necho Hello from Codex CLI\r\n";
 
             if (unixScript.Contains("temporary outage", StringComparison.Ordinal))
-            {
                 return "@echo off\r\necho temporary outage 1>&2\r\nexit /b 75\r\n";
-            }
 
             if (unixScript.Contains("SHOULD_NOT_EXIST", StringComparison.Ordinal))
-            {
                 return "@echo off\r\ntype nul > SHOULD_NOT_EXIST\r\necho started\r\n";
-            }
 
             if (unixScript.Contains("sleep 30", StringComparison.Ordinal))
-            {
                 return "@echo off\r\nping -n 31 127.0.0.1 >nul\r\necho too late\r\n";
-            }
 
             return "@echo off\r\necho token=sk-test-secret bearer abc123 password=hunter2 1>&2\r\nexit /b 77\r\n";
         }

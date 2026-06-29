@@ -54,12 +54,14 @@ public sealed class SimulationService
         else if (!string.IsNullOrWhiteSpace(request.MockModelResponse))
         {
             // Inject mock model response
-            var assistantMessage = _store.AddMessage(request.SessionId, "assistant", $"[SIMULATED] {request.MockModelResponse}");
-            _events.Publish(_store.AppendNewEvent("simulation.model_response.injected", request.SessionId, new JsonObject
-            {
-                ["message_id"] = assistantMessage.Id,
-                ["simulated"] = true
-            }, ["simulation", "agent.message"]));
+            var assistantMessage =
+                _store.AddMessage(request.SessionId, "assistant", $"[SIMULATED] {request.MockModelResponse}");
+            _events.Publish(_store.AppendNewEvent("simulation.model_response.injected", request.SessionId,
+                new JsonObject
+                {
+                    ["message_id"] = assistantMessage.Id,
+                    ["simulated"] = true
+                }, ["simulation", "agent.message"]));
         }
 
         return new SimulateMessageResponse
@@ -135,12 +137,13 @@ public sealed class SimulationService
 
         var approval = _store.DecideApproval(request.ApprovalId, request.Decision);
 
-        _events.Publish(_store.AppendNewEvent($"simulation.approval.{request.Decision}", approval?.SessionId, new JsonObject
-        {
-            ["approval_id"] = request.ApprovalId,
-            ["decision"] = request.Decision,
-            ["simulated"] = true
-        }, ["simulation", "approval.decide"]));
+        _events.Publish(_store.AppendNewEvent($"simulation.approval.{request.Decision}", approval?.SessionId,
+            new JsonObject
+            {
+                ["approval_id"] = request.ApprovalId,
+                ["decision"] = request.Decision,
+                ["simulated"] = true
+            }, ["simulation", "approval.decide"]));
 
         return new SimulateMessageResponse
         {
@@ -161,9 +164,7 @@ public sealed class SimulationService
         // Log the state patch as an event
         var stateJson = new JsonObject();
         foreach (var kvp in request.State)
-        {
             stateJson[kvp.Key] = kvp.Value is not null ? JsonValue.Create(kvp.Value) : null;
-        }
 
         _events.Publish(_store.AppendNewEvent("simulation.state.patched", request.SessionId, new JsonObject
         {

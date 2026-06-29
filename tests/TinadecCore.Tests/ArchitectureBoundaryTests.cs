@@ -1,4 +1,4 @@
-﻿﻿namespace TinadecCore.Tests;
+﻿namespace TinadecCore.Tests;
 
 public sealed class ArchitectureBoundaryTests
 {
@@ -32,10 +32,7 @@ public sealed class ArchitectureBoundaryTests
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "TinadecOffice.slnx")))
-            {
-                return directory.FullName;
-            }
+            if (File.Exists(Path.Combine(directory.FullName, "TinadecOffice.slnx"))) return directory.FullName;
 
             directory = directory.Parent;
         }

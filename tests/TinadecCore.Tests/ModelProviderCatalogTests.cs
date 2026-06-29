@@ -146,12 +146,14 @@ public sealed class ModelProviderCatalogTests
 
     private static ModelProviderTemplateDto GetTemplate(string driver)
     {
-        return Assert.Single(ModelProviderCatalog.ListTemplates(), template => template.Driver.Equals(driver, StringComparison.OrdinalIgnoreCase));
+        return Assert.Single(ModelProviderCatalog.ListTemplates(),
+            template => template.Driver.Equals(driver, StringComparison.OrdinalIgnoreCase));
     }
 
     private static ModelCatalogReadinessReceiptDto BuildCatalogReadinessReceipt()
     {
-        var store = new CoreStore(Path.Combine(Path.GetTempPath(), $"tinadec-model-catalog-readiness-{Guid.NewGuid():N}.db"));
+        var store = new CoreStore(Path.Combine(Path.GetTempPath(),
+            $"tinadec-model-catalog-readiness-{Guid.NewGuid():N}.db"));
         store.Initialize();
         var service = new ModelCatalogReadinessService(store, CreateRegisteredModuleCatalog());
 
@@ -174,13 +176,13 @@ public sealed class ModelProviderCatalogTests
         return new ModelProviderModuleMetadata(
             providerFamily,
             new ProviderCapabilityDto(
-                SupportsStreaming: true,
-                SupportsTools: true,
-                SupportsJsonMode: true,
-                SupportsSystemPrompt: true,
-                MaxContextTokens: null,
-                RequiresWorkspace: providerFamily.Equals("cli", StringComparison.OrdinalIgnoreCase),
-                CredentialKind: providerFamily.Equals("local-http", StringComparison.OrdinalIgnoreCase) ? "none" : "api_key",
-                HealthStatus: ProviderHealthStatus.Unknown));
+                true,
+                true,
+                true,
+                true,
+                null,
+                providerFamily.Equals("cli", StringComparison.OrdinalIgnoreCase),
+                providerFamily.Equals("local-http", StringComparison.OrdinalIgnoreCase) ? "none" : "api_key",
+                ProviderHealthStatus.Unknown));
     }
 }

@@ -35,7 +35,6 @@ public sealed class PromptContextService(
 
         PromptContextPlanDto? plan = null;
         if (complex && !string.IsNullOrWhiteSpace(runId))
-        {
             try
             {
                 plan = await plannerRuntime.TryCreatePlanAsync(
@@ -53,27 +52,21 @@ public sealed class PromptContextService(
                     cancellationToken);
 
                 if (plan is not null)
-                {
                     store.SavePromptContextPlan(plan);
-                }
                 else
-                {
                     warnings.Add("Prompt Context Engineer was unavailable; deterministic prompt assembly was used.");
-                }
             }
             catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException or TaskCanceledException)
             {
-                warnings.Add($"Prompt Context Engineer plan failed; deterministic prompt assembly was used. {ex.Message}");
+                warnings.Add(
+                    $"Prompt Context Engineer plan failed; deterministic prompt assembly was used. {ex.Message}");
             }
-        }
 
         var selectedFragments = ApplyPlan(candidateFragments, plan);
-        if (selectedFragments.Count == 0)
-        {
-            warnings.Add("No enabled prompt fragments matched the target agent.");
-        }
+        if (selectedFragments.Count == 0) warnings.Add("No enabled prompt fragments matched the target agent.");
 
-        var systemPrompt = BuildSystemPrompt(agentId, mode, selectedFragments, contextPacks, taskNodes, tools, plan, warnings);
+        var systemPrompt = BuildSystemPrompt(agentId, mode, selectedFragments, contextPacks, taskNodes, tools, plan,
+            warnings);
         return new PromptContextPreviewDto(
             agentId,
             mode,
@@ -112,15 +105,9 @@ public sealed class PromptContextService(
         PromptContextPreviewRequest request,
         OrchestrationSnapshotDto? snapshot)
     {
-        if (snapshot is not null)
-        {
-            return snapshot;
-        }
+        if (snapshot is not null) return snapshot;
 
-        if (!string.IsNullOrWhiteSpace(request.RunId))
-        {
-            return store.GetOrchestrationSnapshotByRun(request.RunId);
-        }
+        if (!string.IsNullOrWhiteSpace(request.RunId)) return store.GetOrchestrationSnapshotByRun(request.RunId);
 
         return string.IsNullOrWhiteSpace(request.SessionId)
             ? null
@@ -132,10 +119,7 @@ public sealed class PromptContextService(
         string? sessionId,
         OrchestrationSnapshotDto? snapshot)
     {
-        if (!string.IsNullOrWhiteSpace(requestUserContent))
-        {
-            return requestUserContent.Trim();
-        }
+        if (!string.IsNullOrWhiteSpace(requestUserContent)) return requestUserContent.Trim();
 
         if (!string.IsNullOrWhiteSpace(sessionId))
         {
@@ -143,10 +127,7 @@ public sealed class PromptContextService(
                 .Where(message => message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(message => message.CreatedAt)
                 .FirstOrDefault();
-            if (latestUserMessage is not null)
-            {
-                return latestUserMessage.Content;
-            }
+            if (latestUserMessage is not null) return latestUserMessage.Content;
         }
 
         return snapshot?.Run?.Summary ?? "";
@@ -174,19 +155,18 @@ public sealed class PromptContextService(
     {
         if (!string.IsNullOrWhiteSpace(fragment.TargetAgentId) &&
             !fragment.TargetAgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase))
-        {
             return false;
-        }
 
         return fragment.Scope switch
         {
             "global" => true,
             "agent" => string.IsNullOrWhiteSpace(fragment.TargetAgentId) ||
-                fragment.TargetAgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase),
+                       fragment.TargetAgentId.Equals(agentId, StringComparison.OrdinalIgnoreCase),
             "mode" => string.IsNullOrWhiteSpace(fragment.TargetAgentId) ||
-                fragment.TargetAgentId.Equals(mode, StringComparison.OrdinalIgnoreCase),
+                      fragment.TargetAgentId.Equals(mode, StringComparison.OrdinalIgnoreCase),
             "session" => string.IsNullOrWhiteSpace(fragment.TargetAgentId) ||
-                (!string.IsNullOrWhiteSpace(sessionId) && fragment.TargetAgentId.Equals(sessionId, StringComparison.OrdinalIgnoreCase)),
+                         (!string.IsNullOrWhiteSpace(sessionId) &&
+                          fragment.TargetAgentId.Equals(sessionId, StringComparison.OrdinalIgnoreCase)),
             "project" => true,
             _ => false
         };
@@ -196,10 +176,7 @@ public sealed class PromptContextService(
         IReadOnlyList<PromptFragmentDto> candidateFragments,
         PromptContextPlanDto? plan)
     {
-        if (plan is null || plan.SelectedFragmentIds.Count == 0)
-        {
-            return candidateFragments;
-        }
+        if (plan is null || plan.SelectedFragmentIds.Count == 0) return candidateFragments;
 
         var selected = plan.SelectedFragmentIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var planned = candidateFragments.Where(fragment => selected.Contains(fragment.Id)).ToArray();
@@ -232,9 +209,8 @@ public sealed class PromptContextService(
         {
             builder.AppendLine("[context:packs]");
             foreach (var pack in contextPacks.OrderByDescending(pack => pack.CreatedAt))
-            {
-                builder.AppendLine($"- {pack.Id}: {pack.Summary} Token budget: {pack.TokenBudget}. Evidence: {string.Join(", ", pack.EvidenceMap.Take(8))}");
-            }
+                builder.AppendLine(
+                    $"- {pack.Id}: {pack.Summary} Token budget: {pack.TokenBudget}. Evidence: {string.Join(", ", pack.EvidenceMap.Take(8))}");
             builder.AppendLine();
         }
 
@@ -242,9 +218,8 @@ public sealed class PromptContextService(
         {
             builder.AppendLine("[task_graph:current]");
             foreach (var node in taskNodes.OrderBy(node => node.Priority))
-            {
-                builder.AppendLine($"- {node.Id}: {node.Title}. Risk: {node.Risk}. Criteria: {string.Join("; ", node.SuccessCriteria)}");
-            }
+                builder.AppendLine(
+                    $"- {node.Id}: {node.Title}. Risk: {node.Risk}. Criteria: {string.Join("; ", node.SuccessCriteria)}");
             builder.AppendLine();
         }
 
@@ -271,10 +246,7 @@ public sealed class PromptContextService(
         if (warnings.Count > 0)
         {
             builder.AppendLine("[prompt_context:warnings]");
-            foreach (var warning in warnings)
-            {
-                builder.AppendLine($"- {warning}");
-            }
+            foreach (var warning in warnings) builder.AppendLine($"- {warning}");
             builder.AppendLine();
         }
 
@@ -289,37 +261,34 @@ public sealed class PromptContextService(
         IReadOnlyList<ToolDescriptorDto> tools)
     {
         return userContent.Length > 1500
-            || taskNodes.Count > 5
-            || contextPacks.Count > 2
-            || ContainsLongTermPlanningIntent(userContent)
-            || taskNodes.Any(node => IsRisky(node.Risk))
-            || assignments.Any(assignment => IsRisky(assignment.PermissionMode));
+               || taskNodes.Count > 5
+               || contextPacks.Count > 2
+               || ContainsLongTermPlanningIntent(userContent)
+               || taskNodes.Any(node => IsRisky(node.Risk))
+               || assignments.Any(assignment => IsRisky(assignment.PermissionMode));
     }
 
     private static bool ContainsLongTermPlanningIntent(string userContent)
     {
         var value = userContent.ToLowerInvariant();
         return value.Contains("long-term", StringComparison.Ordinal)
-            || value.Contains("multi-stage", StringComparison.Ordinal)
-            || value.Contains("multi phase", StringComparison.Ordinal)
-            || value.Contains("长期", StringComparison.Ordinal)
-            || value.Contains("多阶段", StringComparison.Ordinal)
-            || value.Contains("分阶段", StringComparison.Ordinal);
+               || value.Contains("multi-stage", StringComparison.Ordinal)
+               || value.Contains("multi phase", StringComparison.Ordinal)
+               || value.Contains("长期", StringComparison.Ordinal)
+               || value.Contains("多阶段", StringComparison.Ordinal)
+               || value.Contains("分阶段", StringComparison.Ordinal);
     }
 
     private static bool IsRisky(string value)
     {
         return value.Contains("workspace-write", StringComparison.OrdinalIgnoreCase)
-            || value.Contains("shell", StringComparison.OrdinalIgnoreCase)
-            || value.Contains("git-write", StringComparison.OrdinalIgnoreCase);
+               || value.Contains("shell", StringComparison.OrdinalIgnoreCase)
+               || value.Contains("git-write", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ResolveMode(string? requestedMode, AgentProfileDto? agent)
     {
-        if (!string.IsNullOrWhiteSpace(requestedMode))
-        {
-            return requestedMode.Trim();
-        }
+        if (!string.IsNullOrWhiteSpace(requestedMode)) return requestedMode.Trim();
 
         return string.IsNullOrWhiteSpace(agent?.Mode) ? "balanced" : agent.Mode;
     }
@@ -335,16 +304,14 @@ public sealed class PromptContextService(
     }
 }
 
-public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime modelRuntime) : IPromptContextPlannerRuntime
+public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime modelRuntime)
+    : IPromptContextPlannerRuntime
 {
     public async Task<PromptContextPlanDto?> TryCreatePlanAsync(
         PromptContextPlanningInput input,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(input.SessionId) || string.IsNullOrWhiteSpace(input.RunId))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(input.SessionId) || string.IsNullOrWhiteSpace(input.RunId)) return null;
 
         var request = BuildPlanningRequest(input);
         var message = new MessageDto(
@@ -361,10 +328,7 @@ public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime mod
             cancellationToken,
             BuildPlannerSystemPrompt(input));
 
-        if (!string.Equals(result.Status, "executed", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
+        if (!string.Equals(result.Status, "executed", StringComparison.OrdinalIgnoreCase)) return null;
 
         return new PromptContextPlanDto(
             input.RunId,
@@ -378,16 +342,17 @@ public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime mod
     private static string BuildPlannerSystemPrompt(PromptContextPlanningInput input)
     {
         return $"""
-            You are TinadecOffice's Prompt Context Engineer Agent.
-            Select and rank prompt fragments for {input.AgentId} without inventing hidden policy.
-            Return a concise optimization summary. Do not include the final system prompt.
-            """;
+                You are TinadecOffice's Prompt Context Engineer Agent.
+                Select and rank prompt fragments for {input.AgentId} without inventing hidden policy.
+                Return a concise optimization summary. Do not include the final system prompt.
+                """;
     }
 
     private static string BuildPlanningRequest(PromptContextPlanningInput input)
     {
         var fragmentLines = input.CandidateFragments
-            .Select(fragment => $"- {fragment.Id}: {fragment.Key}, category={fragment.Category}, priority={fragment.Priority}")
+            .Select(fragment =>
+                $"- {fragment.Id}: {fragment.Key}, category={fragment.Category}, priority={fragment.Priority}")
             .ToArray();
         var contextLines = input.ContextPacks
             .Select(pack => $"- {pack.Id}: {pack.Summary}")
@@ -397,21 +362,21 @@ public sealed class ModelPromptContextPlannerRuntime(IModelInvocationRuntime mod
             .ToArray();
 
         return $"""
-            Agent: {input.AgentId}
-            Mode: {input.Mode}
-            Complex: {input.IsComplex}
-            User content:
-            {input.UserContent}
+                Agent: {input.AgentId}
+                Mode: {input.Mode}
+                Complex: {input.IsComplex}
+                User content:
+                {input.UserContent}
 
-            Candidate fragments:
-            {string.Join("\n", fragmentLines)}
+                Candidate fragments:
+                {string.Join("\n", fragmentLines)}
 
-            Context packs:
-            {string.Join("\n", contextLines)}
+                Context packs:
+                {string.Join("\n", contextLines)}
 
-            Task nodes:
-            {string.Join("\n", nodeLines)}
-            """;
+                Task nodes:
+                {string.Join("\n", nodeLines)}
+                """;
     }
 
     private static string SummarizePlanText(string content)

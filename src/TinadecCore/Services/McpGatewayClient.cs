@@ -14,23 +14,25 @@ public sealed class McpGatewayClient(HttpClient httpClient)
     {
         using var response = await httpClient.PostAsync(
             $"api/v1/mcp/servers/{Uri.EscapeDataString(serverId)}/connect",
-            content: null,
+            null,
             cancellationToken);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<McpConnectResultDto>(TinadecJson.Options, cancellationToken);
     }
 
-    public async Task<McpDisconnectResultDto?> DisconnectAsync(string serverId, CancellationToken cancellationToken = default)
+    public async Task<McpDisconnectResultDto?> DisconnectAsync(string serverId,
+        CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.PostAsync(
             $"api/v1/mcp/servers/{Uri.EscapeDataString(serverId)}/disconnect",
-            content: null,
+            null,
             cancellationToken);
         if (!response.IsSuccessStatusCode) return null;
         return await response.Content.ReadFromJsonAsync<McpDisconnectResultDto>(TinadecJson.Options, cancellationToken);
     }
 
-    public async Task<McpRuntimeStatusDto?> GetStatusAsync(string serverId, CancellationToken cancellationToken = default)
+    public async Task<McpRuntimeStatusDto?> GetStatusAsync(string serverId,
+        CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync(
             $"api/v1/mcp/servers/{Uri.EscapeDataString(serverId)}/status",

@@ -137,10 +137,7 @@ public sealed class TraceDiagnosticService
 
     private static void TrimQueue<T>(ConcurrentQueue<T> queue, int maxSize)
     {
-        while (queue.Count > maxSize)
-        {
-            queue.TryDequeue(out _);
-        }
+        while (queue.Count > maxSize) queue.TryDequeue(out _);
     }
 }
 

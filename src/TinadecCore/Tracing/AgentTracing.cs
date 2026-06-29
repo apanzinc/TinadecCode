@@ -30,28 +30,17 @@ public sealed class AgentTracing
         // Allow environment variable overrides
         var enabled = Environment.GetEnvironmentVariable("TINADEC_TRACING_ENABLED");
         if (enabled is not null)
-        {
             Options.Enabled = string.Equals(enabled, "true", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(enabled, "1", StringComparison.OrdinalIgnoreCase);
-        }
+                              || string.Equals(enabled, "1", StringComparison.OrdinalIgnoreCase);
 
         var traceFile = Environment.GetEnvironmentVariable("TINADEC_TRACE_FILE");
-        if (!string.IsNullOrWhiteSpace(traceFile))
-        {
-            Options.TraceFilePath = traceFile;
-        }
+        if (!string.IsNullOrWhiteSpace(traceFile)) Options.TraceFilePath = traceFile;
 
         var otlpTracesUrl = Environment.GetEnvironmentVariable("TINADEC_OTLP_TRACES_URL");
-        if (!string.IsNullOrWhiteSpace(otlpTracesUrl))
-        {
-            Options.OtlpTracesUrl = otlpTracesUrl;
-        }
+        if (!string.IsNullOrWhiteSpace(otlpTracesUrl)) Options.OtlpTracesUrl = otlpTracesUrl;
 
         var otlpMetricsUrl = Environment.GetEnvironmentVariable("TINADEC_OTLP_METRICS_URL");
-        if (!string.IsNullOrWhiteSpace(otlpMetricsUrl))
-        {
-            Options.OtlpMetricsUrl = otlpMetricsUrl;
-        }
+        if (!string.IsNullOrWhiteSpace(otlpMetricsUrl)) Options.OtlpMetricsUrl = otlpMetricsUrl;
     }
 
     public void Initialize(TinadecMetrics metrics)
@@ -72,13 +61,9 @@ public sealed class AgentTracing
             })
             .AddHttpClientInstrumentation();
 
-        if (Options.ConsoleExporterEnabled)
-        {
-            tracerBuilder.AddConsoleExporter();
-        }
+        if (Options.ConsoleExporterEnabled) tracerBuilder.AddConsoleExporter();
 
         if (!string.IsNullOrWhiteSpace(Options.OtlpTracesUrl))
-        {
             tracerBuilder.AddOtlpExporter(otlpOptions =>
             {
                 otlpOptions.Endpoint = new Uri(Options.OtlpTracesUrl);
@@ -88,7 +73,6 @@ public sealed class AgentTracing
                     ScheduledDelayMilliseconds = Options.OtlpExportIntervalMs > 0 ? Options.OtlpExportIntervalMs : 10000
                 };
             });
-        }
 
         // Always add the NDJSON file exporter
         tracerBuilder.AddProcessor(new NdjsonTraceExporter(new NdjsonTraceExporterOptions
@@ -107,17 +91,12 @@ public sealed class AgentTracing
             .AddMeter(TinadecMetrics.MeterName);
 
         if (!string.IsNullOrWhiteSpace(Options.OtlpMetricsUrl))
-        {
             meterBuilder.AddOtlpExporter(otlpOptions =>
             {
                 otlpOptions.Endpoint = new Uri(Options.OtlpMetricsUrl);
             });
-        }
 
-        if (Options.ConsoleExporterEnabled)
-        {
-            meterBuilder.AddConsoleExporter();
-        }
+        if (Options.ConsoleExporterEnabled) meterBuilder.AddConsoleExporter();
 
         _meterProvider = meterBuilder.Build();
     }

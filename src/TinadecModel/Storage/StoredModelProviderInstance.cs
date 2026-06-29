@@ -40,7 +40,8 @@ public sealed record StoredModelProviderInstance(
 
     public StoredModelSettings ToModelSettings(string? routeModel = null)
     {
-        return new StoredModelSettings(BaseUrl ?? string.Empty, routeModel ?? Model ?? string.Empty, EncryptedApiKey, UpdatedAt);
+        return new StoredModelSettings(BaseUrl ?? string.Empty, routeModel ?? Model ?? string.Empty, EncryptedApiKey,
+            UpdatedAt);
     }
 
     private (string Status, string Message) ResolveStatus()
@@ -60,11 +61,9 @@ public sealed record StoredModelProviderInstance(
             return ("needs_key", "API key is not set.");
 
         if (IsInCooldown())
-        {
             return LastErrorCategory is null
                 ? ("cooldown", "Provider is cooling down after a retryable failure.")
                 : ("cooldown", $"Provider is cooling down after {LastErrorCategory.Value}.");
-        }
 
         return isCli
             ? ("ready", "CLI provider is configured.")

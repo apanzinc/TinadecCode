@@ -1,4 +1,4 @@
-﻿﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using TinadecCore.Services;
 using TinadecCore.Storage;
 using Tinadec.Contracts.Models;
@@ -17,8 +17,10 @@ public sealed class CoreStoreTests
         var project = store.CreateProject("TinadecOffice", Environment.CurrentDirectory);
         var session = store.CreateSession(project.Id, "MVP");
         var message = store.AddMessage(session.Id, "user", "hello");
-        var approval = store.CreateApproval(new CreateApprovalRequest(session.Id, "shell", "npm test", "npm test", project.Path));
-        var envelope = store.AppendNewEvent("message.created", session.Id, new JsonObject { ["message_id"] = message.Id }, ["agent.message"]);
+        var approval =
+            store.CreateApproval(new CreateApprovalRequest(session.Id, "shell", "npm test", "npm test", project.Path));
+        var envelope = store.AppendNewEvent("message.created", session.Id,
+            new JsonObject { ["message_id"] = message.Id }, ["agent.message"]);
 
         Assert.Single(store.ListProjects());
         Assert.Single(store.ListSessions(project.Id));
@@ -36,16 +38,20 @@ public sealed class CoreStoreTests
         store.Initialize();
 
         var catalogItem = Assert.Single(store.ListMarketCatalog("skill", null, null));
-        var preview = store.PreviewExtensionInstall(new InstallExtensionPreviewRequest(catalogItem.CatalogId, null, null, null));
+        var preview =
+            store.PreviewExtensionInstall(new InstallExtensionPreviewRequest(catalogItem.CatalogId, null, null, null));
         Assert.True(preview.RequiresApproval);
 
-        var pending = store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, null));
+        var pending =
+            store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, null));
         Assert.True(pending.ApprovalRequired);
         Assert.NotNull(pending.Approval);
         Assert.Empty(store.ListInstalledExtensions());
 
         store.DecideApproval(pending.Approval!.Id, "approved");
-        var installed = store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, pending.Approval.Id));
+        var installed =
+            store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null,
+                pending.Approval.Id));
 
         Assert.False(installed.ApprovalRequired);
         Assert.NotNull(installed.Extension);
@@ -63,9 +69,12 @@ public sealed class CoreStoreTests
         foreach (var kind in new[] { "mcp-server", "acp-adapter" })
         {
             var catalogItem = Assert.Single(store.ListMarketCatalog(kind, null, null));
-            var pending = store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, null));
+            var pending =
+                store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, null));
             store.DecideApproval(pending.Approval!.Id, "approved");
-            var installed = store.InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null, pending.Approval.Id)).Extension!;
+            var installed = store
+                .InstallExtension(new InstallExtensionRequest(catalogItem.CatalogId, null, null, null,
+                    pending.Approval.Id)).Extension!;
             store.SetExtensionEnabled(installed.Id, true);
         }
 
@@ -183,17 +192,28 @@ public sealed class CoreStoreTests
 
         var tools = registry.ListTools("programming");
 
-        Assert.Contains(tools, tool => tool.Id == "search_files" && tool.Source == "codex-rust" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "glob_search" && tool.Source == "codex-rust" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "search_files" && tool.Source == "codex-rust" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "glob_search" && tool.Source == "codex-rust" && !tool.RequiresApproval);
         Assert.Contains(tools, tool => tool.Id == "read_file" && tool.Source == "codex-rust" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "list_directory" && tool.Source == "codex-rust" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "grep_content" && tool.Source == "codex-rust" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "sandbox_exec" && tool.Source == "codex-rust" && tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "apply_patch" && tool.Source == "codex-rust" && tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "review_format" && tool.Source == "codex-rust" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "project_templates" && tool.Source == "code" && !tool.RequiresApproval);
-        Assert.Contains(tools, tool => tool.Id == "project_template_scaffold" && tool.Source == "code" && tool.RequiresApproval && tool.Risk == "workspace-write");
-        Assert.Contains(tools, tool => tool.Id == "language_runtime_probe" && tool.Source == "code" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "list_directory" && tool.Source == "codex-rust" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "grep_content" && tool.Source == "codex-rust" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "sandbox_exec" && tool.Source == "codex-rust" && tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "apply_patch" && tool.Source == "codex-rust" && tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "review_format" && tool.Source == "codex-rust" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "project_templates" && tool.Source == "code" && !tool.RequiresApproval);
+        Assert.Contains(tools,
+            tool => tool.Id == "project_template_scaffold" && tool.Source == "code" && tool.RequiresApproval &&
+                    tool.Risk == "workspace-write");
+        Assert.Contains(tools,
+            tool => tool.Id == "language_runtime_probe" && tool.Source == "code" && !tool.RequiresApproval);
         Assert.Contains(tools, tool => tool.Id == "bash_environment" && tool.Source == "code" && tool.RequiresApproval);
         Assert.Contains(tools, tool => tool.Id == "debug_session" && tool.Source == "code" && tool.RequiresApproval);
         Assert.Contains(tools, tool => tool.Id == "code_editor" && tool.Source == "code" && tool.RequiresApproval);
@@ -206,7 +226,9 @@ public sealed class CoreStoreTests
             && tool.Capabilities.Contains("git.unstage")
             && tool.Capabilities.Contains("git.commit")
             && tool.Capabilities.Contains("git.push"));
-        Assert.Contains(tools, tool => tool.Id == "language_runtime_probe" && tool.Capabilities.Contains("runtime.nodejs") && tool.Capabilities.Contains("runtime.java"));
+        Assert.Contains(tools,
+            tool => tool.Id == "language_runtime_probe" && tool.Capabilities.Contains("runtime.nodejs") &&
+                    tool.Capabilities.Contains("runtime.java"));
         Assert.All(tools, tool => Assert.Equal("programming", tool.Domain));
     }
 
@@ -219,10 +241,13 @@ public sealed class CoreStoreTests
 
         var fragments = store.ListPromptFragments();
 
-        Assert.Contains(fragments, fragment => fragment.Id == "prompt_builtin_meeting_default" && fragment.TargetAgentId == "agent_meeting");
-        Assert.Contains(fragments, fragment => fragment.Id == "prompt_builtin_tool_approval_boundaries" && fragment.IsBuiltIn);
+        Assert.Contains(fragments,
+            fragment => fragment.Id == "prompt_builtin_meeting_default" && fragment.TargetAgentId == "agent_meeting");
+        Assert.Contains(fragments,
+            fragment => fragment.Id == "prompt_builtin_tool_approval_boundaries" && fragment.IsBuiltIn);
         Assert.Contains(fragments, fragment => fragment.Id == "prompt_builtin_agent_mode" && fragment.Enabled);
-        Assert.Contains(fragments, fragment => fragment.Id == "prompt_builtin_context_pack_rules" && fragment.Category == "context");
+        Assert.Contains(fragments,
+            fragment => fragment.Id == "prompt_builtin_context_pack_rules" && fragment.Category == "context");
     }
 
     [Fact]
@@ -274,7 +299,8 @@ public sealed class CoreStoreTests
             "custom override prompt",
             meetingAgent.Enabled));
 
-        var overrideFragment = Assert.Single(store.ListPromptFragments(targetAgentId: meetingAgent.Id), fragment => fragment.Key == "agent.override.agent_meeting");
+        var overrideFragment = Assert.Single(store.ListPromptFragments(targetAgentId: meetingAgent.Id),
+            fragment => fragment.Key == "agent.override.agent_meeting");
         Assert.False(overrideFragment.IsBuiltIn);
         Assert.Equal("custom override prompt", overrideFragment.Content);
         Assert.Equal(1000, overrideFragment.Priority);
@@ -298,8 +324,10 @@ public sealed class CoreStoreTests
         Assert.Equal(snapshot.Run!.Id, plan.RunId);
         Assert.Equal(AgentWorkflowRuntime.RuntimeName, plan.Runtime);
         Assert.Equal(snapshot.Assignments.Count, plan.Steps.Count);
-        Assert.Contains(plan.Steps, step => step.AgentType == "search-specialist" && step.ToolIds.Contains("search_files"));
-        Assert.Contains(plan.Steps, step => step.AgentType == "test-multimodal" && step.ToolIds.Contains("sandbox_exec"));
+        Assert.Contains(plan.Steps,
+            step => step.AgentType == "search-specialist" && step.ToolIds.Contains("search_files"));
+        Assert.Contains(plan.Steps,
+            step => step.AgentType == "test-multimodal" && step.ToolIds.Contains("sandbox_exec"));
     }
 
     [Fact]

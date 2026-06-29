@@ -10,14 +10,12 @@ public sealed class EventHub
 
     public void Publish(EventEnvelope envelope)
     {
-        foreach (var subscriber in _subscribers.Values)
-        {
-            subscriber.Writer.TryWrite(envelope);
-        }
+        foreach (var subscriber in _subscribers.Values) subscriber.Writer.TryWrite(envelope);
     }
 
     public async IAsyncEnumerable<EventEnvelope> Subscribe(
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken)
     {
         var id = Guid.NewGuid();
         var channel = Channel.CreateUnbounded<EventEnvelope>(new UnboundedChannelOptions
@@ -30,10 +28,7 @@ public sealed class EventHub
 
         try
         {
-            await foreach (var envelope in channel.Reader.ReadAllAsync(cancellationToken))
-            {
-                yield return envelope;
-            }
+            await foreach (var envelope in channel.Reader.ReadAllAsync(cancellationToken)) yield return envelope;
         }
         finally
         {

@@ -22,12 +22,10 @@ public sealed class AnthropicClient(HttpClient httpClient)
         using var request = BuildMessagesRequest(settings, apiKey, messages);
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
-        {
             throw new HttpRequestException(
                 $"Anthropic request failed with {(int)response.StatusCode}.",
                 null,
                 response.StatusCode);
-        }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         using var document = JsonDocument.Parse(body);
@@ -55,10 +53,7 @@ public sealed class AnthropicClient(HttpClient httpClient)
         var request = new HttpRequestMessage(HttpMethod.Post, BuildMessagesEndpoint(settings.BaseUrl));
         request.Headers.Add("anthropic-version", "2023-06-01");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            request.Headers.Add("x-api-key", apiKey.Trim());
-        }
+        if (!string.IsNullOrWhiteSpace(apiKey)) request.Headers.Add("x-api-key", apiKey.Trim());
 
         var systemPrompt = string.Join("\n\n", messages
             .Where(message => string.Equals(message.Role, "system", StringComparison.OrdinalIgnoreCase))
@@ -76,10 +71,7 @@ public sealed class AnthropicClient(HttpClient httpClient)
                 .ToArray()
         };
 
-        if (!string.IsNullOrWhiteSpace(systemPrompt))
-        {
-            payload["system"] = systemPrompt;
-        }
+        if (!string.IsNullOrWhiteSpace(systemPrompt)) payload["system"] = systemPrompt;
 
         request.Content = new StringContent(
             JsonSerializer.Serialize(payload, TinadecJson.Options),
@@ -91,10 +83,7 @@ public sealed class AnthropicClient(HttpClient httpClient)
     private static Uri BuildMessagesEndpoint(string baseUrl)
     {
         var trimmed = baseUrl.Trim().TrimEnd('/');
-        if (!trimmed.EndsWith("/messages", StringComparison.OrdinalIgnoreCase))
-        {
-            trimmed += "/messages";
-        }
+        if (!trimmed.EndsWith("/messages", StringComparison.OrdinalIgnoreCase)) trimmed += "/messages";
 
         return new Uri(trimmed, UriKind.Absolute);
     }
@@ -102,9 +91,8 @@ public sealed class AnthropicClient(HttpClient httpClient)
     private static object ToAnthropicMessage(MessageDto message)
     {
         if (string.Equals(message.Role, "tool", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Anthropic tool_result messages require a tool_use_id and structured tool_result content.");
-        }
+            throw new InvalidOperationException(
+                "Anthropic tool_result messages require a tool_use_id and structured tool_result content.");
 
         var role = string.Equals(message.Role, "assistant", StringComparison.OrdinalIgnoreCase)
             ? "assistant"
@@ -127,18 +115,12 @@ public sealed class AnthropicClient(HttpClient httpClient)
     private static string ReadTextContent(JsonElement root)
     {
         if (!root.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
-        {
             return "The model returned an empty response.";
-        }
 
         var builder = new StringBuilder();
         foreach (var item in content.EnumerateArray())
-        {
             if (ReadString(item, "type") == "text")
-            {
                 builder.Append(ReadString(item, "text"));
-            }
-        }
 
         var text = builder.ToString();
         return string.IsNullOrWhiteSpace(text)
@@ -148,10 +130,7 @@ public sealed class AnthropicClient(HttpClient httpClient)
 
     private static ModelUsageDto ReadUsage(JsonElement root)
     {
-        if (!root.TryGetProperty("usage", out var usage))
-        {
-            return new ModelUsageDto(0, 0, 0);
-        }
+        if (!root.TryGetProperty("usage", out var usage)) return new ModelUsageDto(0, 0, 0);
 
         var promptTokens = ReadInt32(usage, "input_tokens") ?? 0;
         var completionTokens = ReadInt32(usage, "output_tokens") ?? 0;
@@ -196,10 +175,7 @@ public sealed class AnthropicClient(HttpClient httpClient)
 
     private static void AddIfPresent(Dictionary<string, object?> custom, string key, object? value)
     {
-        if (value is not null)
-        {
-            custom[key] = value;
-        }
+        if (value is not null) custom[key] = value;
     }
 }
 
@@ -210,7 +186,7 @@ public sealed class AnthropicProviderRuntime(AnthropicClient client) : IModelPro
     public bool CanHandle(ResolvedModelInvocationContextDto context)
     {
         return string.Equals(context.Driver, "anthropic", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(context.Provider?.Driver, "anthropic", StringComparison.OrdinalIgnoreCase);
+               || string.Equals(context.Provider?.Driver, "anthropic", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<ModelInvocationResultDto> GenerateAsync(
@@ -274,7 +250,8 @@ public sealed class AnthropicProviderRuntime(AnthropicClient client) : IModelPro
         CancellationToken cancellationToken = default,
         IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
-        throw new NotSupportedException("Anthropic streaming is not yet implemented. Falling back to non-streaming generation.");
+        throw new NotSupportedException(
+            "Anthropic streaming is not yet implemented. Falling back to non-streaming generation.");
     }
 }
 
@@ -291,13 +268,13 @@ public sealed class AnthropicModule : IModelProviderModule
     public ProviderCapabilityDto GetCapabilities()
     {
         return new ProviderCapabilityDto(
-            SupportsStreaming: false,
-            SupportsTools: true,
-            SupportsJsonMode: true,
-            SupportsSystemPrompt: true,
-            MaxContextTokens: null,
-            RequiresWorkspace: false,
-            CredentialKind: "api_key",
-            HealthStatus: ProviderHealthStatus.Unknown);
+            false,
+            true,
+            true,
+            true,
+            null,
+            false,
+            "api_key",
+            ProviderHealthStatus.Unknown);
     }
 }

@@ -14,13 +14,16 @@ public interface IModelStore
     // Provider Instances
     IReadOnlyList<ModelProviderInstanceDto> ListModelProviderInstances();
     StoredModelProviderInstance? GetStoredModelProviderInstance(string providerInstanceId);
+
     ModelProviderInstanceDto SaveModelProviderInstance(
         SaveModelProviderInstanceRequest request, string? encryptedApiKey);
+
     bool DeleteModelProviderInstance(string providerInstanceId);
 
     // Health
     void RecordModelProviderFailure(
         string providerInstanceId, ProviderErrorCategory category, DateTimeOffset now);
+
     void RecordModelProviderSuccess(string providerInstanceId);
 
     // Routes

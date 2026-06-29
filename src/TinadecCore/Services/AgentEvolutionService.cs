@@ -44,18 +44,18 @@ public sealed class AgentEvolutionService(
                 continue;
 
             var proposal = new AgentEvolutionProposalDto(
-                Id: $"evo_{Guid.NewGuid():N}",
-                GeneratedByAgentId: EvolverAgentId,
-                Name: pattern.Name,
-                Layer: pattern.Layer,
-                AgentType: pattern.AgentType,
-                Description: pattern.Description,
-                SuggestedTools: pattern.SuggestedTools,
-                EvaluationNotes: pattern.EvaluationNotes,
-                ObservedPatterns: pattern.ObservedPatterns,
-                ConfidenceScore: pattern.ConfidenceScore,
-                Status: "proposed",
-                CreatedAt: DateTimeOffset.UtcNow);
+                $"evo_{Guid.NewGuid():N}",
+                EvolverAgentId,
+                pattern.Name,
+                pattern.Layer,
+                pattern.AgentType,
+                pattern.Description,
+                pattern.SuggestedTools,
+                pattern.EvaluationNotes,
+                pattern.ObservedPatterns,
+                pattern.ConfidenceScore,
+                "proposed",
+                DateTimeOffset.UtcNow);
 
             proposals.Add(proposal);
 
@@ -75,9 +75,7 @@ public sealed class AgentEvolutionService(
 
         // 如果有模型运行时，可以让 Evolver Agent 做二次评估
         if (modelRuntime is not null && proposals.Count > 0)
-        {
             proposals = await EvaluateProposalsWithModelAsync(proposals, cancellationToken);
-        }
 
         return proposals;
     }
@@ -176,7 +174,6 @@ public sealed class AgentEvolutionService(
         var toolSequence = new List<string>();
 
         foreach (var evt in events)
-        {
             if (evt.Type.Contains("tool.execution", StringComparison.OrdinalIgnoreCase))
             {
                 var toolId = evt.Payload is not null && evt.Payload.TryGetPropertyValue("tool_id", out var tid)
@@ -188,7 +185,6 @@ public sealed class AgentEvolutionService(
                     toolSequence.Add(toolId);
                 }
             }
-        }
 
         // 模式 1：频繁使用的工具组合 → 建议专用 executor
         var topTools = toolUsage.OrderByDescending(kvp => kvp.Value).Take(3).ToList();
@@ -201,7 +197,11 @@ public sealed class AgentEvolutionService(
                 "specialist",
                 $"Observed frequent co-usage of {string.Join(", ", toolNames)}. Consider a dedicated executor agent.",
                 toolNames.ToArray(),
-                new[] { $"Co-used {topTools[0].Value}+ times", "Read-only by default", "Needs evaluation before write access" },
+                new[]
+                {
+                    $"Co-used {topTools[0].Value}+ times", "Read-only by default",
+                    "Needs evaluation before write access"
+                },
                 toolSequence.Take(20).Select(t => $"tool:{t}").ToArray(),
                 Math.Min(0.9, topTools[0].Value / 10.0)));
         }
@@ -209,7 +209,6 @@ public sealed class AgentEvolutionService(
         // 模式 2：长会话上下文压缩 → 建议上下文优化 agent
         var contextEvents = events.Count(e => e.Type.Contains("context", StringComparison.OrdinalIgnoreCase));
         if (contextEvents >= 5)
-        {
             patterns.Add(new WorkflowPattern(
                 "context-optimizer",
                 "planning",
@@ -219,12 +218,10 @@ public sealed class AgentEvolutionService(
                 new[] { "Context events detected", "Token budget optimization candidate" },
                 new[] { $"context_events:{contextEvents}" },
                 Math.Min(0.8, contextEvents / 20.0)));
-        }
 
         // 模式 3：审批密集 → 建议 supervisor 辅助 agent
         var approvalEvents = events.Count(e => e.Type.Contains("approval", StringComparison.OrdinalIgnoreCase));
         if (approvalEvents >= 3)
-        {
             patterns.Add(new WorkflowPattern(
                 "approval-assistant",
                 "planning",
@@ -234,7 +231,6 @@ public sealed class AgentEvolutionService(
                 new[] { "Approval workflow optimization", "Needs safety review before enablement" },
                 new[] { $"approval_events:{approvalEvents}" },
                 Math.Min(0.7, approvalEvents / 15.0)));
-        }
 
         return patterns;
     }
@@ -254,17 +250,11 @@ public sealed class AgentEvolutionService(
                 // 简单解析：如果模型认为某个提案不合适，则移除
                 var rejected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var proposal in proposals)
-                {
                     if (result.Content.Contains(proposal.Name, StringComparison.OrdinalIgnoreCase)
                         && result.Content.Contains("reject", StringComparison.OrdinalIgnoreCase))
-                    {
                         rejected.Add(proposal.Name);
-                    }
-                }
-                if (rejected.Count > 0)
-                {
-                    proposals = proposals.Where(p => !rejected.Contains(p.Name)).ToList();
-                }
+
+                if (rejected.Count > 0) proposals = proposals.Where(p => !rejected.Contains(p.Name)).ToList();
             }
         }
         catch
@@ -280,12 +270,12 @@ public sealed class AgentEvolutionService(
         var lines = proposals.Select(p =>
             $"- {p.Name} ({p.Layer}/{p.AgentType}): {p.Description}. Tools: {string.Join(", ", p.SuggestedTools)}. Confidence: {p.ConfidenceScore:F2}");
         return $"""
-            You are TinadecOffice's Evolution Agent. Review these agent proposals and identify any that should be rejected.
-            Return one line per proposal: "ACCEPT <name>" or "REJECT <name> <reason>".
+                You are TinadecOffice's Evolution Agent. Review these agent proposals and identify any that should be rejected.
+                Return one line per proposal: "ACCEPT <name>" or "REJECT <name> <reason>".
 
-            Proposals:
-            {string.Join("\n", lines)}
-            """;
+                Proposals:
+                {string.Join("\n", lines)}
+                """;
     }
 
     private void PublishProposalEvent(string type, AgentEvolutionProposalDto proposal)

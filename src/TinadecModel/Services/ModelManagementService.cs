@@ -9,10 +9,14 @@ public sealed class ModelManagementService(
     SecretProtector protector) : IModelManagementService
 {
     public IReadOnlyList<ModelProviderTemplateDto> ListProviderTemplates()
-        => ModelProviderCatalog.ListTemplates();
+    {
+        return ModelProviderCatalog.ListTemplates();
+    }
 
     public IReadOnlyList<ModelProviderInstanceDto> ListProviders()
-        => store.ListModelProviderInstances();
+    {
+        return store.ListModelProviderInstances();
+    }
 
     public ModelProviderInstanceDto CreateProvider(SaveModelProviderInstanceRequest request)
     {
@@ -35,7 +39,10 @@ public sealed class ModelManagementService(
         return store.DeleteModelProviderInstance(providerInstanceId) ? existing.ToDto() : null;
     }
 
-    public IReadOnlyList<ModelRouteDto> ListRoutes() => store.ListModelRoutes();
+    public IReadOnlyList<ModelRouteDto> ListRoutes()
+    {
+        return store.ListModelRoutes();
+    }
 
     public ModelRouteDto? SaveRoute(string purpose, SaveModelRouteRequest request)
     {
@@ -44,12 +51,15 @@ public sealed class ModelManagementService(
         return store.SaveModelRoute(purpose, request.ProviderInstanceId, request.Model ?? provider.Model);
     }
 
-    public ModelSettingsDto GetSettings() => store.GetModelSettings().ToDto();
+    public ModelSettingsDto GetSettings()
+    {
+        return store.GetModelSettings().ToDto();
+    }
 
     public ModelSettingsDto SaveSettings(SaveModelSettingsRequest request)
     {
         var existing = store.GetModelSettings();
-        string? encryptedApiKey = existing.EncryptedApiKey;
+        var encryptedApiKey = existing.EncryptedApiKey;
 
         if (request.ClearApiKey)
             encryptedApiKey = null;
@@ -60,7 +70,8 @@ public sealed class ModelManagementService(
         return saved.ToDto();
     }
 
-    private string? ResolveEncryptedApiKey(SaveModelProviderInstanceRequest request, Storage.StoredModelProviderInstance? existing)
+    private string? ResolveEncryptedApiKey(SaveModelProviderInstanceRequest request,
+        Storage.StoredModelProviderInstance? existing)
     {
         if (request.ClearApiKey) return null;
         if (!string.IsNullOrWhiteSpace(request.ApiKey)) return protector.Protect(request.ApiKey.Trim());

@@ -81,9 +81,7 @@ public sealed class BreakpointService
             if (value is null || condition.Value is null) return false;
 
             if (!string.Equals(value.ToString(), condition.Value?.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
                 return false;
-            }
         }
 
         return true;
@@ -106,7 +104,9 @@ public sealed class Breakpoint
 
 public sealed class CreateBreakpointRequest
 {
-    public string ConditionType { get; set; } = ""; // on_tool_call, on_approval, on_agent_error, on_token_budget, on_state_change, on_sub_agent_spawn
+    public string ConditionType { get; set; } =
+        ""; // on_tool_call, on_approval, on_agent_error, on_token_budget, on_state_change, on_sub_agent_spawn
+
     public Dictionary<string, object?> Condition { get; set; } = new();
     public string Action { get; set; } = ""; // pause, log, auto_approve, inject_response
     public Dictionary<string, object?>? ActionParams { get; set; }

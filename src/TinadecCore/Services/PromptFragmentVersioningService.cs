@@ -36,20 +36,17 @@ public sealed class PromptFragmentVersioningService(
         var nextVersion = existingVersions.Count == 0 ? 1 : existingVersions.Max(v => v.Version) + 1;
 
         // 将旧版本标记为非活跃
-        foreach (var old in existingVersions.Where(v => v.IsActive))
-        {
-            store.DeactivatePromptFragmentVersion(old.Id);
-        }
+        foreach (var old in existingVersions.Where(v => v.IsActive)) store.DeactivatePromptFragmentVersion(old.Id);
 
         var version = new PromptFragmentVersionDto(
-            Id: $"ver_{Guid.NewGuid():N}",
-            FragmentId: fragmentId,
-            Version: nextVersion,
-            Content: content,
-            ChangedFields: changedFields,
-            ChangeSummary: changeSummary,
-            IsActive: true,
-            CreatedAt: DateTimeOffset.UtcNow);
+            $"ver_{Guid.NewGuid():N}",
+            fragmentId,
+            nextVersion,
+            content,
+            changedFields,
+            changeSummary,
+            true,
+            DateTimeOffset.UtcNow);
 
         store.SavePromptFragmentVersion(version);
 
@@ -96,7 +93,8 @@ public sealed class PromptFragmentVersioningService(
     /// </summary>
     public PromptFragmentEffectivenessDto RecordSignal(PromptFragmentEffectivenessInput input)
     {
-        store.RecordPromptFragmentSignal(input.FragmentId, input.Signal, input.RunId, input.SessionId, input.Note, input.Version);
+        store.RecordPromptFragmentSignal(input.FragmentId, input.Signal, input.RunId, input.SessionId, input.Note,
+            input.Version);
 
         PublishSignalEvent(input);
 
@@ -148,9 +146,8 @@ public sealed class PromptFragmentVersioningService(
         var vb = versions.FirstOrDefault(v => v.Version == versionB);
 
         if (va is null || vb is null)
-        {
-            return new PromptFragmentAbTestResultDto(fragmentId, versionA, versionB, null, null, 0, 0, 0.5, "One or both versions not found");
-        }
+            return new PromptFragmentAbTestResultDto(fragmentId, versionA, versionB, null, null, 0, 0, 0.5,
+                "One or both versions not found");
 
         var statsA = store.GetPromptFragmentVersionSignalStats(fragmentId, versionA);
         var statsB = store.GetPromptFragmentVersionSignalStats(fragmentId, versionB);
@@ -162,8 +159,10 @@ public sealed class PromptFragmentVersioningService(
 
         var recommendation = (scoreA, scoreB) switch
         {
-            _ when scoreA > scoreB + 0.1 => $"Version {versionA} outperforms {versionB}. Consider keeping version {versionA}.",
-            _ when scoreB > scoreA + 0.1 => $"Version {versionB} outperforms {versionA}. Consider rolling back to version {versionB}.",
+            _ when scoreA > scoreB + 0.1 =>
+                $"Version {versionA} outperforms {versionB}. Consider keeping version {versionA}.",
+            _ when scoreB > scoreA + 0.1 =>
+                $"Version {versionB} outperforms {versionA}. Consider rolling back to version {versionB}.",
             _ => "Versions perform similarly. Consider collecting more signals before deciding."
         };
 

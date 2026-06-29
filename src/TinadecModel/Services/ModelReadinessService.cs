@@ -18,7 +18,8 @@ public sealed class ModelReadinessService(IModelStore store)
         var providersById = providers.ToDictionary(provider => provider.Id, StringComparer.OrdinalIgnoreCase);
 
         var providerReceipts = providers
-            .Select(provider => BuildProvider(provider, routeGroups.TryGetValue(provider.Id, out var providerRoutes) ? providerRoutes : []))
+            .Select(provider => BuildProvider(provider,
+                routeGroups.TryGetValue(provider.Id, out var providerRoutes) ? providerRoutes : []))
             .OrderByDescending(provider => provider.RoutePurposes.Count)
             .ThenBy(provider => StatusSortKey(provider.Status))
             .ThenBy(provider => provider.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -73,7 +74,9 @@ public sealed class ModelReadinessService(IModelStore store)
         var providerReady = Is(provider.Status, "ready");
         var status = providerReady
             ? routePurposes.Length > 0 ? "ready" : "warning"
-            : routePurposes.Length > 0 ? "blocked" : "warning";
+            : routePurposes.Length > 0
+                ? "blocked"
+                : "warning";
         var summary = status switch
         {
             "ready" => $"Provider is ready for {routePurposes.Length} model route(s).",
@@ -101,7 +104,6 @@ public sealed class ModelReadinessService(IModelStore store)
         IReadOnlyDictionary<string, ModelProviderInstanceDto> providersById)
     {
         if (!providersById.TryGetValue(route.ProviderInstanceId, out var provider))
-        {
             return new ModelRouteReadinessDto(
                 route.Purpose,
                 route.ProviderInstanceId,
@@ -113,10 +115,8 @@ public sealed class ModelReadinessService(IModelStore store)
                     $"provider_instance_id:{route.ProviderInstanceId}",
                     $"model:{route.Model ?? "(provider-default)"}"
                 ]);
-        }
 
         if (!Is(provider.Status, "ready"))
-        {
             return new ModelRouteReadinessDto(
                 route.Purpose,
                 provider.Id,
@@ -131,7 +131,6 @@ public sealed class ModelReadinessService(IModelStore store)
                     $"has_credential:{HasCredential(provider)}",
                     $"model:{route.Model ?? provider.Model ?? "(unset)"}"
                 ]);
-        }
 
         return new ModelRouteReadinessDto(
             route.Purpose,
@@ -147,7 +146,8 @@ public sealed class ModelReadinessService(IModelStore store)
             ]);
     }
 
-    private static IReadOnlyList<string> BuildProviderEvidence(ModelProviderInstanceDto provider, IReadOnlyList<string> routePurposes)
+    private static IReadOnlyList<string> BuildProviderEvidence(ModelProviderInstanceDto provider,
+        IReadOnlyList<string> routePurposes)
     {
         return
         [
@@ -165,9 +165,7 @@ public sealed class ModelReadinessService(IModelStore store)
     private static bool HasCredential(ModelProviderInstanceDto provider)
     {
         if (!ProviderTemplateRules.RequiresApiKey(provider.Driver, provider.ConnectionKind, provider.Capabilities))
-        {
             return true;
-        }
 
         return provider.HasApiKey;
     }

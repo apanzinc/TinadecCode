@@ -44,7 +44,8 @@ public sealed class HarnessManifestService(
             {
                 var layerAgents = group.ToArray();
                 var layerModes = layerAgents
-                    .Select(agent => modes.FirstOrDefault(mode => mode.Id.Equals(agent.Mode, StringComparison.OrdinalIgnoreCase)))
+                    .Select(agent =>
+                        modes.FirstOrDefault(mode => mode.Id.Equals(agent.Mode, StringComparison.OrdinalIgnoreCase)))
                     .Where(mode => mode is not null)
                     .Cast<AgentModeDto>()
                     .ToArray();
@@ -112,7 +113,8 @@ public sealed class HarnessManifestService(
             .Select(group => new ToolRiskManifestDto(
                 group.Key,
                 group.Count(),
-                group.Any(tool => tool.RequiresApproval) || !group.Key.Equals("read-only", StringComparison.OrdinalIgnoreCase),
+                group.Any(tool => tool.RequiresApproval) ||
+                !group.Key.Equals("read-only", StringComparison.OrdinalIgnoreCase),
                 RiskPolicySummary(group.Key)))
             .ToArray();
     }
@@ -151,10 +153,7 @@ public sealed class HarnessManifestService(
 
     private static string ProviderStatus(IReadOnlyList<ToolDescriptorDto> providerTools)
     {
-        if (providerTools.All(IsFutureTool))
-        {
-            return "future";
-        }
+        if (providerTools.All(IsFutureTool)) return "future";
 
         return providerTools.Any(IsFutureTool) ? "mixed" : "active";
     }
@@ -162,7 +161,7 @@ public sealed class HarnessManifestService(
     private static bool IsActiveTool(ToolDescriptorDto tool)
     {
         return tool.Capabilities.Any(capability => capability.EndsWith(".active", StringComparison.OrdinalIgnoreCase))
-            || !IsFutureTool(tool);
+               || !IsFutureTool(tool);
     }
 
     private static bool IsFutureTool(ToolDescriptorDto tool)

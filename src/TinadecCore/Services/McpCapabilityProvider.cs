@@ -30,27 +30,25 @@ public sealed class McpCapabilityProvider : ICapabilityProvider
 
         foreach (var server in servers)
         {
-            if (!string.Equals(server.Status, "connected", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+            if (!string.Equals(server.Status, "connected", StringComparison.OrdinalIgnoreCase)) continue;
 
             foreach (var toolName in server.Tools)
             {
                 // 模型可见名：mcp__{server_name}__{tool_name}
                 var toolId = $"mcp__{SanitizeForId(server.Name)}__{toolName}";
                 // ExecuteEndpoint 指向 Gateway 的 tools/call 端点
-                var endpoint = $"/api/v1/mcp/servers/{Uri.EscapeDataString(server.Id)}/tools/{Uri.EscapeDataString(toolName)}/call";
+                var endpoint =
+                    $"/api/v1/mcp/servers/{Uri.EscapeDataString(server.Id)}/tools/{Uri.EscapeDataString(toolName)}/call";
 
                 tools.Add(new ToolDescriptorDto(
-                    Id: toolId,
-                    DisplayName: $"{server.Name}: {toolName}",
-                    Domain: "programming",
-                    Source: "mcp",
-                    Risk: "read-only",
-                    RequiresApproval: false,
-                    ExecuteEndpoint: endpoint,
-                    Capabilities: ["mcp", server.Name, toolName]));
+                    toolId,
+                    $"{server.Name}: {toolName}",
+                    "programming",
+                    "mcp",
+                    "read-only",
+                    false,
+                    endpoint,
+                    ["mcp", server.Name, toolName]));
             }
         }
 
@@ -62,12 +60,9 @@ public sealed class McpCapabilityProvider : ICapabilityProvider
         // 将 server name 转换为合法的 id 片段（只保留字母数字和下划线）
         var chars = value.ToCharArray();
         for (var i = 0; i < chars.Length; i++)
-        {
             if (!char.IsAsciiLetterOrDigit(chars[i]) && chars[i] != '_')
-            {
                 chars[i] = '_';
-            }
-        }
+
         return new string(chars).Trim('_');
     }
 }

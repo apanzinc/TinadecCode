@@ -13,10 +13,7 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
     {
         using var activity = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentWorkflowCompile);
 
-        if (snapshot.Run is null)
-        {
-            return new AgentWorkflowPlanDto("", RuntimeName, []);
-        }
+        if (snapshot.Run is null) return new AgentWorkflowPlanDto("", RuntimeName, []);
 
         var nodeMap = snapshot.Nodes.ToDictionary(node => node.Id);
         var steps = snapshot.Assignments
@@ -42,7 +39,8 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
 
     private IReadOnlyList<string> ResolveToolIds(AgentAssignmentDto assignment, TaskNodeDto? node)
     {
-        var available = tools.ListTools("programming").Select(tool => tool.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var available = tools.ListTools("programming").Select(tool => tool.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var requested = new List<string>();
 
         // Search-oriented agents: code-explorer, search-specialist, file-finder
@@ -54,10 +52,7 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
         }
 
         // Test / multimodal agent needs sandbox
-        if (assignment.AgentType is "test-multimodal" or "testing-agent")
-        {
-            requested.Add("sandbox_exec");
-        }
+        if (assignment.AgentType is "test-multimodal" or "testing-agent") requested.Add("sandbox_exec");
 
         // Git manager needs Git tooling plus read-only context for handoff notes.
         if (assignment.AgentType is "git-manager")
@@ -78,9 +73,7 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
 
         // Review-related agents
         if (assignment.AgentType is "review-executor" || node?.RequiredCapabilities.Contains("review.format") == true)
-        {
             requested.Add("review_format");
-        }
 
         // Agents that need file/workspace access
         if (assignment.AgentType is "code-explorer" or "context-compressor" or "file-finder")
@@ -90,9 +83,7 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
         }
 
         if (assignment.AllowedTools.Any(tool => tool.Contains("write", StringComparison.OrdinalIgnoreCase)))
-        {
             requested.Add("apply_patch");
-        }
 
         // Auto-assign read-only tools to any agent type that needs workspace access
         if (requested.Count > 0)

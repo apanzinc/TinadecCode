@@ -16,15 +16,17 @@ public static class ProviderCredentialValidator
             return new CredentialValidationResult(true, null, null);
 
         if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            return ProviderTemplateRules.RequiresApiKey(context.Driver, context.ConnectionKind, context.Provider?.Capabilities)
-                ? new CredentialValidationResult(false, ProviderErrorCategory.AuthenticationFailed, "Provider API key is missing or invalid.")
+            return ProviderTemplateRules.RequiresApiKey(context.Driver, context.ConnectionKind,
+                context.Provider?.Capabilities)
+                ? new CredentialValidationResult(false, ProviderErrorCategory.AuthenticationFailed,
+                    "Provider API key is missing or invalid.")
                 : new CredentialValidationResult(true, null, null);
-        }
 
         var trimmed = apiKey.Trim();
-        if (!string.Equals(apiKey, trimmed, StringComparison.Ordinal) || trimmed.Length < 8 || trimmed.Any(char.IsWhiteSpace))
-            return new CredentialValidationResult(false, ProviderErrorCategory.AuthenticationFailed, "Provider API key is missing or invalid.");
+        if (!string.Equals(apiKey, trimmed, StringComparison.Ordinal) || trimmed.Length < 8 ||
+            trimmed.Any(char.IsWhiteSpace))
+            return new CredentialValidationResult(false, ProviderErrorCategory.AuthenticationFailed,
+                "Provider API key is missing or invalid.");
 
         return new CredentialValidationResult(true, null, null);
     }

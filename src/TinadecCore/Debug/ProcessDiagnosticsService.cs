@@ -18,7 +18,7 @@ public sealed class ProcessDiagnosticsService
             ProcessName = process.ProcessName,
             WorkingSetBytes = process.WorkingSet64,
             PrivateBytes = process.PrivateMemorySize64,
-            GcHeapBytes = GC.GetTotalMemory(forceFullCollection: false),
+            GcHeapBytes = GC.GetTotalMemory(false),
             GcGen0Collections = GC.CollectionCount(0),
             GcGen1Collections = GC.CollectionCount(1),
             GcGen2Collections = GC.CollectionCount(2),

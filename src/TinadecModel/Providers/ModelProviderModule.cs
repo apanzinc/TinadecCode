@@ -14,9 +14,8 @@ public static class ModelProviderModuleServiceCollectionExtensions
         var providerFamily = NormalizeProviderFamily(module.ProviderFamily);
 
         if (services.Any(descriptor => IsDuplicateProviderFamily(descriptor, providerFamily)))
-        {
-            throw new InvalidOperationException($"A model provider module for provider family '{providerFamily}' is already registered.");
-        }
+            throw new InvalidOperationException(
+                $"A model provider module for provider family '{providerFamily}' is already registered.");
 
         var metadata = new ModelProviderModuleMetadata(providerFamily, module.GetCapabilities());
 
@@ -31,22 +30,21 @@ public static class ModelProviderModuleServiceCollectionExtensions
     private static bool IsDuplicateProviderFamily(ServiceDescriptor descriptor, string providerFamily)
     {
         return descriptor.ServiceType == typeof(ModelProviderModuleMetadata)
-            && descriptor.ImplementationInstance is ModelProviderModuleMetadata metadata
-            && string.Equals(metadata.ProviderFamily, providerFamily, StringComparison.OrdinalIgnoreCase);
+               && descriptor.ImplementationInstance is ModelProviderModuleMetadata metadata
+               && string.Equals(metadata.ProviderFamily, providerFamily, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizeProviderFamily(string providerFamily)
     {
         if (string.IsNullOrWhiteSpace(providerFamily))
-        {
             throw new InvalidOperationException("Model provider modules must declare a provider family.");
-        }
 
         return providerFamily.Trim();
     }
 }
 
-public sealed class ModelProviderModuleCatalog(IEnumerable<ModelProviderModuleMetadata> modules) : IModelProviderModuleCatalog
+public sealed class ModelProviderModuleCatalog(IEnumerable<ModelProviderModuleMetadata> modules)
+    : IModelProviderModuleCatalog
 {
     private readonly IReadOnlyList<ModelProviderModuleMetadata> _modules = modules.ToArray();
 
@@ -75,14 +73,14 @@ public sealed class OpenAiCompatibleModule : IModelProviderModule
     public ProviderCapabilityDto GetCapabilities()
     {
         return new ProviderCapabilityDto(
-            SupportsStreaming: true,
-            SupportsTools: true,
-            SupportsJsonMode: true,
-            SupportsSystemPrompt: true,
-            MaxContextTokens: null,
-            RequiresWorkspace: false,
-            CredentialKind: "api-key",
-            HealthStatus: ProviderHealthStatus.Unknown);
+            true,
+            true,
+            true,
+            true,
+            null,
+            false,
+            "api-key",
+            ProviderHealthStatus.Unknown);
     }
 }
 
@@ -98,13 +96,13 @@ public sealed class CliModule : IModelProviderModule
     public ProviderCapabilityDto GetCapabilities()
     {
         return new ProviderCapabilityDto(
-            SupportsStreaming: false,
-            SupportsTools: false,
-            SupportsJsonMode: false,
-            SupportsSystemPrompt: true,
-            MaxContextTokens: null,
-            RequiresWorkspace: true,
-            CredentialKind: "cli",
-            HealthStatus: ProviderHealthStatus.Unknown);
+            false,
+            false,
+            false,
+            true,
+            null,
+            true,
+            "cli",
+            ProviderHealthStatus.Unknown);
     }
 }

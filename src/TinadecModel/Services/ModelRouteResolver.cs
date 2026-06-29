@@ -54,7 +54,7 @@ public sealed class ModelRouteResolver(IModelStore store) : IModelRouteResolver
         {
             var routedProvider = providers
                 .FirstOrDefault(c => c.Provider!.Id.Equals(route.ProviderInstanceId, StringComparison.OrdinalIgnoreCase)
-                    && CanServe(c.Provider!, purpose, now))?.Provider;
+                                     && CanServe(c.Provider!, purpose, now))?.Provider;
             if (routedProvider is not null) return routedProvider;
         }
 
@@ -69,15 +69,19 @@ public sealed class ModelRouteResolver(IModelStore store) : IModelRouteResolver
     }
 
     private static bool CanServe(StoredModelProviderInstance provider, string purpose, DateTimeOffset now)
-        => provider.Enabled
-            && provider.Capabilities.Any(c => c.Equals("chat", StringComparison.OrdinalIgnoreCase))
-            && AllowsPurpose(provider, purpose)
-            && IsAvailable(provider, now);
+    {
+        return provider.Enabled
+               && provider.Capabilities.Any(c => c.Equals("chat", StringComparison.OrdinalIgnoreCase))
+               && AllowsPurpose(provider, purpose)
+               && IsAvailable(provider, now);
+    }
 
     private static bool AllowsPurpose(StoredModelProviderInstance provider, string purpose)
     {
-        var routeCaps = provider.Capabilities.Where(c => c.StartsWith("route:", StringComparison.OrdinalIgnoreCase)).ToArray();
-        return routeCaps.Length == 0 || routeCaps.Any(c => c["route:".Length..].Equals(purpose, StringComparison.OrdinalIgnoreCase));
+        var routeCaps = provider.Capabilities.Where(c => c.StartsWith("route:", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        return routeCaps.Length == 0 ||
+               routeCaps.Any(c => c["route:".Length..].Equals(purpose, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool IsAvailable(StoredModelProviderInstance provider, DateTimeOffset now)
@@ -116,8 +120,10 @@ public sealed class ModelRouteResolver(IModelStore store) : IModelRouteResolver
     }
 
     private static DateTimeOffset? ResolveClock(IEnumerable<ProviderRouteCandidate> providers)
-        => providers.Select(c => c.Provider is null ? null : ResolveCapabilityTime(c.Provider, "clock"))
+    {
+        return providers.Select(c => c.Provider is null ? null : ResolveCapabilityTime(c.Provider, "clock"))
             .FirstOrDefault(v => v is not null);
+    }
 
     private static DateTimeOffset? ResolveCapabilityTime(StoredModelProviderInstance provider, string key)
     {
@@ -128,7 +134,8 @@ public sealed class ModelRouteResolver(IModelStore store) : IModelRouteResolver
     private static string? ResolveCapabilityValue(StoredModelProviderInstance provider, string key)
     {
         var prefix = key + ":";
-        return provider.Capabilities.FirstOrDefault(c => c.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
+        return provider.Capabilities.FirstOrDefault(c => c.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[
+            prefix.Length..];
     }
 
     private sealed record ProviderRouteCandidate(StoredModelProviderInstance? Provider, int RouteOrder, int? Priority);

@@ -83,7 +83,10 @@ public sealed class CodexCapabilityProvider : ICapabilityProvider
             ["review.format", "workspace.read", "codex-rust.active"])
     ];
 
-    public IReadOnlyList<ToolDescriptorDto> ListCapabilities() => CodexTools;
+    public IReadOnlyList<ToolDescriptorDto> ListCapabilities()
+    {
+        return CodexTools;
+    }
 }
 
 public sealed class CodeCapabilityProvider : ICapabilityProvider
@@ -168,10 +171,16 @@ public sealed class CodeCapabilityProvider : ICapabilityProvider
             "git-write",
             true,
             "/api/v1/code/tools/git_worktree_manager/execute",
-            ["git.status", "git.diff", "git.stage", "git.unstage", "git.worktree", "git.branch", "git.commit", "git.push", "workspace.isolation", "tool-layer.code-suite"])
+            [
+                "git.status", "git.diff", "git.stage", "git.unstage", "git.worktree", "git.branch", "git.commit",
+                "git.push", "workspace.isolation", "tool-layer.code-suite"
+            ])
     ];
 
-    public IReadOnlyList<ToolDescriptorDto> ListCapabilities() => CodeTools;
+    public IReadOnlyList<ToolDescriptorDto> ListCapabilities()
+    {
+        return CodeTools;
+    }
 }
 
 public sealed class PromptContextCapabilityProvider : ICapabilityProvider
@@ -191,7 +200,10 @@ public sealed class PromptContextCapabilityProvider : ICapabilityProvider
             ["prompt.context.resolve", "prompt.fragment.select", "context_pack.rank"])
     ];
 
-    public IReadOnlyList<ToolDescriptorDto> ListCapabilities() => PromptContextTools;
+    public IReadOnlyList<ToolDescriptorDto> ListCapabilities()
+    {
+        return PromptContextTools;
+    }
 }
 
 public sealed class ToolRegistryService : IToolRegistry
@@ -212,10 +224,7 @@ public sealed class ToolRegistryService : IToolRegistry
     public IReadOnlyList<ToolDescriptorDto> ListTools(string? domain = null)
     {
         var tools = CanonicalTools(domain);
-        if (string.IsNullOrWhiteSpace(domain))
-        {
-            return tools;
-        }
+        if (string.IsNullOrWhiteSpace(domain)) return tools;
 
         return tools;
     }
@@ -280,9 +289,15 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["query"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Search query for file names." },
-                    ["limit"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Maximum results." },
-                    ["exclude"] = new Dictionary<string, object?> { ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "string" }, ["description"] = "Patterns to exclude." }
+                    ["query"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Search query for file names." },
+                    ["limit"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Maximum results." },
+                    ["exclude"] = new Dictionary<string, object?>
+                    {
+                        ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "string" },
+                        ["description"] = "Patterns to exclude."
+                    }
                 },
                 ["required"] = new[] { "query" }
             },
@@ -291,8 +306,10 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["pattern"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Glob pattern (e.g. **/*.ts, src/**/*.rs)." },
-                    ["limit"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Maximum results." }
+                    ["pattern"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Glob pattern (e.g. **/*.ts, src/**/*.rs)." },
+                    ["limit"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Maximum results." }
                 },
                 ["required"] = new[] { "pattern" }
             },
@@ -301,9 +318,12 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["path"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "File path to read." },
-                    ["start_line"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Start line (1-based)." },
-                    ["end_line"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "End line (inclusive)." }
+                    ["path"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "File path to read." },
+                    ["start_line"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Start line (1-based)." },
+                    ["end_line"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "End line (inclusive)." }
                 },
                 ["required"] = new[] { "path" }
             },
@@ -312,9 +332,12 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["path"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Directory path." },
-                    ["show_hidden"] = new Dictionary<string, object?> { ["type"] = "boolean", ["description"] = "Include hidden files." },
-                    ["limit"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Maximum entries." }
+                    ["path"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Directory path." },
+                    ["show_hidden"] = new Dictionary<string, object?>
+                        { ["type"] = "boolean", ["description"] = "Include hidden files." },
+                    ["limit"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Maximum entries." }
                 },
                 ["required"] = new[] { "path" }
             },
@@ -323,11 +346,16 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["pattern"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Text pattern to search for." },
-                    ["glob"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Optional glob filter for files." },
-                    ["context"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Context lines around matches." },
-                    ["case_insensitive"] = new Dictionary<string, object?> { ["type"] = "boolean", ["description"] = "Case-insensitive search." },
-                    ["limit"] = new Dictionary<string, object?> { ["type"] = "integer", ["description"] = "Maximum matches." }
+                    ["pattern"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Text pattern to search for." },
+                    ["glob"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Optional glob filter for files." },
+                    ["context"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Context lines around matches." },
+                    ["case_insensitive"] = new Dictionary<string, object?>
+                        { ["type"] = "boolean", ["description"] = "Case-insensitive search." },
+                    ["limit"] = new Dictionary<string, object?>
+                        { ["type"] = "integer", ["description"] = "Maximum matches." }
                 },
                 ["required"] = new[] { "pattern" }
             },
@@ -336,7 +364,8 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["patch"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "The patch content to apply." }
+                    ["patch"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "The patch content to apply." }
                 },
                 ["required"] = new[] { "patch" }
             },
@@ -345,7 +374,11 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["command"] = new Dictionary<string, object?> { ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "string" }, ["description"] = "Command and arguments to execute." }
+                    ["command"] = new Dictionary<string, object?>
+                    {
+                        ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "string" },
+                        ["description"] = "Command and arguments to execute."
+                    }
                 },
                 ["required"] = new[] { "command" }
             },
@@ -354,8 +387,13 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["findings"] = new Dictionary<string, object?> { ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "object" }, ["description"] = "Review findings with title, severity, location, description." },
-                    ["title"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Review title." }
+                    ["findings"] = new Dictionary<string, object?>
+                    {
+                        ["type"] = "array", ["items"] = new Dictionary<string, object?> { ["type"] = "object" },
+                        ["description"] = "Review findings with title, severity, location, description."
+                    },
+                    ["title"] = new Dictionary<string, object?>
+                        { ["type"] = "string", ["description"] = "Review title." }
                 },
                 ["required"] = new[] { "findings" }
             },
@@ -364,8 +402,12 @@ public sealed class ToolRegistryService : IToolRegistry
                 ["type"] = "object",
                 ["properties"] = new Dictionary<string, object?>
                 {
-                    ["action"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "Action: status, diff, branch, commit, push, worktree." },
-                    ["args"] = new Dictionary<string, object?> { ["type"] = "object", ["description"] = "Action-specific arguments." }
+                    ["action"] = new Dictionary<string, object?>
+                    {
+                        ["type"] = "string", ["description"] = "Action: status, diff, branch, commit, push, worktree."
+                    },
+                    ["args"] = new Dictionary<string, object?>
+                        { ["type"] = "object", ["description"] = "Action-specific arguments." }
                 },
                 ["required"] = new[] { "action" }
             },
@@ -384,10 +426,7 @@ public sealed class ToolRegistryService : IToolRegistry
             .SelectMany(provider => provider.ListCapabilities())
             .ToArray();
 
-        if (string.IsNullOrWhiteSpace(domain))
-        {
-            return tools;
-        }
+        if (string.IsNullOrWhiteSpace(domain)) return tools;
 
         return tools
             .Where(tool => string.Equals(tool.Domain, domain, StringComparison.OrdinalIgnoreCase))

@@ -19,28 +19,21 @@ public sealed class ToolExecutionTimelineService(
         int? limit = null)
     {
         var take = Math.Clamp(limit.GetValueOrDefault(DefaultLimit), 1, MaxLimit);
-        var stepResultsByRun = new Dictionary<string, IReadOnlyDictionary<string, StepResultDto>>(StringComparer.OrdinalIgnoreCase);
+        var stepResultsByRun =
+            new Dictionary<string, IReadOnlyDictionary<string, StepResultDto>>(StringComparer.OrdinalIgnoreCase);
         var items = new List<ToolExecutionTimelineBuilder>();
 
         foreach (var envelope in store.ListEvents(sessionId).Where(IsToolExecutionEvent))
         {
             var payload = envelope.Payload;
             var eventRunId = ReadString(payload, "run_id");
-            if (string.IsNullOrWhiteSpace(eventRunId))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(eventRunId)) continue;
 
-            if (!string.IsNullOrWhiteSpace(runId) && !eventRunId.Equals(runId.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+            if (!string.IsNullOrWhiteSpace(runId) &&
+                !eventRunId.Equals(runId.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
 
             var toolId = ReadString(payload, "tool_id");
-            if (string.IsNullOrWhiteSpace(toolId))
-            {
-                continue;
-            }
+            if (string.IsNullOrWhiteSpace(toolId)) continue;
 
             var builder = envelope.Type.Equals("tool.execution.requested", StringComparison.OrdinalIgnoreCase)
                 ? null
@@ -65,9 +58,9 @@ public sealed class ToolExecutionTimelineService(
     private static bool IsToolExecutionEvent(EventEnvelope envelope)
     {
         return envelope.Type.Equals("tool.execution.requested", StringComparison.OrdinalIgnoreCase)
-            || envelope.Type.Equals("tool.execution.approval_required", StringComparison.OrdinalIgnoreCase)
-            || envelope.Type.Equals("tool.execution.completed", StringComparison.OrdinalIgnoreCase)
-            || envelope.Type.Equals("tool.execution.failed", StringComparison.OrdinalIgnoreCase);
+               || envelope.Type.Equals("tool.execution.approval_required", StringComparison.OrdinalIgnoreCase)
+               || envelope.Type.Equals("tool.execution.completed", StringComparison.OrdinalIgnoreCase)
+               || envelope.Type.Equals("tool.execution.failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private ToolExecutionTimelineBuilder CreateBuilder(
@@ -110,10 +103,7 @@ public sealed class ToolExecutionTimelineService(
         builder.RequiresApproval = builder.RequiresApproval || ReadBool(envelope.Payload, "requires_approval");
 
         var approvalId = ReadString(envelope.Payload, "approval_id");
-        if (!string.IsNullOrWhiteSpace(approvalId))
-        {
-            builder.ApprovalId = approvalId;
-        }
+        if (!string.IsNullOrWhiteSpace(approvalId)) builder.ApprovalId = approvalId;
 
         var stepResultId = ReadString(envelope.Payload, "step_result_id");
         if (!string.IsNullOrWhiteSpace(stepResultId))
@@ -145,8 +135,8 @@ public sealed class ToolExecutionTimelineService(
         if (!stepResultsByRun.TryGetValue(runId, out var stepResults))
         {
             stepResults = store.GetOrchestrationSnapshotByRun(runId)?.StepResults
-                .ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase)
-                ?? new Dictionary<string, StepResultDto>(StringComparer.OrdinalIgnoreCase);
+                              .ToDictionary(item => item.Id, StringComparer.OrdinalIgnoreCase)
+                          ?? new Dictionary<string, StepResultDto>(StringComparer.OrdinalIgnoreCase);
             stepResultsByRun[runId] = stepResults;
         }
 
@@ -168,8 +158,8 @@ public sealed class ToolExecutionTimelineService(
     private static bool IsTerminalStatus(string status)
     {
         return status.Equals("completed", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("failed", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("blocked", StringComparison.OrdinalIgnoreCase);
+               || status.Equals("failed", StringComparison.OrdinalIgnoreCase)
+               || status.Equals("blocked", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string StatusFromEvent(EventEnvelope envelope)
@@ -201,40 +191,27 @@ public sealed class ToolExecutionTimelineService(
         bool requiresApproval,
         string? approvalId)
     {
-        if (!string.IsNullOrWhiteSpace(approvalId))
-        {
-            return $"Core approval {approvalId} authorized this execution.";
-        }
+        if (!string.IsNullOrWhiteSpace(approvalId)) return $"Core approval {approvalId} authorized this execution.";
 
         if (!requiresApproval && risk.Equals("read-only", StringComparison.OrdinalIgnoreCase))
-        {
             return "Read-only tool execution was auto-dispatchable under Core policy.";
-        }
 
         return "Core policy requires a human checkpoint before dispatch.";
     }
 
     private static string? ReadString(JsonObject? payload, string key)
     {
-        if (payload is null || !payload.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return null;
-        }
+        if (payload is null || !payload.TryGetPropertyValue(key, out var node) || node is null) return null;
 
         if (node is JsonValue value && value.TryGetValue<string>(out var text))
-        {
             return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
-        }
 
         return node.ToString();
     }
 
     private static bool ReadBool(JsonObject? payload, string key)
     {
-        if (payload is null || !payload.TryGetPropertyValue(key, out var node) || node is null)
-        {
-            return false;
-        }
+        if (payload is null || !payload.TryGetPropertyValue(key, out var node) || node is null) return false;
 
         return node is JsonValue value && value.TryGetValue<bool>(out var result) && result;
     }

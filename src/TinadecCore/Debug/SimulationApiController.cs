@@ -38,9 +38,7 @@ public static class SimulationApiController
         AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.BadRequest(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var result = simulation.InjectMessage(request);
         return Results.Ok(result);
@@ -52,9 +50,7 @@ public static class SimulationApiController
         AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.BadRequest(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var result = simulation.InjectModelResponse(request);
         return Results.Ok(result);
@@ -66,9 +62,7 @@ public static class SimulationApiController
         AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.BadRequest(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var result = simulation.InjectToolResult(request);
         return Results.Ok(result);
@@ -78,13 +72,11 @@ public static class SimulationApiController
         ForceApprovalDecisionRequest request,
         SimulationService simulation,
         CoreStore store,
-        TinadecCore.Services.EventHub events,
+        Services.EventHub events,
         AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.BadRequest(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var result = simulation.ForceApprovalDecision(request);
         return Results.Ok(result);
@@ -96,9 +88,7 @@ public static class SimulationApiController
         AgentTracing tracing)
     {
         if (!tracing.Options.Enabled)
-        {
             return Results.BadRequest(new { code = "TRACING_DISABLED", message = "Tracing is not enabled." });
-        }
 
         var result = simulation.PatchAgentState(request);
         return Results.Ok(result);

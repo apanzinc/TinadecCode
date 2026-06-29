@@ -18,19 +18,20 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_RetriesOnRetryableFailureAndRecordsCooldown()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true);
-        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, success: true);
+        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, true);
         var runtime = new ModelInvocationRuntime(
             new ModelRouteResolver(store),
             new FakeCredentialResolver(),
             [primaryRuntime, backupRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("executed", result.Status);
         Assert.Equal(AnthropicBackupProviderId, result.Context.ProviderInstanceId);
@@ -47,19 +48,21 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_DoesNotDoubleRecordRuntimeRecordedRetryableFailure()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
-        var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true, runtimeId: "openai-compatible", store: store);
-        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, success: true);
+        var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true,
+            runtimeId: "openai-compatible", store: store);
+        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, true);
         var runtime = new ModelInvocationRuntime(
             new ModelRouteResolver(store),
             new FakeCredentialResolver(),
             [primaryRuntime, backupRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("executed", result.Status);
         var primaryAfter = store.GetStoredModelProviderInstance(OpenAiPrimaryProviderId)!;
@@ -70,25 +73,27 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_ClearsCooldownOnlyForProviderThatSucceeds()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
         SaveProvider(
             store,
             AnthropicBackupProviderId,
             "Anthropic Backup",
             "claude-4",
-            priority: 20,
-            healthMetadata: ["health:cooldown", $"cooldown_until:{DateTimeOffset.UtcNow.AddMinutes(-1):O}", "failure_count:1"]);
+            20,
+            healthMetadata:
+            ["health:cooldown", $"cooldown_until:{DateTimeOffset.UtcNow.AddMinutes(-1):O}", "failure_count:1"]);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true);
-        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, success: true);
+        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, true);
         var runtime = new ModelInvocationRuntime(
             new ModelRouteResolver(store),
             new FakeCredentialResolver(),
             [primaryRuntime, backupRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("executed", result.Status);
 
@@ -105,19 +110,20 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_DoesNotPolluteSuccessResultWithFirstFailureMetadata()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true);
-        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, success: true);
+        var backupRuntime = new FakeProviderRuntime(AnthropicBackupProviderId, true);
         var runtime = new ModelInvocationRuntime(
             new ModelRouteResolver(store),
             new FakeCredentialResolver(),
             [primaryRuntime, backupRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("executed", result.Status);
         Assert.Null(result.ErrorCategory);
@@ -130,8 +136,8 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_ReturnsFallbackFailureWhenAllProvidersFail()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
-        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", priority: 20);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
+        SaveProvider(store, AnthropicBackupProviderId, "Anthropic Backup", "claude-4", 20);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
         var primaryRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, retryableFailure: true);
@@ -142,7 +148,8 @@ public sealed class ModelInvocationRuntimeTests
             [primaryRuntime, backupRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(AnthropicBackupProviderId, result.ErrorProviderId);
@@ -153,7 +160,7 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_ReturnsTerminalUnavailableWhenFallbackCannotBeResolved()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
         // Do not create Anthropic backup; fallback resolution will have no available provider
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
 
@@ -164,7 +171,8 @@ public sealed class ModelInvocationRuntimeTests
             [primaryRuntime],
             store);
 
-        var result = await runtime.InvokeAsync("sess_1", ChatPurpose, [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
+        var result = await runtime.InvokeAsync("sess_1", ChatPurpose,
+            [new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UtcNow)]);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorCategory.ProviderUnavailable, result.ErrorCategory);
@@ -176,9 +184,9 @@ public sealed class ModelInvocationRuntimeTests
     public async Task InvokeAsync_PrependsSystemPromptForProviderRuntime()
     {
         var store = CreateStore();
-        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", priority: 10);
+        SaveProvider(store, OpenAiPrimaryProviderId, "OpenAI Primary", "gpt-5.4", 10);
         store.SaveModelRoute(ChatPurpose, OpenAiPrimaryProviderId, "gpt-5.4");
-        var providerRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, success: true);
+        var providerRuntime = new FakeProviderRuntime(OpenAiPrimaryProviderId, true);
         var runtime = new ModelInvocationRuntime(
             new ModelRouteResolver(store),
             new FakeCredentialResolver(),
@@ -230,10 +238,7 @@ public sealed class ModelInvocationRuntimeTests
             "no-api-key"
         };
 
-        if (healthMetadata is not null)
-        {
-            capabilities.AddRange(healthMetadata);
-        }
+        if (healthMetadata is not null) capabilities.AddRange(healthMetadata);
 
         var baseUrl = connectionKind.Equals("local-http", StringComparison.OrdinalIgnoreCase)
             ? "http://127.0.0.1:11434/v1"
@@ -248,14 +253,14 @@ public sealed class ModelInvocationRuntimeTests
                 baseUrl,
                 model,
                 null,
-                ClearApiKey: false,
-                BinaryPath: null,
-                HomePath: null,
-                ServerUrl: null,
-                LaunchArgs: null,
-                Capabilities: capabilities,
-                Enabled: enabled),
-            encryptedApiKey: null);
+                false,
+                null,
+                null,
+                null,
+                null,
+                capabilities,
+                enabled),
+            null);
     }
 
     private sealed class FakeProviderRuntime : IModelProviderRuntime
@@ -266,7 +271,8 @@ public sealed class ModelInvocationRuntimeTests
         private readonly string? _runtimeId;
         private readonly CoreStore? _store;
 
-        public FakeProviderRuntime(string id, bool success = false, bool retryableFailure = false, string? runtimeId = null, CoreStore? store = null)
+        public FakeProviderRuntime(string id, bool success = false, bool retryableFailure = false,
+            string? runtimeId = null, CoreStore? store = null)
         {
             _id = id;
             _success = success;
@@ -294,19 +300,15 @@ public sealed class ModelInvocationRuntimeTests
             WasCalled = true;
             LastMessages = messages;
             if (_success)
-            {
                 return Task.FromResult(new ModelInvocationResultDto(
                     "executed",
                     "Success",
                     context,
                     false,
                     _id));
-            }
 
             if (_retryableFailure && _store is not null)
-            {
                 _store.RecordModelProviderFailure(_id, ProviderErrorCategory.RateLimited, DateTimeOffset.UtcNow);
-            }
 
             return Task.FromResult(new ModelInvocationResultDto(
                 "failed",
@@ -328,7 +330,9 @@ public sealed class ModelInvocationRuntimeTests
             IReadOnlyList<MessageDto> messages,
             CancellationToken cancellationToken = default,
             IReadOnlyList<ModelToolSpecDto>? tools = null)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class FakeCredentialResolver : IModelCredentialResolver

@@ -22,7 +22,9 @@ public interface IApprovalService
 public interface IEventLog
 {
     IReadOnlyList<EventEnvelope> ListEvents(string? sessionId);
-    EventEnvelope AppendNewEvent(string type, string? sessionId, IReadOnlyDictionary<string, object?>? payload, IReadOnlyList<string> capabilities);
+
+    EventEnvelope AppendNewEvent(string type, string? sessionId, IReadOnlyDictionary<string, object?>? payload,
+        IReadOnlyList<string> capabilities);
 }
 
 public interface IExtensionCatalogService
@@ -97,6 +99,7 @@ public interface IToolInvocationAdapter
 {
     string Id { get; }
     bool CanInvoke(ToolDescriptorDto tool);
+
     Task<CodeToolExecuteResultDto> InvokeAsync(
         ToolDescriptorDto tool,
         CodeToolExecuteRequest request,

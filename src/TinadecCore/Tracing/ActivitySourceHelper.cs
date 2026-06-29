@@ -71,7 +71,8 @@ public static class ActivityExtensions
     /// Add an event to the current activity.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Activity? AddSpanEvent(this Activity? activity, string name, IEnumerable<KeyValuePair<string, object?>>? attributes = null)
+    public static Activity? AddSpanEvent(this Activity? activity, string name,
+        IEnumerable<KeyValuePair<string, object?>>? attributes = null)
     {
         if (activity is null) return null;
         var tags = attributes is null
@@ -101,7 +102,8 @@ public static class ActivityExtensions
     /// Start a new child span from the current activity.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Activity? StartChildSpan(this Activity? parent, string name, ActivityKind kind = ActivityKind.Internal)
+    public static Activity? StartChildSpan(this Activity? parent, string name,
+        ActivityKind kind = ActivityKind.Internal)
     {
         return TinadecActivitySource.Instance.StartActivity(name, kind, parent?.Context ?? default);
     }

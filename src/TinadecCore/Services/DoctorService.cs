@@ -37,10 +37,7 @@ public sealed class DoctorService
                 CreateNoWindow = true
             });
 
-            if (process is null)
-            {
-                return new DoctorCheckDto(fileName, "missing", missingMessage);
-            }
+            if (process is null) return new DoctorCheckDto(fileName, "missing", missingMessage);
 
             process.WaitForExit(3000);
             var output = process.StandardOutput.ReadToEnd().Trim();

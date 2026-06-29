@@ -51,8 +51,13 @@ public sealed class ModelInvocationRuntime(
                     var recoveredProviderId = result.Context.ProviderInstanceId;
                     store.RecordModelProviderSuccess(recoveredProviderId);
                 }
-                return firstFailure is null ? result
-                    : result with { ErrorProviderId = firstFailure.ErrorProviderId ?? firstFailure.Context.ProviderInstanceId };
+
+                return firstFailure is null
+                    ? result
+                    : result with
+                    {
+                        ErrorProviderId = firstFailure.ErrorProviderId ?? firstFailure.Context.ProviderInstanceId
+                    };
             }
 
             firstFailure ??= result;
@@ -62,10 +67,12 @@ public sealed class ModelInvocationRuntime(
 
             attemptedProviderIds.Add(result.ErrorProviderId ?? result.Context.ProviderInstanceId);
             if (store is not null && result.ErrorCategory is { } category && !RuntimeRecordsRetryableFailure(result))
-                store.RecordModelProviderFailure(result.ErrorProviderId ?? result.Context.ProviderInstanceId, category, DateTimeOffset.UtcNow);
+                store.RecordModelProviderFailure(result.ErrorProviderId ?? result.Context.ProviderInstanceId, category,
+                    DateTimeOffset.UtcNow);
         }
 
-        return lastFailure ?? firstFailure ?? throw new InvalidOperationException("Model invocation did not produce a result.");
+        return lastFailure ?? firstFailure ??
+            throw new InvalidOperationException("Model invocation did not produce a result.");
     }
 
     private async Task<ModelInvocationResultDto> InvokeResolvedProviderAsync(
@@ -82,7 +89,8 @@ public sealed class ModelInvocationRuntime(
         var apiKey = credentialResolver.ResolveApiKey(context);
         var credentialValidation = ProviderCredentialValidator.Validate(context, apiKey);
         if (!credentialValidation.IsValid)
-            return new ModelInvocationResultDto("failed", credentialValidation.SafeMessage ?? "Provider authentication failed.",
+            return new ModelInvocationResultDto("failed",
+                credentialValidation.SafeMessage ?? "Provider authentication failed.",
                 context, true, null, credentialValidation.ErrorCategory, false, null, null,
                 credentialValidation.SafeMessage, context.ProviderInstanceId);
 
@@ -109,7 +117,8 @@ public sealed class ModelInvocationRuntime(
     /// </summary>
     public async IAsyncEnumerable<ModelStreamChunkDto> InvokeStreamAsync(
         string sessionId, string purpose, IReadOnlyList<MessageDto> messages,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default,
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken = default,
         string? systemPrompt = null, IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
         var requestMessages = BuildRequestMessages(sessionId, messages, systemPrompt);
@@ -136,13 +145,13 @@ public sealed class ModelInvocationRuntime(
 
             // 推送 context chunk，让前端知道当前使用的 provider/model
             yield return new ModelStreamChunkDto(
-                RunId: string.Empty,
-                SessionId: sessionId,
-                Purpose: purpose,
-                ProviderInstanceId: context.ProviderInstanceId,
-                EffectiveModel: context.EffectiveModel,
-                Kind: ModelStreamChunkKind.Context,
-                Delta: null,
+                string.Empty,
+                sessionId,
+                purpose,
+                context.ProviderInstanceId,
+                context.EffectiveModel,
+                ModelStreamChunkKind.Context,
+                null,
                 FallbackProviderSelected: firstFailure is not null,
                 ErrorProviderId: firstFailure?.ErrorProviderId ?? firstFailure?.Context.ProviderInstanceId);
 
@@ -150,7 +159,7 @@ public sealed class ModelInvocationRuntime(
             var contentBuilder = new System.Text.StringBuilder();
             ToolCallDto? lastToolCall = null;
             ModelUsageDto? usage = null;
-            ModelFinishReason finishReason = ModelFinishReason.Unknown;
+            var finishReason = ModelFinishReason.Unknown;
 
             if (runtime is not null)
             {
@@ -210,7 +219,8 @@ public sealed class ModelInvocationRuntime(
                     catchErrorChunk = new ModelStreamChunkDto(
                         string.Empty, sessionId, purpose, context.ProviderInstanceId, context.EffectiveModel,
                         ModelStreamChunkKind.Error, null, null, null, null,
-                        ProviderErrorCategory.ProviderUnavailable, false, false, ex.Message, context.ProviderInstanceId);
+                        ProviderErrorCategory.ProviderUnavailable, false, false, ex.Message,
+                        context.ProviderInstanceId);
                 }
 
                 if (catchErrorChunk is not null)
@@ -225,8 +235,10 @@ public sealed class ModelInvocationRuntime(
                     if (ShouldTryFallback(result, attemptedProviderIds))
                     {
                         attemptedProviderIds.Add(result.ErrorProviderId ?? context.ProviderInstanceId);
-                        if (store is not null && result.ErrorCategory is { } category && !RuntimeRecordsRetryableFailure(result))
-                            store.RecordModelProviderFailure(result.ErrorProviderId ?? context.ProviderInstanceId, category, DateTimeOffset.UtcNow);
+                        if (store is not null && result.ErrorCategory is { } category &&
+                            !RuntimeRecordsRetryableFailure(result))
+                            store.RecordModelProviderFailure(result.ErrorProviderId ?? context.ProviderInstanceId,
+                                category, DateTimeOffset.UtcNow);
                         continue; // 尝试 fallback
                     }
 
@@ -258,7 +270,8 @@ public sealed class ModelInvocationRuntime(
             yield return new ModelStreamChunkDto(
                 string.Empty, sessionId, purpose, context.ProviderInstanceId, context.EffectiveModel,
                 ModelStreamChunkKind.Done, null, lastToolCall, usage, finishReason,
-                null, false, firstFailure is not null, null, firstFailure?.ErrorProviderId ?? firstFailure?.Context.ProviderInstanceId);
+                null, false, firstFailure is not null, null,
+                firstFailure?.ErrorProviderId ?? firstFailure?.Context.ProviderInstanceId);
             yield break;
         }
 
@@ -296,13 +309,11 @@ public sealed class ModelInvocationRuntime(
         var apiKey = credentialResolver.ResolveApiKey(context);
         var credentialValidation = ProviderCredentialValidator.Validate(context, apiKey);
         if (!credentialValidation.IsValid)
-        {
             return new StreamResolution(context, apiKey, null, new ModelStreamChunkDto(
                 string.Empty, string.Empty, purpose, context.ProviderInstanceId, context.EffectiveModel,
                 ModelStreamChunkKind.Error, null, null, null, null,
                 credentialValidation.ErrorCategory, false, false,
                 credentialValidation.SafeMessage ?? "Provider authentication failed.", context.ProviderInstanceId));
-        }
 
         var runtime = providerRuntimes
             .Where(r => r.CanHandle(context))
@@ -313,21 +324,26 @@ public sealed class ModelInvocationRuntime(
         return new StreamResolution(context, apiKey, runtime, null);
     }
 
-    private static IReadOnlyList<MessageDto> BuildRequestMessages(string sessionId, IReadOnlyList<MessageDto> messages, string? systemPrompt)
+    private static IReadOnlyList<MessageDto> BuildRequestMessages(string sessionId, IReadOnlyList<MessageDto> messages,
+        string? systemPrompt)
     {
         if (string.IsNullOrWhiteSpace(systemPrompt)) return messages;
-        var systemMessage = new MessageDto($"sys_{Guid.NewGuid():N}", sessionId, "system", systemPrompt.Trim(), DateTimeOffset.UtcNow);
+        var systemMessage = new MessageDto($"sys_{Guid.NewGuid():N}", sessionId, "system", systemPrompt.Trim(),
+            DateTimeOffset.UtcNow);
         return [systemMessage, .. messages];
     }
 
     private static bool ShouldTryFallback(ModelInvocationResultDto result, HashSet<string> attemptedProviderIds)
     {
         var failedProviderId = result.ErrorProviderId ?? result.Context.ProviderInstanceId;
-        return result.IsRetryable && result.ErrorCategory is not null && !attemptedProviderIds.Contains(failedProviderId);
+        return result.IsRetryable && result.ErrorCategory is not null &&
+               !attemptedProviderIds.Contains(failedProviderId);
     }
 
     private static bool RuntimeRecordsRetryableFailure(ModelInvocationResultDto result)
-        => result.IsRetryable
-            && (string.Equals(result.RuntimeId, "openai-compatible", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(result.RuntimeId, "cli-provider", StringComparison.OrdinalIgnoreCase));
+    {
+        return result.IsRetryable
+               && (string.Equals(result.RuntimeId, "openai-compatible", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(result.RuntimeId, "cli-provider", StringComparison.OrdinalIgnoreCase));
+    }
 }

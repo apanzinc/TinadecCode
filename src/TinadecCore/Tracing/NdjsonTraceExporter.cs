@@ -21,6 +21,7 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
     private readonly ConcurrentQueue<JsonDocument> _queue = new();
     private readonly Timer _flushTimer;
     private readonly object _writeLock = new();
+
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
@@ -41,10 +42,7 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
 
         // Ensure directory exists
         var dir = Path.GetDirectoryName(_filePath);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
         OpenFile();
         _flushTimer = new Timer(_ => FlushQueue(), null, _batchWindowMs, _batchWindowMs);
@@ -52,10 +50,7 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
 
     public override void OnEnd(Activity activity)
     {
-        if (activity.Source.Name != TinadecActivitySource.SourceName)
-        {
-            return;
-        }
+        if (activity.Source.Name != TinadecActivitySource.SourceName) return;
 
         var record = ConvertToTraceRecord(activity);
         var json = JsonSerializer.SerializeToDocument(record, _jsonOptions);
@@ -70,6 +65,7 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
             FlushQueue();
             CloseFile();
         }
+
         base.Dispose(disposing);
     }
 
@@ -80,7 +76,6 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
         lock (_writeLock)
         {
             while (_queue.TryDequeue(out var json))
-            {
                 try
                 {
                     _writer?.WriteLine(json.RootElement.GetRawText());
@@ -89,7 +84,6 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
                 {
                     // Silently ignore write errors to avoid crashing the process
                 }
-            }
 
             try
             {
@@ -137,14 +131,13 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
                 if (!File.Exists(newerPath)) continue;
 
                 if (i == _maxFiles - 1)
-                {
-                    if (File.Exists(olderPath)) File.Delete(olderPath);
-                }
+                    if (File.Exists(olderPath))
+                        File.Delete(olderPath);
 
                 if (File.Exists(newerPath))
                 {
                     var targetPath = $"{basePath}.{i}";
-                    File.Move(newerPath, targetPath, overwrite: true);
+                    File.Move(newerPath, targetPath, true);
                 }
             }
 
@@ -153,26 +146,23 @@ public sealed class NdjsonTraceExporter : BaseProcessor<Activity>
         catch
         {
             // If rotation fails, try to reopen the file
-            try { CloseFile(); } catch { }
-            try { OpenFile(); } catch { }
+            try { CloseFile(); }
+            catch { }
+
+            try { OpenFile(); }
+            catch { }
         }
     }
 
     private TraceRecord ConvertToTraceRecord(Activity activity)
     {
         var attributes = new Dictionary<string, object?>();
-        foreach (var tag in activity.TagObjects)
-        {
-            attributes[tag.Key] = tag.Value;
-        }
+        foreach (var tag in activity.TagObjects) attributes[tag.Key] = tag.Value;
 
         var events = activity.Events.Select(e =>
         {
             var evtAttrs = new Dictionary<string, object?>();
-            foreach (var tag in e.Tags)
-            {
-                evtAttrs[tag.Key] = tag.Value;
-            }
+            foreach (var tag in e.Tags) evtAttrs[tag.Key] = tag.Value;
             return new TraceEvent
             {
                 Name = e.Name,

@@ -21,7 +21,7 @@ public sealed class DebugWebSocketHandler
     private readonly BreakpointService _breakpoints;
 
     public DebugWebSocketHandler(
-        TinadecCore.Services.EventHub eventHub,
+        EventHub eventHub,
         TinadecMetrics metrics,
         BreakpointService breakpoints)
     {
@@ -61,9 +61,7 @@ public sealed class DebugWebSocketHandler
         {
             _connections.TryRemove(connectionId, out _);
             if (webSocket.State == WebSocketState.Open)
-            {
                 await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
-            }
         }
     }
 
@@ -83,9 +81,7 @@ public sealed class DebugWebSocketHandler
         var segment = new ArraySegment<byte>(bytes);
 
         foreach (var connection in _connections.Values)
-        {
             if (connection.State == WebSocketState.Open)
-            {
                 try
                 {
                     connection.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
@@ -94,8 +90,6 @@ public sealed class DebugWebSocketHandler
                 {
                     // Silently ignore send errors
                 }
-            }
-        }
     }
 
     private async Task ForwardEventHubEventsAsync(WebSocket webSocket, CancellationToken cancellationToken)
@@ -116,7 +110,8 @@ public sealed class DebugWebSocketHandler
 
             try
             {
-                await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, cancellationToken);
+                await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
+                    cancellationToken);
             }
             catch
             {
@@ -125,7 +120,8 @@ public sealed class DebugWebSocketHandler
         }
     }
 
-    private async Task ReceiveClientMessagesAsync(WebSocket webSocket, string connectionId, CancellationToken cancellationToken)
+    private async Task ReceiveClientMessagesAsync(WebSocket webSocket, string connectionId,
+        CancellationToken cancellationToken)
     {
         var buffer = new byte[4096];
 
@@ -141,10 +137,7 @@ public sealed class DebugWebSocketHandler
                 break;
             }
 
-            if (result.MessageType == WebSocketMessageType.Close)
-            {
-                break;
-            }
+            if (result.MessageType == WebSocketMessageType.Close) break;
 
             if (result.MessageType == WebSocketMessageType.Text)
             {

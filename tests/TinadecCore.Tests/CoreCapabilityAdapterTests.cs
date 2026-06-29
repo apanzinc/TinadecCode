@@ -16,7 +16,8 @@ public sealed class CoreCapabilityAdapterTests
         var capabilities = provider.ListCapabilities();
 
         Assert.Contains(capabilities, tool => tool.Id == "search_files" && tool.Source == "codex-rust");
-        Assert.Contains(capabilities, tool => tool.Id == "read_file" && tool.Capabilities.Contains("codex-rust.active"));
+        Assert.Contains(capabilities,
+            tool => tool.Id == "read_file" && tool.Capabilities.Contains("codex-rust.active"));
         Assert.Contains(capabilities, tool => tool.Id == "grep_content" && tool.Risk == "read-only");
         Assert.Contains(capabilities, tool => tool.Id == "apply_patch" && tool.RequiresApproval);
         Assert.Contains(capabilities, tool => tool.Id == "sandbox_exec" && tool.RequiresApproval);
@@ -121,18 +122,25 @@ public sealed class CoreCapabilityAdapterTests
 
         Assert.Equal(AgentWorkflowRuntime.RuntimeName, manifest.Runtime);
         Assert.Contains("Core owns orchestration", manifest.OwnershipModel);
-        Assert.Contains(manifest.AgentLayers, layer => layer.Layer == "planning" && layer.Role.Contains("planning", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(manifest.AgentLayers, layer => layer.Layer == "execution" && layer.Role.Contains("execution", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(manifest.AgentLayers,
+            layer => layer.Layer == "planning" && layer.Role.Contains("planning", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(manifest.AgentLayers,
+            layer => layer.Layer == "execution" &&
+                     layer.Role.Contains("execution", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(manifest.ToolProviders, provider => provider.Source == "core" && provider.Layer == "core");
-        Assert.Contains(manifest.ToolProviders, provider => provider.Source == "code" && provider.Layer == "tool-layer" && provider.ApprovalRequiredCount > 0);
-        Assert.Contains(manifest.ToolProviders, provider => provider.Source == "codex-rust" && provider.Layer == "native-glue");
+        Assert.Contains(manifest.ToolProviders,
+            provider => provider.Source == "code" && provider.Layer == "tool-layer" &&
+                        provider.ApprovalRequiredCount > 0);
+        Assert.Contains(manifest.ToolProviders,
+            provider => provider.Source == "codex-rust" && provider.Layer == "native-glue");
         Assert.Contains(manifest.ToolRisks, risk => risk.Risk == "read-only" && !risk.RequiresHumanCheckpoint);
         Assert.Contains(manifest.ToolRisks, risk => risk.Risk == "workspace-write" && risk.RequiresHumanCheckpoint);
         Assert.Equal(manifest.Tools.Count, manifest.ToolRegistry.CanonicalToolCount);
         Assert.True(manifest.ToolRegistry.DeclaredToolCount >= manifest.ToolRegistry.CanonicalToolCount);
         Assert.Contains("source precedence", manifest.ToolRegistry.SelectionPolicy, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(manifest.DesignNotes, note => note.Contains("canonical", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(manifest.DesignNotes, note => note.Contains("not a second orchestration runtime", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(manifest.DesignNotes,
+            note => note.Contains("not a second orchestration runtime", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -151,16 +159,24 @@ public sealed class CoreCapabilityAdapterTests
         Assert.Equal(0, receipt.BlockedCount);
         Assert.StartsWith("readiness_", receipt.ReceiptId);
         Assert.Contains(receipt.Components, component => component.Id == "storage" && component.Status == "ready");
-        Assert.Contains(receipt.Components, component => component.Id == "agent_profiles" && component.Evidence.Any(item => item.StartsWith("enabled_planning_count:", StringComparison.Ordinal)));
-        Assert.Contains(receipt.Components, component => component.Id == "tool_registry" && component.Evidence.Any(item => item.StartsWith("canonical_tool_count:", StringComparison.Ordinal)));
-        Assert.Contains(receipt.Components, component => component.Id == "model_routes" && component.Status == "warning" && component.Evidence.Any(item => item.StartsWith("unavailable_provider_routes:", StringComparison.Ordinal)));
+        Assert.Contains(receipt.Components,
+            component => component.Id == "agent_profiles" && component.Evidence.Any(item =>
+                item.StartsWith("enabled_planning_count:", StringComparison.Ordinal)));
+        Assert.Contains(receipt.Components,
+            component => component.Id == "tool_registry" && component.Evidence.Any(item =>
+                item.StartsWith("canonical_tool_count:", StringComparison.Ordinal)));
+        Assert.Contains(receipt.Components,
+            component => component.Id == "model_routes" && component.Status == "warning" &&
+                         component.Evidence.Any(item =>
+                             item.StartsWith("unavailable_provider_routes:", StringComparison.Ordinal)));
         Assert.Contains(receipt.Components, component => component.Id == "extension_runtime");
     }
 
     [Fact]
     public void ToolLayerReadinessReceiptResolvesExecutionAgentScopesAndCheckpointPolicy()
     {
-        var store = new CoreStore(Path.Combine(Path.GetTempPath(), $"tinadec-tool-layer-readiness-{Guid.NewGuid():N}.db"));
+        var store = new CoreStore(Path.Combine(Path.GetTempPath(),
+            $"tinadec-tool-layer-readiness-{Guid.NewGuid():N}.db"));
         store.Initialize();
         var service = new ToolLayerReadinessService(store, new ToolRegistryService());
 
@@ -195,7 +211,8 @@ public sealed class CoreCapabilityAdapterTests
             && agent.ToolIds.Contains("grep_content")
             && agent.ToolIds.Contains("glob_search")
             && agent.UnresolvedScopeCount == 0);
-        Assert.Contains(receipt.DesignNotes, note => note.Contains("Core owns Tool-layer readiness", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(receipt.DesignNotes,
+            note => note.Contains("Core owns Tool-layer readiness", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -314,7 +331,8 @@ public sealed class CoreCapabilityAdapterTests
         var client = new RecordingCodeToolClient();
         var adapter = new CodexToolInvocationAdapter(client);
         var tool = new CodexCapabilityProvider().ListCapabilities().Single(item => item.Id == "read_file");
-        var request = new CodeToolExecuteRequest("sess_1", "run_1", "node_1", null, "D:\\repo", new Dictionary<string, object?>());
+        var request = new CodeToolExecuteRequest("sess_1", "run_1", "node_1", null, "D:\\repo",
+            new Dictionary<string, object?>());
 
         var result = await adapter.InvokeAsync(tool, request);
 
@@ -329,8 +347,10 @@ public sealed class CoreCapabilityAdapterTests
     {
         var client = new RecordingCodeToolClient();
         var adapter = new CodexToolInvocationAdapter(client);
-        var tool = new CodeCapabilityProvider().ListCapabilities().Single(item => item.Id == "project_template_scaffold");
-        var request = new CodeToolExecuteRequest("sess_1", "run_1", "node_1", null, "D:\\repo", new Dictionary<string, object?>());
+        var tool = new CodeCapabilityProvider().ListCapabilities()
+            .Single(item => item.Id == "project_template_scaffold");
+        var request = new CodeToolExecuteRequest("sess_1", "run_1", "node_1", null, "D:\\repo",
+            new Dictionary<string, object?>());
 
         var result = await adapter.InvokeAsync(tool, request);
 
@@ -349,7 +369,8 @@ public sealed class CoreCapabilityAdapterTests
             new ToolRegistryService(),
             new NullPromptContextPlannerRuntime());
         var adapter = new CoreToolInvocationAdapter(service);
-        var tool = new PromptContextCapabilityProvider().ListCapabilities().Single(item => item.Id == "prompt_context_resolve");
+        var tool = new PromptContextCapabilityProvider().ListCapabilities()
+            .Single(item => item.Id == "prompt_context_resolve");
 
         var result = await adapter.InvokeAsync(tool, new CodeToolExecuteRequest(
             "sess_1",
@@ -395,11 +416,15 @@ public sealed class CoreCapabilityAdapterTests
         }
     }
 
-    private sealed class StaticCapabilityProvider(string id, IReadOnlyList<ToolDescriptorDto> tools) : ICapabilityProvider
+    private sealed class StaticCapabilityProvider(string id, IReadOnlyList<ToolDescriptorDto> tools)
+        : ICapabilityProvider
     {
         public string Id { get; } = id;
 
-        public IReadOnlyList<ToolDescriptorDto> ListCapabilities() => tools;
+        public IReadOnlyList<ToolDescriptorDto> ListCapabilities()
+        {
+            return tools;
+        }
     }
 
     private sealed class NullPromptContextPlannerRuntime : IPromptContextPlannerRuntime

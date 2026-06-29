@@ -9,10 +9,14 @@ public sealed record ProviderExecutionPolicy(
     bool RecordRetryableFailuresToHealth = true)
 {
     public static ProviderExecutionPolicy SingleAttempt(TimeSpan? attemptTimeout = null)
-        => new(1, attemptTimeout, EnableRetries: false);
+    {
+        return new ProviderExecutionPolicy(1, attemptTimeout, false);
+    }
 
     public static ProviderExecutionPolicy RetryableHttpDefault()
-        => new(3);
+    {
+        return new ProviderExecutionPolicy(3);
+    }
 }
 
 public sealed record ProviderExecutionResult<T>(
@@ -22,10 +26,14 @@ public sealed record ProviderExecutionResult<T>(
     int AttemptsUsed)
 {
     public static ProviderExecutionResult<T> Success(T value, int attemptsUsed)
-        => new(true, value, null, attemptsUsed);
+    {
+        return new ProviderExecutionResult<T>(true, value, null, attemptsUsed);
+    }
 
     public static ProviderExecutionResult<T> Failed(ProviderFailureDetails failure, int attemptsUsed)
-        => new(false, default, failure, attemptsUsed);
+    {
+        return new ProviderExecutionResult<T>(false, default, failure, attemptsUsed);
+    }
 }
 
 public static class ProviderPolicyHelpers
@@ -42,7 +50,6 @@ public static class ProviderPolicyHelpers
         ProviderFailureDetails? lastFailure = null;
 
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
-        {
             try
             {
                 using var timeoutCts = policy.AttemptTimeout is { } timeout
@@ -62,31 +69,28 @@ public static class ProviderPolicyHelpers
                 if (exception is OperationCanceledException
                     && !cancellationToken.IsCancellationRequested
                     && policy.AttemptTimeout is not null)
-                {
-                    failure = ProviderErrorMapper.FromException(providerId, new TimeoutException("Provider request timed out."));
-                }
+                    failure = ProviderErrorMapper.FromException(providerId,
+                        new TimeoutException("Provider request timed out."));
 
                 lastFailure = failure;
 
                 var canRetry = policy.EnableRetries
-                    && attempt < maxAttempts
-                    && ProviderErrorMapper.IsRetryable(failure.Category);
+                               && attempt < maxAttempts
+                               && ProviderErrorMapper.IsRetryable(failure.Category);
                 if (!canRetry)
                 {
                     if (policy.RecordRetryableFailuresToHealth
                         && failure.Retryable
                         && store is not null)
-                    {
                         store.RecordModelProviderFailure(providerId, failure.Category, DateTimeOffset.UtcNow);
-                    }
 
                     return ProviderExecutionResult<T>.Failed(failure, attempt);
                 }
             }
-        }
 
         return ProviderExecutionResult<T>.Failed(
-            lastFailure ?? ProviderErrorMapper.FromException(providerId, new InvalidOperationException("Provider request failed.")),
+            lastFailure ??
+            ProviderErrorMapper.FromException(providerId, new InvalidOperationException("Provider request failed.")),
             Math.Max(1, policy.MaxAttempts));
     }
 }

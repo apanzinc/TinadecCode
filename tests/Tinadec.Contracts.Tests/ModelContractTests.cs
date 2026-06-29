@@ -16,12 +16,10 @@ public sealed class ModelContractTests
     public void ModelInvocationContractsSerializeWithSnakeCaseFields()
     {
         var request = new ModelInvocationRequestDto(
-            Messages:
             [
                 new MessageDto("msg_1", "sess_1", "user", "Hello", DateTimeOffset.UnixEpoch)
             ],
-            SystemPrompt: "Be concise.",
-            Tools:
+            "Be concise.",
             [
                 new JsonObject
                 {
@@ -29,21 +27,21 @@ public sealed class ModelContractTests
                     ["description"] = "Search workspace"
                 }
             ],
-            Settings: new ModelSettingsDto("https://example.test", "model-a", true, DateTimeOffset.UnixEpoch),
-            StateHandle: new ModelStateHandleDto("state_1", DateTimeOffset.UnixEpoch));
+            new ModelSettingsDto("https://example.test", "model-a", true, DateTimeOffset.UnixEpoch),
+            new ModelStateHandleDto("state_1", DateTimeOffset.UnixEpoch));
 
         var response = new ModelInvocationResponseDto(
-            TextContent: "Done",
-            Usage: new ModelUsageDto(10, 5, 15),
-            FinishReason: ModelFinishReason.ToolCalls,
-            Metadata: new ProviderMetadataDto(
-                ProviderId: "provider_1",
-                Model: "model-a",
-                RawProviderName: "ExampleProvider",
-                Custom: new Dictionary<string, object?> { ["request_id"] = "req_1" }),
-            StateHandle: new ModelStateHandleDto("state_2", DateTimeOffset.UnixEpoch),
-            ErrorCategory: ProviderErrorCategory.RateLimited,
-            ErrorMessage: "Too many requests");
+            "Done",
+            new ModelUsageDto(10, 5, 15),
+            ModelFinishReason.ToolCalls,
+            new ProviderMetadataDto(
+                "provider_1",
+                "model-a",
+                "ExampleProvider",
+                new Dictionary<string, object?> { ["request_id"] = "req_1" }),
+            new ModelStateHandleDto("state_2", DateTimeOffset.UnixEpoch),
+            ProviderErrorCategory.RateLimited,
+            "Too many requests");
 
         var requestJson = JsonSerializer.Serialize(request, JsonOptions);
         var responseJson = JsonSerializer.Serialize(response, JsonOptions);
@@ -82,14 +80,14 @@ public sealed class ModelContractTests
     public void ProviderCapabilityMetadataRepresentsRequiredFields()
     {
         var capability = new ProviderCapabilityDto(
-            SupportsStreaming: true,
-            SupportsTools: true,
-            SupportsJsonMode: true,
-            SupportsSystemPrompt: true,
-            MaxContextTokens: 128000,
-            RequiresWorkspace: false,
-            CredentialKind: "api_key",
-            HealthStatus: ProviderHealthStatus.Cooldown);
+            true,
+            true,
+            true,
+            true,
+            128000,
+            false,
+            "api_key",
+            ProviderHealthStatus.Cooldown);
 
         var json = JsonSerializer.Serialize(capability, JsonOptions);
 
@@ -107,51 +105,47 @@ public sealed class ModelContractTests
     public void HarnessManifestContractSerializesToolAndLayerSummaries()
     {
         var manifest = new HarnessManifestDto(
-            Runtime: "tinadec-core-workflow",
-            OwnershipModel: "Core owns orchestration.",
-            ToolRegistry: new ToolRegistrySummaryDto(
-                DeclaredToolCount: 4,
-                CanonicalToolCount: 3,
-                DuplicateToolIdCount: 1,
-                DuplicateToolIds: ["apply_patch"],
-                SourcePrecedence: ["core", "code", "codex-rust", "extension"],
-                SelectionPolicy: "Core canonicalizes duplicate tool ids by source precedence."),
-            AgentLayers:
+            "tinadec-core-workflow",
+            "Core owns orchestration.",
+            new ToolRegistrySummaryDto(
+                4,
+                3,
+                1,
+                ["apply_patch"],
+                ["core", "code", "codex-rust", "extension"],
+                "Core canonicalizes duplicate tool ids by source precedence."),
             [
                 new AgentLayerManifestDto(
                     "planning",
                     "Active planning and supervision layer",
-                    AgentCount: 2,
-                    EnabledAgentCount: 2,
-                    MaxParallelExecutors: 1,
-                    WorktreeIsolation: false,
-                    ApprovalRequired: true,
-                    AgentTypes: ["meeting", "supervisor"],
-                    ToolIds: ["prompt_context_resolve"])
+                    2,
+                    2,
+                    1,
+                    false,
+                    true,
+                    ["meeting", "supervisor"],
+                    ["prompt_context_resolve"])
             ],
-            ToolProviders:
             [
                 new ToolProviderManifestDto(
                     "code",
                     "Code Tool Suite",
                     "tool-layer",
                     "active",
-                    ToolCount: 3,
-                    ActiveToolCount: 3,
-                    FutureToolCount: 0,
-                    ApprovalRequiredCount: 2,
-                    ReadOnlyCount: 1,
-                    CapabilityPrefixes: ["project", "runtime"])
+                    3,
+                    3,
+                    0,
+                    2,
+                    1,
+                    ["project", "runtime"])
             ],
-            ToolRisks:
             [
                 new ToolRiskManifestDto(
                     "workspace-write",
-                    ToolCount: 1,
-                    RequiresHumanCheckpoint: true,
-                    PolicySummary: "Requires approval.")
+                    1,
+                    true,
+                    "Requires approval.")
             ],
-            Tools:
             [
                 new ToolDescriptorDto(
                     "apply_patch",
@@ -159,11 +153,11 @@ public sealed class ModelContractTests
                     "programming",
                     "codex-rust",
                     "workspace-write",
-                    RequiresApproval: true,
-                    ExecuteEndpoint: "/api/v1/code/tools/apply_patch/execute",
-                    Capabilities: ["patch.apply"])
+                    true,
+                    "/api/v1/code/tools/apply_patch/execute",
+                    ["patch.apply"])
             ],
-            DesignNotes: ["Code is a Tool-layer suite."]);
+            ["Code is a Tool-layer suite."]);
 
         var json = JsonSerializer.Serialize(manifest, JsonOptions);
 
@@ -192,14 +186,17 @@ public sealed class ModelContractTests
                 "programming",
                 "code",
                 "git-write",
-                RequiresApproval: true,
-                ExecuteEndpoint: "/api/v1/code/tools/git_worktree_manager/execute",
-                Capabilities: ["git.status", "git.diff", "git.stage", "git.unstage", "git.worktree", "git.commit", "git.push", "workspace.isolation"]),
-            Score: 420,
-            MatchedFields: ["id", "capabilities"],
-            ProviderLayer: "tool-layer",
-            RequiresHumanCheckpoint: true,
-            ApprovalSummary: "Requires Core approval before dispatch.");
+                true,
+                "/api/v1/code/tools/git_worktree_manager/execute",
+                [
+                    "git.status", "git.diff", "git.stage", "git.unstage", "git.worktree", "git.commit", "git.push",
+                    "workspace.isolation"
+                ]),
+            420,
+            ["id", "capabilities"],
+            "tool-layer",
+            true,
+            "Requires Core approval before dispatch.");
 
         var json = JsonSerializer.Serialize(result, JsonOptions);
 
@@ -222,19 +219,19 @@ public sealed class ModelContractTests
             "codex-rust",
             "native-glue",
             "read-only",
-            RequiresApproval: false,
-            Status: "completed",
-            ApprovalId: null,
-            StepResultId: "step_1",
-            Summary: "Read a file.",
-            Evidence: ["file:README.md"],
-            RequestedAt: DateTimeOffset.UnixEpoch,
-            UpdatedAt: DateTimeOffset.UnixEpoch.AddSeconds(2),
-            DurationMs: 2000,
-            RequestedSeq: 10,
-            UpdatedSeq: 11,
-            EventTypes: ["tool.execution.requested", "tool.execution.completed"],
-            CheckpointSummary: "Read-only tool execution was auto-dispatchable under Core policy.");
+            false,
+            "completed",
+            null,
+            "step_1",
+            "Read a file.",
+            ["file:README.md"],
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddSeconds(2),
+            2000,
+            10,
+            11,
+            ["tool.execution.requested", "tool.execution.completed"],
+            "Read-only tool execution was auto-dispatchable under Core policy.");
 
         var json = JsonSerializer.Serialize(item, JsonOptions);
 
@@ -246,18 +243,18 @@ public sealed class ModelContractTests
         Assert.Contains("\"requested_seq\":10", json);
         Assert.Contains("\"updated_seq\":11", json);
         Assert.Contains("\"event_types\":[\"tool.execution.requested\",\"tool.execution.completed\"]", json);
-        Assert.Contains("\"checkpoint_summary\":\"Read-only tool execution was auto-dispatchable under Core policy.\"", json);
+        Assert.Contains("\"checkpoint_summary\":\"Read-only tool execution was auto-dispatchable under Core policy.\"",
+            json);
     }
 
     [Fact]
     public void RuntimeReadinessReceiptContractSerializesCoreStartupEvidence()
     {
         var receipt = new RuntimeReadinessReceiptDto(
-            Status: "warning",
-            GeneratedAt: DateTimeOffset.UnixEpoch,
-            Runtime: "tinadec-core-workflow",
-            ReceiptId: "readiness_1",
-            Components:
+            "warning",
+            DateTimeOffset.UnixEpoch,
+            "tinadec-core-workflow",
+            "readiness_1",
             [
                 new RuntimeReadinessComponentDto(
                     "tool_registry",
@@ -266,9 +263,9 @@ public sealed class ModelContractTests
                     "Core tool registry is canonical.",
                     ["canonical_tool_count:15"])
             ],
-            ReadyCount: 1,
-            WarningCount: 1,
-            BlockedCount: 0);
+            1,
+            1,
+            0);
 
         var json = JsonSerializer.Serialize(receipt, JsonOptions);
 
@@ -285,23 +282,22 @@ public sealed class ModelContractTests
     public void ToolLayerReadinessReceiptContractSerializesToolAndAgentScopeEvidence()
     {
         var receipt = new ToolLayerReadinessReceiptDto(
-            Status: "warning",
-            GeneratedAt: DateTimeOffset.UnixEpoch,
-            Runtime: "tinadec-core-workflow",
-            ReceiptId: "tool_layer_readiness_1",
-            ToolCount: 1,
-            ReadyToolCount: 0,
-            WarningToolCount: 1,
-            BlockedToolCount: 0,
-            ExecutionAgentCount: 1,
-            ReadyAgentCount: 1,
-            WarningAgentCount: 0,
-            BlockedAgentCount: 0,
-            ApprovalGatedToolCount: 1,
-            HumanCheckpointToolCount: 1,
-            FutureToolCount: 1,
-            UnresolvedScopeCount: 0,
-            Tools:
+            "warning",
+            DateTimeOffset.UnixEpoch,
+            "tinadec-core-workflow",
+            "tool_layer_readiness_1",
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
             [
                 new ToolLayerToolReadinessDto(
                     "sandbox_exec",
@@ -310,33 +306,32 @@ public sealed class ModelContractTests
                     "native-glue",
                     "shell",
                     "warning",
-                    RequiresApproval: true,
-                    RequiresHumanCheckpoint: true,
-                    IsFuture: true,
-                    AssignedExecutionAgentCount: 1,
-                    Summary: "Tool is declared for future integration.",
-                    Evidence: ["requires_human_checkpoint:True"])
+                    true,
+                    true,
+                    true,
+                    1,
+                    "Tool is declared for future integration.",
+                    ["requires_human_checkpoint:True"])
             ],
-            AgentScopes:
             [
                 new ToolLayerAgentScopeReadinessDto(
                     "executor_git_manager",
                     "Git Manager Subagent",
                     "execution",
                     "git-manager",
-                    Enabled: true,
-                    Status: "ready",
-                    DeclaredScopeCount: 2,
-                    DispatchableToolCount: 1,
-                    InternalCapabilityCount: 1,
-                    UnresolvedScopeCount: 0,
-                    ApprovalGatedToolCount: 1,
-                    ToolIds: ["git_worktree_manager"],
-                    UnresolvedScopes: [],
-                    Summary: "Execution agent scope resolves to Core tools.",
-                    Evidence: ["dispatchable_tool_count:1"])
+                    true,
+                    "ready",
+                    2,
+                    1,
+                    1,
+                    0,
+                    1,
+                    ["git_worktree_manager"],
+                    [],
+                    "Execution agent scope resolves to Core tools.",
+                    ["dispatchable_tool_count:1"])
             ],
-            DesignNotes: ["Core owns Tool-layer readiness."]);
+            ["Core owns Tool-layer readiness."]);
 
         var json = JsonSerializer.Serialize(receipt, JsonOptions);
 
@@ -358,18 +353,17 @@ public sealed class ModelContractTests
     public void ModelReadinessReceiptContractSerializesProviderAndRouteEvidence()
     {
         var receipt = new ModelReadinessReceiptDto(
-            Status: "blocked",
-            GeneratedAt: DateTimeOffset.UnixEpoch,
-            ReceiptId: "model_readiness_1",
-            ProviderCount: 1,
-            ReadyProviderCount: 0,
-            WarningProviderCount: 0,
-            BlockedProviderCount: 1,
-            RouteCount: 1,
-            ReadyRouteCount: 0,
-            WarningRouteCount: 0,
-            BlockedRouteCount: 1,
-            Providers:
+            "blocked",
+            DateTimeOffset.UnixEpoch,
+            "model_readiness_1",
+            1,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            1,
             [
                 new ModelProviderReadinessDto(
                     "openai_default",
@@ -378,13 +372,12 @@ public sealed class ModelContractTests
                     "api-key",
                     "blocked",
                     "needs_key",
-                    Enabled: true,
-                    HasCredential: false,
-                    RoutePurposes: ["chat"],
-                    Summary: "Provider status 'needs_key' blocks routed model traffic.",
-                    Evidence: ["provider_status:needs_key"])
+                    true,
+                    false,
+                    ["chat"],
+                    "Provider status 'needs_key' blocks routed model traffic.",
+                    ["provider_status:needs_key"])
             ],
-            Routes:
             [
                 new ModelRouteReadinessDto(
                     "chat",
@@ -395,7 +388,7 @@ public sealed class ModelContractTests
                     "Route provider is needs_key.",
                     ["provider_status:needs_key"])
             ],
-            DesignNotes: ["Core owns provider readiness."]);
+            ["Core owns provider readiness."]);
 
         var json = JsonSerializer.Serialize(receipt, JsonOptions);
 
@@ -413,17 +406,16 @@ public sealed class ModelContractTests
     public void ModelCatalogReadinessReceiptContractSerializesTemplateEvidence()
     {
         var receipt = new ModelCatalogReadinessReceiptDto(
-            Status: "warning",
-            GeneratedAt: DateTimeOffset.UnixEpoch,
-            ReceiptId: "model_catalog_readiness_1",
-            TemplateCount: 1,
-            ReadyTemplateCount: 0,
-            WarningTemplateCount: 1,
-            BlockedTemplateCount: 0,
-            RuntimeModuleCount: 3,
-            ConfiguredProviderCount: 1,
-            AdvisoryProbeTemplateCount: 1,
-            Templates:
+            "warning",
+            DateTimeOffset.UnixEpoch,
+            "model_catalog_readiness_1",
+            1,
+            0,
+            1,
+            0,
+            3,
+            1,
+            1,
             [
                 new ModelCatalogTemplateReadinessDto(
                     "openai-compatible",
@@ -434,17 +426,16 @@ public sealed class ModelContractTests
                     "warning",
                     "openai-compatible",
                     "registered",
-                    ConfiguredInstanceCount: 1,
-                    SupportsLiveDiscovery: true,
-                    LiveDiscoveryPolicy: "credential_gated_remote_advisory",
-                    Summary: "Template is available through the Core catalog.",
-                    Evidence:
+                    1,
+                    true,
+                    "credential_gated_remote_advisory",
+                    "Template is available through the Core catalog.",
                     [
                         "runtime_module_status:registered",
                         "live_discovery_policy:credential_gated_remote_advisory"
                     ])
             ],
-            DesignNotes: ["Core owns model catalog readiness."]);
+            ["Core owns model catalog readiness."]);
 
         var json = JsonSerializer.Serialize(receipt, JsonOptions);
 
@@ -487,21 +478,21 @@ public sealed class ModelContractTests
     public void ProviderSpecificWireFieldsDoNotLeakToNormalizedDtoTopLevel()
     {
         var response = new ModelInvocationResponseDto(
-            TextContent: "Done",
-            Usage: new ModelUsageDto(1, 2, 3),
-            FinishReason: ModelFinishReason.Stop,
-            Metadata: new ProviderMetadataDto(
-                ProviderId: "provider_1",
-                Model: "model-a",
-                RawProviderName: "ExampleProvider",
-                Custom: new Dictionary<string, object?>
+            "Done",
+            new ModelUsageDto(1, 2, 3),
+            ModelFinishReason.Stop,
+            new ProviderMetadataDto(
+                "provider_1",
+                "model-a",
+                "ExampleProvider",
+                new Dictionary<string, object?>
                 {
                     ["previous_response_id"] = "resp_1",
                     ["choices"] = 1
                 }),
-            StateHandle: null,
-            ErrorCategory: null,
-            ErrorMessage: null);
+            null,
+            null,
+            null);
 
         var json = JsonSerializer.Serialize(response, JsonOptions);
         var root = JsonNode.Parse(json)!.AsObject();

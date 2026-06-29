@@ -18,7 +18,8 @@ public sealed class CredentialSafetyTests
         var context = CreateContext();
         var routeResolver = new FixedRouteResolver(context);
         var credentialResolver = new FixedCredentialResolver($" {fakeSecret} ");
-        var runtime = new ModelInvocationRuntime(routeResolver, credentialResolver, Array.Empty<IModelProviderRuntime>());
+        var runtime =
+            new ModelInvocationRuntime(routeResolver, credentialResolver, Array.Empty<IModelProviderRuntime>());
 
         var result = await runtime.InvokeAsync("sess-1", "planner", Array.Empty<MessageDto>());
 
@@ -26,7 +27,8 @@ public sealed class CredentialSafetyTests
         Assert.Equal(ProviderErrorCategory.AuthenticationFailed, result.ErrorCategory);
         Assert.False(result.IsRetryable);
         Assert.False(ProviderCredentialValidator.ContainsRawSecret(result.Content, fakeSecret));
-        Assert.False(ProviderCredentialValidator.ContainsRawSecret(result.SafeErrorMessage ?? string.Empty, fakeSecret));
+        Assert.False(
+            ProviderCredentialValidator.ContainsRawSecret(result.SafeErrorMessage ?? string.Empty, fakeSecret));
     }
 
     [Fact]
@@ -35,10 +37,10 @@ public sealed class CredentialSafetyTests
         const string fakeSecret = "sk-test-do-not-leak";
         var failure = ProviderErrorMapper.FromHttpStatus("provider-openai", 401);
         var envelope = EventEnvelope.Create(
-            type: "model.request.failed",
-            seq: 1,
-            sessionId: "sess-1",
-            payload: new JsonObject
+            "model.request.failed",
+            1,
+            "sess-1",
+            new JsonObject
             {
                 ["provider_id"] = failure.ProviderId,
                 ["category"] = failure.Category.ToString(),
@@ -74,11 +76,17 @@ public sealed class CredentialSafetyTests
 
     private sealed class FixedRouteResolver(ResolvedModelInvocationContextDto context) : IModelRouteResolver
     {
-        public ResolvedModelInvocationContextDto Resolve(string purpose) => context;
+        public ResolvedModelInvocationContextDto Resolve(string purpose)
+        {
+            return context;
+        }
     }
 
     private sealed class FixedCredentialResolver(string? value) : IModelCredentialResolver
     {
-        public string? ResolveApiKey(ResolvedModelInvocationContextDto context) => value;
+        public string? ResolveApiKey(ResolvedModelInvocationContextDto context)
+        {
+            return value;
+        }
     }
 }

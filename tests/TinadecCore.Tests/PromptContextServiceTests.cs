@@ -43,7 +43,8 @@ public sealed class PromptContextServiceTests
             "disabled fragment content should not appear",
             2000,
             false));
-        var service = new PromptContextService(store, new ToolRegistryService(), new RecordingPromptContextPlannerRuntime());
+        var service =
+            new PromptContextService(store, new ToolRegistryService(), new RecordingPromptContextPlannerRuntime());
 
         var preview = await service.PreviewAsync(new PromptContextPreviewRequest(
             "agent_meeting",
@@ -69,7 +70,8 @@ public sealed class PromptContextServiceTests
             "custom high priority instruction",
             1200,
             true));
-        var service = new PromptContextService(store, new ToolRegistryService(), new RecordingPromptContextPlannerRuntime());
+        var service =
+            new PromptContextService(store, new ToolRegistryService(), new RecordingPromptContextPlannerRuntime());
 
         var preview = await service.PreviewAsync(new PromptContextPreviewRequest(
             "agent_meeting",
@@ -119,9 +121,7 @@ public sealed class PromptContextServiceTests
         {
             CallCount++;
             if (!ReturnPlan || string.IsNullOrWhiteSpace(input.RunId))
-            {
                 return Task.FromResult<PromptContextPlanDto?>(null);
-            }
 
             return Task.FromResult<PromptContextPlanDto?>(new PromptContextPlanDto(
                 input.RunId,

@@ -59,26 +59,26 @@ public sealed class ToolSearchService(IToolRegistry tools)
         var score = 0;
         foreach (var token in tokens)
         {
-            score += ScoreText(tool.Id, token, "id", matchedFields, exactScore: 180, containsScore: 120);
-            score += ScoreText(tool.Id.Replace('_', ' '), token, "id", matchedFields, exactScore: 140, containsScore: 90);
-            score += ScoreText(tool.DisplayName, token, "display_name", matchedFields, exactScore: 160, containsScore: 110);
-            score += ScoreText(tool.Domain, token, "domain", matchedFields, exactScore: 80, containsScore: 45);
-            score += ScoreText(tool.Source, token, "source", matchedFields, exactScore: 90, containsScore: 50);
-            score += ScoreText(tool.Risk, token, "risk", matchedFields, exactScore: 90, containsScore: 60);
-            score += ScoreText(tool.ExecuteEndpoint, token, "execute_endpoint", matchedFields, exactScore: 35, containsScore: 20);
+            score += ScoreText(tool.Id, token, "id", matchedFields, 180, 120);
+            score += ScoreText(tool.Id.Replace('_', ' '), token, "id", matchedFields, 140, 90);
+            score += ScoreText(tool.DisplayName, token, "display_name", matchedFields, 160, 110);
+            score += ScoreText(tool.Domain, token, "domain", matchedFields, 80, 45);
+            score += ScoreText(tool.Source, token, "source", matchedFields, 90, 50);
+            score += ScoreText(tool.Risk, token, "risk", matchedFields, 90, 60);
+            score += ScoreText(tool.ExecuteEndpoint, token, "execute_endpoint", matchedFields, 35, 20);
 
             foreach (var capability in tool.Capabilities)
             {
-                score += ScoreText(capability, token, "capabilities", matchedFields, exactScore: 110, containsScore: 75);
-                score += ScoreText(capability.Replace('.', ' '), token, "capabilities", matchedFields, exactScore: 85, containsScore: 55);
+                score += ScoreText(capability, token, "capabilities", matchedFields, 110, 75);
+                score += ScoreText(capability.Replace('.', ' '), token, "capabilities", matchedFields, 85, 55);
             }
         }
 
         if (tokens.Count > 1)
         {
             var phrase = string.Join(' ', tokens);
-            score += ScoreText(tool.Id.Replace('_', ' '), phrase, "id", matchedFields, exactScore: 300, containsScore: 220);
-            score += ScoreText(tool.DisplayName, phrase, "display_name", matchedFields, exactScore: 280, containsScore: 210);
+            score += ScoreText(tool.Id.Replace('_', ' '), phrase, "id", matchedFields, 300, 220);
+            score += ScoreText(tool.DisplayName, phrase, "display_name", matchedFields, 280, 210);
         }
 
         return score;
@@ -93,10 +93,7 @@ public sealed class ToolSearchService(IToolRegistry tools)
         int containsScore)
     {
         var text = Normalize(value);
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return 0;
-        }
+        if (string.IsNullOrWhiteSpace(text)) return 0;
 
         if (text.Equals(token, StringComparison.OrdinalIgnoreCase))
         {
@@ -116,20 +113,21 @@ public sealed class ToolSearchService(IToolRegistry tools)
     private static int BaselineScore(ToolDescriptorDto tool, ISet<string> matchedFields)
     {
         matchedFields.Add("catalog");
-        var activeBonus = tool.Capabilities.Any(capability => capability.EndsWith(".active", StringComparison.OrdinalIgnoreCase)) ? 10 : 0;
+        var activeBonus =
+            tool.Capabilities.Any(capability => capability.EndsWith(".active", StringComparison.OrdinalIgnoreCase))
+                ? 10
+                : 0;
         var readOnlyBonus = RequiresHumanCheckpoint(tool) ? 0 : 5;
         return 1 + activeBonus + readOnlyBonus;
     }
 
     private static string[] Tokenize(string? query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return [];
-        }
+        if (string.IsNullOrWhiteSpace(query)) return [];
 
         return query
-            .Split([' ', '\t', '\r', '\n', '_', '.', '/', '\\'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Split([' ', '\t', '\r', '\n', '_', '.', '/', '\\'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(Normalize)
             .Where(token => token.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -144,7 +142,7 @@ public sealed class ToolSearchService(IToolRegistry tools)
     private static bool MatchesFilter(string value, string? filter)
     {
         return string.IsNullOrWhiteSpace(filter)
-            || value.Equals(filter.Trim(), StringComparison.OrdinalIgnoreCase);
+               || value.Equals(filter.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool RequiresHumanCheckpoint(ToolDescriptorDto tool)
@@ -154,10 +152,7 @@ public sealed class ToolSearchService(IToolRegistry tools)
 
     private static string ApprovalSummary(ToolDescriptorDto tool, bool requiresCheckpoint)
     {
-        if (!requiresCheckpoint)
-        {
-            return "Auto-dispatchable when an agent has this tool in scope.";
-        }
+        if (!requiresCheckpoint) return "Auto-dispatchable when an agent has this tool in scope.";
 
         return tool.RequiresApproval
             ? "Requires Core approval before dispatch."

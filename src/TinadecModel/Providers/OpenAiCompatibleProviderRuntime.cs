@@ -15,10 +15,12 @@ public sealed class OpenAiCompatibleProviderRuntime(
     public string Id => "openai-compatible";
 
     public bool CanHandle(ResolvedModelInvocationContextDto context)
-        => !ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(context.Driver)
-            && !ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(context.Provider?.Driver)
-            && (ProviderTemplateRules.IsOpenAiCompatibleDriver(context.Driver)
-                || ProviderTemplateRules.IsOpenAiCompatibleDriver(context.Provider?.Driver));
+    {
+        return !ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(context.Driver)
+               && !ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(context.Provider?.Driver)
+               && (ProviderTemplateRules.IsOpenAiCompatibleDriver(context.Driver)
+                   || ProviderTemplateRules.IsOpenAiCompatibleDriver(context.Provider?.Driver));
+    }
 
     public async Task<ModelInvocationResultDto> GenerateAsync(
         ResolvedModelInvocationContextDto context, string? apiKey,
@@ -59,7 +61,8 @@ public sealed class OpenAiCompatibleProviderRuntime(
     public async IAsyncEnumerable<ModelStreamChunkDto> StreamAsync(
         ResolvedModelInvocationContextDto context, string? apiKey,
         IReadOnlyList<MessageDto> messages,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default,
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken = default,
         IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
         var settings = new StoredModelSettings(
@@ -89,9 +92,6 @@ public sealed class OpenAiCompatibleProviderRuntime(
             yield break;
         }
 
-        await foreach (var chunk in stream!.WithCancellation(cancellationToken))
-        {
-            yield return chunk;
-        }
+        await foreach (var chunk in stream!.WithCancellation(cancellationToken)) yield return chunk;
     }
 }

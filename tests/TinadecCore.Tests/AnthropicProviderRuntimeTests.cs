@@ -26,9 +26,11 @@ public sealed class AnthropicProviderRuntimeTests
             return AnthropicSuccessResponse("Hello from Claude");
         });
         var client = new AnthropicClient(new HttpClient(handler));
-        var settings = new StoredModelSettings("https://api.anthropic.com/v1/", "claude-test", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.anthropic.com/v1/", "claude-test", null, DateTimeOffset.UtcNow);
 
-        await client.CreateAssistantResponseAsync(settings, "anthropic-secret", CreateMessages(), "provider-anthropic", CancellationToken.None);
+        await client.CreateAssistantResponseAsync(settings, "anthropic-secret", CreateMessages(), "provider-anthropic",
+            CancellationToken.None);
 
         Assert.NotNull(capturedRequest);
         Assert.Equal(HttpMethod.Post, capturedRequest.Method);
@@ -56,24 +58,26 @@ public sealed class AnthropicProviderRuntimeTests
         var handler = new StubHttpMessageHandler(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent("""
-                {
-                  "id": "msg_123",
-                  "type": "message",
-                  "role": "assistant",
-                  "model": "claude-test",
-                  "content": [
-                    { "type": "text", "text": "First" },
-                    { "type": "text", "text": " second" }
-                  ],
-                  "stop_reason": "end_turn",
-                  "usage": { "input_tokens": 12, "output_tokens": 8 }
-                }
-                """)
+                                  {
+                                    "id": "msg_123",
+                                    "type": "message",
+                                    "role": "assistant",
+                                    "model": "claude-test",
+                                    "content": [
+                                      { "type": "text", "text": "First" },
+                                      { "type": "text", "text": " second" }
+                                    ],
+                                    "stop_reason": "end_turn",
+                                    "usage": { "input_tokens": 12, "output_tokens": 8 }
+                                  }
+                                  """)
         }));
         var client = new AnthropicClient(new HttpClient(handler));
-        var settings = new StoredModelSettings("https://api.anthropic.com/v1", "claude-test", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.anthropic.com/v1", "claude-test", null, DateTimeOffset.UtcNow);
 
-        var response = await client.CreateAssistantResponseAsync(settings, "anthropic-secret", CreateMessages(), "provider-anthropic", CancellationToken.None);
+        var response = await client.CreateAssistantResponseAsync(settings, "anthropic-secret", CreateMessages(),
+            "provider-anthropic", CancellationToken.None);
 
         Assert.Equal("First second", response.TextContent);
         Assert.Equal(new ModelUsageDto(12, 8, 20), response.Usage);
@@ -91,7 +95,8 @@ public sealed class AnthropicProviderRuntimeTests
     [Fact]
     public async Task ToolResultShapeGuardIsAnthropicAdapterLocal()
     {
-        var settings = new StoredModelSettings("https://api.anthropic.com/v1", "claude-test", null, DateTimeOffset.UtcNow);
+        var settings =
+            new StoredModelSettings("https://api.anthropic.com/v1", "claude-test", null, DateTimeOffset.UtcNow);
         var messages = new[]
         {
             new MessageDto("msg_1", "sess_1", "tool", "plain tool output", DateTimeOffset.UtcNow)
@@ -121,7 +126,8 @@ public sealed class AnthropicProviderRuntimeTests
         }));
         var runtime = new AnthropicProviderRuntime(new AnthropicClient(new HttpClient(handler)));
 
-        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(), CancellationToken.None);
+        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(),
+            CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(expectedCategory, result.ErrorCategory);
@@ -138,7 +144,8 @@ public sealed class AnthropicProviderRuntimeTests
         var handler = new StubHttpMessageHandler(_ => throw new TimeoutException("anthropic-secret timeout detail"));
         var runtime = new AnthropicProviderRuntime(new AnthropicClient(new HttpClient(handler)));
 
-        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(), CancellationToken.None);
+        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(),
+            CancellationToken.None);
 
         Assert.Equal("failed", result.Status);
         Assert.Equal(ProviderErrorCategory.Timeout, result.ErrorCategory);
@@ -159,7 +166,8 @@ public sealed class AnthropicProviderRuntimeTests
         using var provider = services.BuildServiceProvider();
         var runtime = Assert.Single(provider.GetServices<IModelProviderRuntime>(), item => item.Id == "anthropic");
 
-        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(), CancellationToken.None);
+        var result = await runtime.GenerateAsync(CreateContext(), "anthropic-secret", CreateMessages(),
+            CancellationToken.None);
 
         Assert.True(runtime.CanHandle(CreateContext()));
         Assert.Equal("executed", result.Status);
@@ -199,16 +207,16 @@ public sealed class AnthropicProviderRuntimeTests
         return new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent($$"""
-                {
-                  "id": "msg_123",
-                  "type": "message",
-                  "role": "assistant",
-                  "model": "claude-test",
-                  "content": [{ "type": "text", "text": "{{text}}" }],
-                  "stop_reason": "end_turn",
-                  "usage": { "input_tokens": 3, "output_tokens": 4 }
-                }
-                """)
+                                    {
+                                      "id": "msg_123",
+                                      "type": "message",
+                                      "role": "assistant",
+                                      "model": "claude-test",
+                                      "content": [{ "type": "text", "text": "{{text}}" }],
+                                      "stop_reason": "end_turn",
+                                      "usage": { "input_tokens": 3, "output_tokens": 4 }
+                                    }
+                                    """)
         };
     }
 
@@ -217,9 +225,11 @@ public sealed class AnthropicProviderRuntimeTests
         return new StringContent(value, Encoding.UTF8, "application/json");
     }
 
-    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle) : HttpMessageHandler
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handle)
+        : HttpMessageHandler
     {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             return handle(request);
         }

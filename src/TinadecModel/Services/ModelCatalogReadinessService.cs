@@ -64,10 +64,10 @@ public sealed class ModelCatalogReadinessService(
         var moduleRegistered = moduleFamilies.Contains(runtimeModuleFamily);
         var configuredCount = configuredByDriver.TryGetValue(template.Driver, out var count) ? count : 0;
         var hasRequiredFields = !string.IsNullOrWhiteSpace(template.Driver)
-            && !string.IsNullOrWhiteSpace(template.ProviderFamily)
-            && !string.IsNullOrWhiteSpace(template.DisplayName)
-            && !string.IsNullOrWhiteSpace(template.ConnectionKind)
-            && !string.IsNullOrWhiteSpace(template.CredentialKind);
+                                && !string.IsNullOrWhiteSpace(template.ProviderFamily)
+                                && !string.IsNullOrWhiteSpace(template.DisplayName)
+                                && !string.IsNullOrWhiteSpace(template.ConnectionKind)
+                                && !string.IsNullOrWhiteSpace(template.CredentialKind);
         var discoveryPolicy = ResolveLiveDiscoveryPolicy(template);
         var supportsLiveDiscovery = !Is(discoveryPolicy, "static_template_only");
         var status = ResolveStatus(hasRequiredFields, moduleRegistered, configuredCount);
@@ -108,62 +108,39 @@ public sealed class ModelCatalogReadinessService(
 
     private static string ResolveStatus(bool hasRequiredFields, bool moduleRegistered, int configuredCount)
     {
-        if (!hasRequiredFields)
-        {
-            return "warning";
-        }
+        if (!hasRequiredFields) return "warning";
 
-        if (moduleRegistered)
-        {
-            return "ready";
-        }
+        if (moduleRegistered) return "ready";
 
         return configuredCount > 0 ? "blocked" : "warning";
     }
 
     private static string ResolveRuntimeModuleFamily(ModelProviderTemplateDto template)
     {
-        if (template.ConnectionKind.Equals("cli", StringComparison.OrdinalIgnoreCase))
-        {
-            return "cli";
-        }
+        if (template.ConnectionKind.Equals("cli", StringComparison.OrdinalIgnoreCase)) return "cli";
 
         if (template.ConnectionKind.Equals("local-server", StringComparison.OrdinalIgnoreCase)
             || template.ProviderFamily.Equals("local-http", StringComparison.OrdinalIgnoreCase))
-        {
             return "local-http";
-        }
 
-        if (ProviderTemplateRules.IsOpenAiCompatibleDriver(template.Driver))
-        {
-            return "openai-compatible";
-        }
+        if (ProviderTemplateRules.IsOpenAiCompatibleDriver(template.Driver)) return "openai-compatible";
 
         return template.ProviderFamily;
     }
 
     private static string ResolveLiveDiscoveryPolicy(ModelProviderTemplateDto template)
     {
-        if (template.ConnectionKind.Equals("cli", StringComparison.OrdinalIgnoreCase))
-        {
-            return "workspace_cli_advisory";
-        }
+        if (template.ConnectionKind.Equals("cli", StringComparison.OrdinalIgnoreCase)) return "workspace_cli_advisory";
 
         if (template.ConnectionKind.Equals("local-server", StringComparison.OrdinalIgnoreCase)
             || IsLoopback(template.DefaultBaseUrl))
-        {
             return "loopback_only_advisory";
-        }
 
         if (template.ConnectionKind.Equals("public-api", StringComparison.OrdinalIgnoreCase))
-        {
             return "public_endpoint_advisory";
-        }
 
         if (IsApiKeyCredential(template.CredentialKind) || IsApiKeyCredential(template.Capabilities.CredentialKind))
-        {
             return "credential_gated_remote_advisory";
-        }
 
         return "static_template_only";
     }
@@ -176,7 +153,7 @@ public sealed class ModelCatalogReadinessService(
     private static bool IsApiKeyCredential(string? value)
     {
         return string.Equals(value, "api_key", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "api-key", StringComparison.OrdinalIgnoreCase);
+               || string.Equals(value, "api-key", StringComparison.OrdinalIgnoreCase);
     }
 
     private static int StatusSortKey(string status)

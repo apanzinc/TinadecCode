@@ -1,4 +1,4 @@
-﻿﻿using Tinadec.Contracts.Models;
+﻿using Tinadec.Contracts.Models;
 
 namespace TinadecCore.Services;
 
@@ -28,10 +28,15 @@ public static class AgentCatalog
 {
     public static IReadOnlyList<AgentModeDto> Modes { get; } =
     [
-        new("balanced", "Balanced", "Default two-layer orchestration with one planner lane and two executor lanes.", 2, true, true, "balanced"),
-        new("plan-first", "Plan First", "Meeting and supervisor agents draft a task graph before execution starts.", 1, true, true, "strict"),
-        new("parallel", "Parallel", "Allows more execution-layer workers when dependencies and budget allow it.", 4, true, true, "performance"),
-        new("safe-research", "Safe Research", "Read-only exploration with strict approval gates for writes, shell, network, and ACP.", 2, false, true, "strict")
+        new("balanced", "Balanced", "Default two-layer orchestration with one planner lane and two executor lanes.", 2,
+            true, true, "balanced"),
+        new("plan-first", "Plan First", "Meeting and supervisor agents draft a task graph before execution starts.", 1,
+            true, true, "strict"),
+        new("parallel", "Parallel", "Allows more execution-layer workers when dependencies and budget allow it.", 4,
+            true, true, "performance"),
+        new("safe-research", "Safe Research",
+            "Read-only exploration with strict approval gates for writes, shell, network, and ACP.", 2, false, true,
+            "strict")
     ];
 
     /// <summary>
@@ -80,7 +85,10 @@ public static class AgentCatalog
             "Observes repeated workflows and proposes candidate skills, MCP manifests, prompts, or executor specs outside the hot path.",
             "evolution",
             ["event.read", "skill.read"],
-            ["evolution.observe", "pattern.learn", "candidate.generate", "evaluation.plan", "skill.propose", "mcp.propose", "executor.propose"]),
+            [
+                "evolution.observe", "pattern.learn", "candidate.generate", "evaluation.plan", "skill.propose",
+                "mcp.propose", "executor.propose"
+            ]),
         new(
             "agent_tool_assistant",
             "Tool Assistant Agent",
@@ -171,7 +179,10 @@ public static class AgentCatalog
             "Manages approved Git workflows, prepares push plans, explains diffs and branch state, and records user-facing Git handoff notes.",
             "git",
             ["git_worktree_manager", "review_format", "read_file", "grep_content", "event.write"],
-            ["git.status", "git.diff", "git.stage", "git.unstage", "git.branch", "git.worktree", "git.commit", "git.push", "git.merge", "git.rebase", "conflict.resolve", "handoff.explain"],
+            [
+                "git.status", "git.diff", "git.stage", "git.unstage", "git.branch", "git.worktree", "git.commit",
+                "git.push", "git.merge", "git.rebase", "conflict.resolve", "handoff.explain"
+            ],
             "You are TinadecOffice's Git Manager Subagent. Work only from assigned execution tasks. Explain repository state, branch intent, diff impact, and push readiness clearly. Never push, rewrite history, create commits, or mutate Git state unless Core has supplied an explicit approval-bound tool invocation."),
         new(
             "executor_code_writer",

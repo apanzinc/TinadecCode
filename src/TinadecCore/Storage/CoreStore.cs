@@ -23,10 +23,7 @@ public sealed class CoreStore : IModelStore
     public CoreStore(string databasePath)
     {
         var directory = Path.GetDirectoryName(databasePath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
 
         _connectionString = new SqliteConnectionStringBuilder
         {
@@ -40,359 +37,359 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                create table if not exists projects (
-                    id text primary key,
-                    name text not null,
-                    path text not null,
-                    created_at text not null
-                );
+                                create table if not exists projects (
+                                    id text primary key,
+                                    name text not null,
+                                    path text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists sessions (
-                    id text primary key,
-                    project_id text not null,
-                    title text not null,
-                    status text not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists sessions (
+                                    id text primary key,
+                                    project_id text not null,
+                                    title text not null,
+                                    status text not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists messages (
-                    id text primary key,
-                    session_id text not null,
-                    role text not null,
-                    content text not null,
-                    created_at text not null
-                );
+                                create table if not exists messages (
+                                    id text primary key,
+                                    session_id text not null,
+                                    role text not null,
+                                    content text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists events (
-                    seq integer primary key,
-                    v text not null,
-                    type text not null,
-                    request_id text not null,
-                    session_id text null,
-                    trace_id text not null,
-                    ts text not null,
-                    capabilities_json text not null,
-                    payload_json text null,
-                    error_json text null
-                );
+                                create table if not exists events (
+                                    seq integer primary key,
+                                    v text not null,
+                                    type text not null,
+                                    request_id text not null,
+                                    session_id text null,
+                                    trace_id text not null,
+                                    ts text not null,
+                                    capabilities_json text not null,
+                                    payload_json text null,
+                                    error_json text null
+                                );
 
-                create table if not exists approvals (
-                    id text primary key,
-                    session_id text null,
-                    kind text not null,
-                    summary text not null,
-                    command text null,
-                    cwd text null,
-                    status text not null,
-                    created_at text not null,
-                    decided_at text null
-                );
+                                create table if not exists approvals (
+                                    id text primary key,
+                                    session_id text null,
+                                    kind text not null,
+                                    summary text not null,
+                                    command text null,
+                                    cwd text null,
+                                    status text not null,
+                                    created_at text not null,
+                                    decided_at text null
+                                );
 
-                create table if not exists model_settings (
-                    id integer primary key check (id = 1),
-                    base_url text not null,
-                    model text not null,
-                    encrypted_api_key text null,
-                    updated_at text not null
-                );
+                                create table if not exists model_settings (
+                                    id integer primary key check (id = 1),
+                                    base_url text not null,
+                                    model text not null,
+                                    encrypted_api_key text null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists model_provider_instances (
-                    id text primary key,
-                    driver text not null,
-                    display_name text not null,
-                    connection_kind text not null,
-                    base_url text null,
-                    model text null,
-                    encrypted_api_key text null,
-                    binary_path text null,
-                    home_path text null,
-                    server_url text null,
-                    launch_args text null,
-                    capabilities_json text not null,
-                    enabled integer not null,
-                    health_status text not null default 'healthy',
-                    cooldown_until text null,
-                    failure_count integer not null default 0,
-                    last_failure_at text null,
-                    last_error_category text null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists model_provider_instances (
+                                    id text primary key,
+                                    driver text not null,
+                                    display_name text not null,
+                                    connection_kind text not null,
+                                    base_url text null,
+                                    model text null,
+                                    encrypted_api_key text null,
+                                    binary_path text null,
+                                    home_path text null,
+                                    server_url text null,
+                                    launch_args text null,
+                                    capabilities_json text not null,
+                                    enabled integer not null,
+                                    health_status text not null default 'healthy',
+                                    cooldown_until text null,
+                                    failure_count integer not null default 0,
+                                    last_failure_at text null,
+                                    last_error_category text null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists model_routes (
-                    purpose text primary key,
-                    provider_instance_id text not null,
-                    model text null,
-                    updated_at text not null
-                );
+                                create table if not exists model_routes (
+                                    purpose text primary key,
+                                    provider_instance_id text not null,
+                                    model text null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists extension_sources (
-                    id text primary key,
-                    name text not null,
-                    kind text not null,
-                    location text not null,
-                    enabled integer not null,
-                    last_refreshed_at text null,
-                    created_at text not null
-                );
+                                create table if not exists extension_sources (
+                                    id text primary key,
+                                    name text not null,
+                                    kind text not null,
+                                    location text not null,
+                                    enabled integer not null,
+                                    last_refreshed_at text null,
+                                    created_at text not null
+                                );
 
-                create table if not exists extension_catalog_cache (
-                    catalog_id text primary key,
-                    source_id text not null,
-                    extension_id text not null,
-                    kind text not null,
-                    version text not null,
-                    publisher text not null,
-                    display_name text not null,
-                    description text not null,
-                    source_kind text not null,
-                    source_location text not null,
-                    capabilities_json text not null,
-                    permissions_json text not null,
-                    manifest_json text not null,
-                    updated_at text not null
-                );
+                                create table if not exists extension_catalog_cache (
+                                    catalog_id text primary key,
+                                    source_id text not null,
+                                    extension_id text not null,
+                                    kind text not null,
+                                    version text not null,
+                                    publisher text not null,
+                                    display_name text not null,
+                                    description text not null,
+                                    source_kind text not null,
+                                    source_location text not null,
+                                    capabilities_json text not null,
+                                    permissions_json text not null,
+                                    manifest_json text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists installed_extensions (
-                    id text primary key,
-                    catalog_id text null,
-                    extension_id text not null,
-                    kind text not null,
-                    version text not null,
-                    publisher text not null,
-                    display_name text not null,
-                    description text not null,
-                    source_kind text not null,
-                    source_location text not null,
-                    capabilities_json text not null,
-                    permissions_json text not null,
-                    manifest_json text not null,
-                    config_json text null,
-                    enabled integer not null,
-                    status text not null,
-                    status_message text not null,
-                    installed_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists installed_extensions (
+                                    id text primary key,
+                                    catalog_id text null,
+                                    extension_id text not null,
+                                    kind text not null,
+                                    version text not null,
+                                    publisher text not null,
+                                    display_name text not null,
+                                    description text not null,
+                                    source_kind text not null,
+                                    source_location text not null,
+                                    capabilities_json text not null,
+                                    permissions_json text not null,
+                                    manifest_json text not null,
+                                    config_json text null,
+                                    enabled integer not null,
+                                    status text not null,
+                                    status_message text not null,
+                                    installed_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists extension_events (
-                    id text primary key,
-                    extension_id text not null,
-                    event_type text not null,
-                    payload_json text null,
-                    created_at text not null
-                );
+                                create table if not exists extension_events (
+                                    id text primary key,
+                                    extension_id text not null,
+                                    event_type text not null,
+                                    payload_json text null,
+                                    created_at text not null
+                                );
 
-                create table if not exists mcp_servers (
-                    id text primary key,
-                    extension_id text not null,
-                    name text not null,
-                    transport text not null,
-                    status text not null,
-                    tools_json text not null,
-                    updated_at text not null
-                );
+                                create table if not exists mcp_servers (
+                                    id text primary key,
+                                    extension_id text not null,
+                                    name text not null,
+                                    transport text not null,
+                                    status text not null,
+                                    tools_json text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists mcp_capabilities_cache (
-                    server_id text primary key,
-                    capabilities_json text not null,
-                    updated_at text not null
-                );
+                                create table if not exists mcp_capabilities_cache (
+                                    server_id text primary key,
+                                    capabilities_json text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists acp_adapters (
-                    id text primary key,
-                    extension_id text not null,
-                    name text not null,
-                    command text not null,
-                    status text not null,
-                    status_message text not null,
-                    capabilities_json text not null,
-                    updated_at text not null
-                );
+                                create table if not exists acp_adapters (
+                                    id text primary key,
+                                    extension_id text not null,
+                                    name text not null,
+                                    command text not null,
+                                    status text not null,
+                                    status_message text not null,
+                                    capabilities_json text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists acp_sessions (
-                    id text primary key,
-                    adapter_id text not null,
-                    external_session_id text null,
-                    status text not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists acp_sessions (
+                                    id text primary key,
+                                    adapter_id text not null,
+                                    external_session_id text null,
+                                    status text not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists agent_profiles (
-                    id text primary key,
-                    name text not null,
-                    layer text not null,
-                    agent_type text not null,
-                    mode text not null,
-                    description text not null,
-                    model_route_purpose text not null,
-                    allowed_tools_json text not null,
-                    capabilities_json text not null,
-                    system_prompt text,
-                    enabled integer not null,
-                    is_builtin integer not null,
-                    updated_at text not null
-                );
+                                create table if not exists agent_profiles (
+                                    id text primary key,
+                                    name text not null,
+                                    layer text not null,
+                                    agent_type text not null,
+                                    mode text not null,
+                                    description text not null,
+                                    model_route_purpose text not null,
+                                    allowed_tools_json text not null,
+                                    capabilities_json text not null,
+                                    system_prompt text,
+                                    enabled integer not null,
+                                    is_builtin integer not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists agent_candidates (
-                    id text primary key,
-                    generated_by_agent_id text not null,
-                    name text not null,
-                    layer text not null,
-                    agent_type text not null,
-                    description text not null,
-                    suggested_tools_json text not null,
-                    evaluation_notes_json text not null,
-                    status text not null,
-                    created_at text not null
-                );
+                                create table if not exists agent_candidates (
+                                    id text primary key,
+                                    generated_by_agent_id text not null,
+                                    name text not null,
+                                    layer text not null,
+                                    agent_type text not null,
+                                    description text not null,
+                                    suggested_tools_json text not null,
+                                    evaluation_notes_json text not null,
+                                    status text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists prompt_fragments (
-                    id text primary key,
-                    key text not null,
-                    title text not null,
-                    scope text not null,
-                    target_agent_id text null,
-                    category text not null,
-                    content text not null,
-                    priority integer not null,
-                    enabled integer not null,
-                    is_builtin integer not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists prompt_fragments (
+                                    id text primary key,
+                                    key text not null,
+                                    title text not null,
+                                    scope text not null,
+                                    target_agent_id text null,
+                                    category text not null,
+                                    content text not null,
+                                    priority integer not null,
+                                    enabled integer not null,
+                                    is_builtin integer not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create unique index if not exists idx_prompt_fragments_key_target
-                on prompt_fragments(key, coalesce(target_agent_id, ''));
+                                create unique index if not exists idx_prompt_fragments_key_target
+                                on prompt_fragments(key, coalesce(target_agent_id, ''));
 
-                create table if not exists prompt_context_plans (
-                    id text primary key,
-                    run_id text not null,
-                    agent_id text not null,
-                    strategy text not null,
-                    selected_fragment_ids_json text not null,
-                    summary text not null,
-                    created_by_agent_id text not null,
-                    created_at text not null
-                );
+                                create table if not exists prompt_context_plans (
+                                    id text primary key,
+                                    run_id text not null,
+                                    agent_id text not null,
+                                    strategy text not null,
+                                    selected_fragment_ids_json text not null,
+                                    summary text not null,
+                                    created_by_agent_id text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists orchestration_runs (
-                    id text primary key,
-                    session_id text not null,
-                    user_message_id text null,
-                    status text not null,
-                    summary text not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists orchestration_runs (
+                                    id text primary key,
+                                    session_id text not null,
+                                    user_message_id text null,
+                                    status text not null,
+                                    summary text not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists task_graphs (
-                    id text primary key,
-                    run_id text not null,
-                    session_id text not null,
-                    title text not null,
-                    status text not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists task_graphs (
+                                    id text primary key,
+                                    run_id text not null,
+                                    session_id text not null,
+                                    title text not null,
+                                    status text not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists task_nodes (
-                    id text primary key,
-                    graph_id text not null,
-                    run_id text not null,
-                    session_id text not null,
-                    title text not null,
-                    description text not null,
-                    status text not null,
-                    priority integer not null,
-                    risk text not null,
-                    success_criteria_json text not null,
-                    dependencies_json text not null,
-                    required_capabilities_json text not null,
-                    created_at text not null,
-                    updated_at text not null
-                );
+                                create table if not exists task_nodes (
+                                    id text primary key,
+                                    graph_id text not null,
+                                    run_id text not null,
+                                    session_id text not null,
+                                    title text not null,
+                                    description text not null,
+                                    status text not null,
+                                    priority integer not null,
+                                    risk text not null,
+                                    success_criteria_json text not null,
+                                    dependencies_json text not null,
+                                    required_capabilities_json text not null,
+                                    created_at text not null,
+                                    updated_at text not null
+                                );
 
-                create table if not exists agent_assignments (
-                    id text primary key,
-                    run_id text not null,
-                    task_node_id text not null,
-                    agent_id text not null,
-                    agent_name text not null,
-                    agent_layer text not null,
-                    agent_type text not null,
-                    model_route_purpose text not null,
-                    permission_mode text not null,
-                    allowed_tools_json text not null,
-                    status text not null,
-                    created_at text not null
-                );
+                                create table if not exists agent_assignments (
+                                    id text primary key,
+                                    run_id text not null,
+                                    task_node_id text not null,
+                                    agent_id text not null,
+                                    agent_name text not null,
+                                    agent_layer text not null,
+                                    agent_type text not null,
+                                    model_route_purpose text not null,
+                                    permission_mode text not null,
+                                    allowed_tools_json text not null,
+                                    status text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists step_results (
-                    id text primary key,
-                    run_id text not null,
-                    task_node_id text not null,
-                    agent_id text not null,
-                    status text not null,
-                    summary text not null,
-                    evidence_json text not null,
-                    created_at text not null
-                );
+                                create table if not exists step_results (
+                                    id text primary key,
+                                    run_id text not null,
+                                    task_node_id text not null,
+                                    agent_id text not null,
+                                    status text not null,
+                                    summary text not null,
+                                    evidence_json text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists context_packs (
-                    id text primary key,
-                    run_id text not null,
-                    session_id text not null,
-                    created_by_agent_id text not null,
-                    summary text not null,
-                    token_budget integer not null,
-                    compression_ratio real not null,
-                    evidence_map_json text not null,
-                    created_at text not null
-                );
+                                create table if not exists context_packs (
+                                    id text primary key,
+                                    run_id text not null,
+                                    session_id text not null,
+                                    created_by_agent_id text not null,
+                                    summary text not null,
+                                    token_budget integer not null,
+                                    compression_ratio real not null,
+                                    evidence_map_json text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists supervision_findings (
-                    id text primary key,
-                    run_id text not null,
-                    session_id text not null,
-                    severity text not null,
-                    category text not null,
-                    summary text not null,
-                    recommendation text not null,
-                    status text not null,
-                    created_at text not null
-                );
+                                create table if not exists supervision_findings (
+                                    id text primary key,
+                                    run_id text not null,
+                                    session_id text not null,
+                                    severity text not null,
+                                    category text not null,
+                                    summary text not null,
+                                    recommendation text not null,
+                                    status text not null,
+                                    created_at text not null
+                                );
 
-                create table if not exists prompt_fragment_versions (
-                    id text primary key,
-                    fragment_id text not null,
-                    version integer not null,
-                    content text not null,
-                    changed_fields_json text not null,
-                    change_summary text not null,
-                    is_active integer not null default 0,
-                    created_at text not null
-                );
+                                create table if not exists prompt_fragment_versions (
+                                    id text primary key,
+                                    fragment_id text not null,
+                                    version integer not null,
+                                    content text not null,
+                                    changed_fields_json text not null,
+                                    change_summary text not null,
+                                    is_active integer not null default 0,
+                                    created_at text not null
+                                );
 
-                create table if not exists prompt_fragment_signals (
-                    id text primary key,
-                    fragment_id text not null,
-                    version integer,
-                    signal text not null,
-                    run_id text,
-                    session_id text,
-                    note text,
-                    created_at text not null
-                );
+                                create table if not exists prompt_fragment_signals (
+                                    id text primary key,
+                                    fragment_id text not null,
+                                    version integer,
+                                    signal text not null,
+                                    run_id text,
+                                    session_id text,
+                                    note text,
+                                    created_at text not null
+                                );
 
-                create index if not exists idx_prompt_fragment_versions_fragment
-                    on prompt_fragment_versions(fragment_id, version);
+                                create index if not exists idx_prompt_fragment_versions_fragment
+                                    on prompt_fragment_versions(fragment_id, version);
 
-                create index if not exists idx_prompt_fragment_signals_fragment
-                    on prompt_fragment_signals(fragment_id, version, created_at);
-                """);
+                                create index if not exists idx_prompt_fragment_signals_fragment
+                                    on prompt_fragment_signals(fragment_id, version, created_at);
+                                """);
 
             // Migration: add system_prompt column to agent_profiles if missing
             try
@@ -404,97 +401,101 @@ public sealed class CoreStore : IModelStore
                 // Column already exists �?ignore
             }
 
-            AddColumnIfMissing(connection, "model_provider_instances", "health_status", "text not null default 'healthy'");
+            AddColumnIfMissing(connection, "model_provider_instances", "health_status",
+                "text not null default 'healthy'");
             AddColumnIfMissing(connection, "model_provider_instances", "cooldown_until", "text null");
             AddColumnIfMissing(connection, "model_provider_instances", "failure_count", "integer not null default 0");
             AddColumnIfMissing(connection, "model_provider_instances", "last_failure_at", "text null");
             AddColumnIfMissing(connection, "model_provider_instances", "last_error_category", "text null");
 
             Execute(connection, """
-                update model_provider_instances
-                set capabilities_json = '["chat","streaming","tool-calls"]'
-                where capabilities_json is null
-                   or trim(capabilities_json) = ''
-                   or lower(trim(capabilities_json)) = 'null';
-                """);
+                                update model_provider_instances
+                                set capabilities_json = '["chat","streaming","tool-calls"]'
+                                where capabilities_json is null
+                                   or trim(capabilities_json) = ''
+                                   or lower(trim(capabilities_json)) = 'null';
+                                """);
 
             Execute(connection, """
-                update model_provider_instances
-                set health_status = 'healthy'
-                where health_status is null
-                   or trim(health_status) = ''
-                   or lower(trim(health_status)) not in ('healthy', 'unhealthy', 'disabled', 'cooldown', 'unknown');
-                """);
+                                update model_provider_instances
+                                set health_status = 'healthy'
+                                where health_status is null
+                                   or trim(health_status) = ''
+                                   or lower(trim(health_status)) not in ('healthy', 'unhealthy', 'disabled', 'cooldown', 'unknown');
+                                """);
 
             Execute(connection, """
-                update model_provider_instances
-                set failure_count = 0
-                where failure_count is null
-                   or failure_count < 0;
-                """);
+                                update model_provider_instances
+                                set failure_count = 0
+                                where failure_count is null
+                                   or failure_count < 0;
+                                """);
 
             Execute(connection, """
-                insert into model_settings (id, base_url, model, encrypted_api_key, updated_at)
-                values (1, 'https://api.openai.com/v1', 'gpt-5.4-mini', null, $updated_at)
-                on conflict(id) do nothing;
-                """, command => command.Parameters.AddWithValue("$updated_at", DateTimeOffset.UtcNow.ToString("O")));
+                                insert into model_settings (id, base_url, model, encrypted_api_key, updated_at)
+                                values (1, 'https://api.openai.com/v1', 'gpt-5.4-mini', null, $updated_at)
+                                on conflict(id) do nothing;
+                                """,
+                command => command.Parameters.AddWithValue("$updated_at", DateTimeOffset.UtcNow.ToString("O")));
 
             Execute(connection, """
-                insert into model_provider_instances (
-                    id,
-                    driver,
-                    display_name,
-                    connection_kind,
-                    base_url,
-                    model,
-                    encrypted_api_key,
-                    binary_path,
-                    home_path,
-                    server_url,
-                    launch_args,
-                    capabilities_json,
-                    enabled,
-                    health_status,
-                    cooldown_until,
-                    failure_count,
-                    last_failure_at,
-                    last_error_category,
-                    created_at,
-                    updated_at
-                )
-                select
-                    'openai_default',
-                    'openai-compatible',
-                    'OpenAI Compatible',
-                    'api-key',
-                    base_url,
-                    model,
-                    encrypted_api_key,
-                    null,
-                    null,
-                    null,
-                    null,
-                    '["chat","streaming","tool-calls"]',
-                    1,
-                    'healthy',
-                    null,
-                    0,
-                    null,
-                    null,
-                    $now,
-                    $now
-                from model_settings
-                where id = 1
-                on conflict(id) do nothing;
-                """, command => command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O")));
+                                insert into model_provider_instances (
+                                    id,
+                                    driver,
+                                    display_name,
+                                    connection_kind,
+                                    base_url,
+                                    model,
+                                    encrypted_api_key,
+                                    binary_path,
+                                    home_path,
+                                    server_url,
+                                    launch_args,
+                                    capabilities_json,
+                                    enabled,
+                                    health_status,
+                                    cooldown_until,
+                                    failure_count,
+                                    last_failure_at,
+                                    last_error_category,
+                                    created_at,
+                                    updated_at
+                                )
+                                select
+                                    'openai_default',
+                                    'openai-compatible',
+                                    'OpenAI Compatible',
+                                    'api-key',
+                                    base_url,
+                                    model,
+                                    encrypted_api_key,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    '["chat","streaming","tool-calls"]',
+                                    1,
+                                    'healthy',
+                                    null,
+                                    0,
+                                    null,
+                                    null,
+                                    $now,
+                                    $now
+                                from model_settings
+                                where id = 1
+                                on conflict(id) do nothing;
+                                """,
+                command => command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O")));
 
             Execute(connection, """
-                insert into model_routes (purpose, provider_instance_id, model, updated_at)
-                select 'chat', 'openai_default', model, $now
-                from model_provider_instances
-                where id = 'openai_default'
-                on conflict(purpose) do nothing;
-                """, command => command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O")));
+                                insert into model_routes (purpose, provider_instance_id, model, updated_at)
+                                select 'chat', 'openai_default', model, $now
+                                from model_provider_instances
+                                where id = 'openai_default'
+                                on conflict(purpose) do nothing;
+                                """,
+                command => command.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O")));
 
             SeedBuiltinExtensions(connection);
             NormalizeLegacyAgentSeeds(connection);
@@ -512,9 +513,8 @@ public sealed class CoreStore : IModelStore
         using var reader = command.ExecuteReader();
         var projects = new List<ProjectDto>();
         while (reader.Read())
-        {
-            projects.Add(new ProjectDto(reader.GetString(0), reader.GetString(1), reader.GetString(2), ParseTime(reader.GetString(3))));
-        }
+            projects.Add(new ProjectDto(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                ParseTime(reader.GetString(3))));
 
         return projects;
     }
@@ -528,9 +528,9 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into projects (id, name, path, created_at)
-                values ($id, $name, $path, $created_at)
-                """, command =>
+                                insert into projects (id, name, path, created_at)
+                                values ($id, $name, $path, $created_at)
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", project.Id);
                 command.Parameters.AddWithValue("$name", project.Name);
@@ -550,17 +550,11 @@ public sealed class CoreStore : IModelStore
             ? "select id, project_id, title, status, created_at, updated_at from sessions order by updated_at desc"
             : "select id, project_id, title, status, created_at, updated_at from sessions where project_id = $project_id order by updated_at desc";
 
-        if (!string.IsNullOrWhiteSpace(projectId))
-        {
-            command.Parameters.AddWithValue("$project_id", projectId);
-        }
+        if (!string.IsNullOrWhiteSpace(projectId)) command.Parameters.AddWithValue("$project_id", projectId);
 
         using var reader = command.ExecuteReader();
         var sessions = new List<SessionDto>();
-        while (reader.Read())
-        {
-            sessions.Add(ReadSession(reader));
-        }
+        while (reader.Read()) sessions.Add(ReadSession(reader));
 
         return sessions;
     }
@@ -580,9 +574,9 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into sessions (id, project_id, title, status, created_at, updated_at)
-                values ($id, $project_id, $title, $status, $created_at, $updated_at)
-                """, command =>
+                                insert into sessions (id, project_id, title, status, created_at, updated_at)
+                                values ($id, $project_id, $title, $status, $created_at, $updated_at)
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", session.Id);
                 command.Parameters.AddWithValue("$project_id", session.ProjectId);
@@ -601,19 +595,18 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, session_id, role, content, created_at
-            from messages
-            where session_id = $session_id
-            order by created_at asc
-            """;
+                              select id, session_id, role, content, created_at
+                              from messages
+                              where session_id = $session_id
+                              order by created_at asc
+                              """;
         command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var messages = new List<MessageDto>();
         while (reader.Read())
-        {
-            messages.Add(new MessageDto(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), ParseTime(reader.GetString(4))));
-        }
+            messages.Add(new MessageDto(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                reader.GetString(3), ParseTime(reader.GetString(4))));
 
         return messages;
     }
@@ -627,11 +620,11 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into messages (id, session_id, role, content, created_at)
-                values ($id, $session_id, $role, $content, $created_at);
+                                insert into messages (id, session_id, role, content, created_at)
+                                values ($id, $session_id, $role, $content, $created_at);
 
-                update sessions set updated_at = $created_at where id = $session_id;
-                """, command =>
+                                update sessions set updated_at = $created_at where id = $session_id;
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", message.Id);
                 command.Parameters.AddWithValue("$session_id", message.SessionId);
@@ -658,9 +651,9 @@ public sealed class CoreStore : IModelStore
             var envelope = EventEnvelope.Create(type, seq, sessionId, payload, capabilities, error);
 
             Execute(connection, """
-                insert into events (seq, v, type, request_id, session_id, trace_id, ts, capabilities_json, payload_json, error_json)
-                values ($seq, $v, $type, $request_id, $session_id, $trace_id, $ts, $capabilities_json, $payload_json, $error_json)
-                """, command =>
+                                insert into events (seq, v, type, request_id, session_id, trace_id, ts, capabilities_json, payload_json, error_json)
+                                values ($seq, $v, $type, $request_id, $session_id, $trace_id, $ts, $capabilities_json, $payload_json, $error_json)
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$seq", envelope.Seq);
                 command.Parameters.AddWithValue("$v", envelope.V);
@@ -669,9 +662,14 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$session_id", (object?)envelope.SessionId ?? DBNull.Value);
                 command.Parameters.AddWithValue("$trace_id", envelope.TraceId);
                 command.Parameters.AddWithValue("$ts", envelope.Ts.ToString("O"));
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(envelope.Capabilities, TinadecJson.Options));
-                command.Parameters.AddWithValue("$payload_json", envelope.Payload?.ToJsonString(TinadecJson.Options) ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("$error_json", envelope.Error is null ? DBNull.Value : JsonSerializer.Serialize(envelope.Error, TinadecJson.Options));
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(envelope.Capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$payload_json",
+                    envelope.Payload?.ToJsonString(TinadecJson.Options) ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("$error_json",
+                    envelope.Error is null
+                        ? DBNull.Value
+                        : JsonSerializer.Serialize(envelope.Error, TinadecJson.Options));
             });
 
             return envelope;
@@ -686,17 +684,11 @@ public sealed class CoreStore : IModelStore
             ? "select seq, v, type, request_id, session_id, trace_id, ts, capabilities_json, payload_json, error_json from events order by seq asc"
             : "select seq, v, type, request_id, session_id, trace_id, ts, capabilities_json, payload_json, error_json from events where session_id = $session_id or session_id is null order by seq asc";
 
-        if (!string.IsNullOrWhiteSpace(sessionId))
-        {
-            command.Parameters.AddWithValue("$session_id", sessionId);
-        }
+        if (!string.IsNullOrWhiteSpace(sessionId)) command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var events = new List<EventEnvelope>();
-        while (reader.Read())
-        {
-            events.Add(ReadEvent(reader));
-        }
+        while (reader.Read()) events.Add(ReadEvent(reader));
 
         return events;
     }
@@ -718,16 +710,14 @@ public sealed class CoreStore : IModelStore
             command.Parameters.AddWithValue("$session_id", sessionId);
         }
 
-        command.CommandText = "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals"
+        command.CommandText =
+            "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals"
             + (where.Count == 0 ? "" : " where " + string.Join(" and ", where))
             + " order by created_at desc";
 
         using var reader = command.ExecuteReader();
         var approvals = new List<ApprovalDto>();
-        while (reader.Read())
-        {
-            approvals.Add(ReadApproval(reader));
-        }
+        while (reader.Read()) approvals.Add(ReadApproval(reader));
 
         return approvals;
     }
@@ -750,9 +740,9 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into approvals (id, session_id, kind, summary, command, cwd, status, created_at, decided_at)
-                values ($id, $session_id, $kind, $summary, $command, $cwd, $status, $created_at, null)
-                """, command =>
+                                insert into approvals (id, session_id, kind, summary, command, cwd, status, created_at, decided_at)
+                                values ($id, $session_id, $kind, $summary, $command, $cwd, $status, $created_at, null)
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", approval.Id);
                 command.Parameters.AddWithValue("$session_id", (object?)approval.SessionId ?? DBNull.Value);
@@ -775,10 +765,10 @@ public sealed class CoreStore : IModelStore
             using var connection = OpenConnection();
             var decidedAt = DateTimeOffset.UtcNow;
             Execute(connection, """
-                update approvals
-                set status = $status, decided_at = $decided_at
-                where id = $id
-                """, command =>
+                                update approvals
+                                set status = $status, decided_at = $decided_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", approvalId);
                 command.Parameters.AddWithValue("$status", decision);
@@ -786,7 +776,8 @@ public sealed class CoreStore : IModelStore
             });
 
             using var command = connection.CreateCommand();
-            command.CommandText = "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals where id = $id";
+            command.CommandText =
+                "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals where id = $id";
             command.Parameters.AddWithValue("$id", approvalId);
             using var reader = command.ExecuteReader();
             return reader.Read() ? ReadApproval(reader) : null;
@@ -807,9 +798,7 @@ public sealed class CoreStore : IModelStore
 
         using var reader = command.ExecuteReader();
         if (!reader.Read())
-        {
             return new StoredModelSettings("https://api.openai.com/v1", "gpt-5.4-mini", null, DateTimeOffset.UtcNow);
-        }
 
         return new StoredModelSettings(
             reader.GetString(0),
@@ -820,7 +809,9 @@ public sealed class CoreStore : IModelStore
 
     public StoredModelSettings SaveModelSettings(string baseUrl, string model, string? encryptedApiKey)
     {
-        var normalizedBaseUrl = string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1" : baseUrl.Trim().TrimEnd('/');
+        var normalizedBaseUrl = string.IsNullOrWhiteSpace(baseUrl)
+            ? "https://api.openai.com/v1"
+            : baseUrl.Trim().TrimEnd('/');
         var normalizedModel = string.IsNullOrWhiteSpace(model) ? "gpt-5.4-mini" : model.Trim();
         var now = DateTimeOffset.UtcNow;
 
@@ -828,14 +819,14 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into model_settings (id, base_url, model, encrypted_api_key, updated_at)
-                values (1, $base_url, $model, $encrypted_api_key, $updated_at)
-                on conflict(id) do update set
-                    base_url = excluded.base_url,
-                    model = excluded.model,
-                    encrypted_api_key = excluded.encrypted_api_key,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into model_settings (id, base_url, model, encrypted_api_key, updated_at)
+                                values (1, $base_url, $model, $encrypted_api_key, $updated_at)
+                                on conflict(id) do update set
+                                    base_url = excluded.base_url,
+                                    model = excluded.model,
+                                    encrypted_api_key = excluded.encrypted_api_key,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$base_url", normalizedBaseUrl);
                 command.Parameters.AddWithValue("$model", normalizedModel);
@@ -844,56 +835,56 @@ public sealed class CoreStore : IModelStore
             });
 
             Execute(connection, """
-                insert into model_provider_instances (
-                    id,
-                    driver,
-                    display_name,
-                    connection_kind,
-                    base_url,
-                    model,
-                    encrypted_api_key,
-                    binary_path,
-                    home_path,
-                    server_url,
-                    launch_args,
-                    capabilities_json,
-                    enabled,
-                    health_status,
-                    cooldown_until,
-                    failure_count,
-                    last_failure_at,
-                    last_error_category,
-                    created_at,
-                    updated_at
-                )
-                values (
-                    'openai_default',
-                    'openai-compatible',
-                    'OpenAI Compatible',
-                    'api-key',
-                    $base_url,
-                    $model,
-                    $encrypted_api_key,
-                    null,
-                    null,
-                    null,
-                    null,
-                    '["chat","streaming","tool-calls"]',
-                    1,
-                    'healthy',
-                    null,
-                    0,
-                    null,
-                    null,
-                    $updated_at,
-                    $updated_at
-                )
-                on conflict(id) do update set
-                    base_url = excluded.base_url,
-                    model = excluded.model,
-                    encrypted_api_key = excluded.encrypted_api_key,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into model_provider_instances (
+                                    id,
+                                    driver,
+                                    display_name,
+                                    connection_kind,
+                                    base_url,
+                                    model,
+                                    encrypted_api_key,
+                                    binary_path,
+                                    home_path,
+                                    server_url,
+                                    launch_args,
+                                    capabilities_json,
+                                    enabled,
+                                    health_status,
+                                    cooldown_until,
+                                    failure_count,
+                                    last_failure_at,
+                                    last_error_category,
+                                    created_at,
+                                    updated_at
+                                )
+                                values (
+                                    'openai_default',
+                                    'openai-compatible',
+                                    'OpenAI Compatible',
+                                    'api-key',
+                                    $base_url,
+                                    $model,
+                                    $encrypted_api_key,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    '["chat","streaming","tool-calls"]',
+                                    1,
+                                    'healthy',
+                                    null,
+                                    0,
+                                    null,
+                                    null,
+                                    $updated_at,
+                                    $updated_at
+                                )
+                                on conflict(id) do update set
+                                    base_url = excluded.base_url,
+                                    model = excluded.model,
+                                    encrypted_api_key = excluded.encrypted_api_key,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$base_url", normalizedBaseUrl);
                 command.Parameters.AddWithValue("$model", normalizedModel);
@@ -902,13 +893,13 @@ public sealed class CoreStore : IModelStore
             });
 
             Execute(connection, """
-                insert into model_routes (purpose, provider_instance_id, model, updated_at)
-                values ('chat', 'openai_default', $model, $updated_at)
-                on conflict(purpose) do update set
-                    provider_instance_id = excluded.provider_instance_id,
-                    model = excluded.model,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into model_routes (purpose, provider_instance_id, model, updated_at)
+                                values ('chat', 'openai_default', $model, $updated_at)
+                                on conflict(purpose) do update set
+                                    provider_instance_id = excluded.provider_instance_id,
+                                    model = excluded.model,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$model", normalizedModel);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
@@ -923,19 +914,16 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, driver, display_name, connection_kind, base_url, model, encrypted_api_key, binary_path, home_path,
-                   server_url, launch_args, capabilities_json, enabled, health_status, cooldown_until, failure_count,
-                   last_failure_at, last_error_category, created_at, updated_at
-            from model_provider_instances
-            order by updated_at desc, display_name
-            """;
+                              select id, driver, display_name, connection_kind, base_url, model, encrypted_api_key, binary_path, home_path,
+                                     server_url, launch_args, capabilities_json, enabled, health_status, cooldown_until, failure_count,
+                                     last_failure_at, last_error_category, created_at, updated_at
+                              from model_provider_instances
+                              order by updated_at desc, display_name
+                              """;
 
         using var reader = command.ExecuteReader();
         var providers = new List<ModelProviderInstanceDto>();
-        while (reader.Read())
-        {
-            providers.Add(ReadModelProvider(reader).ToDto());
-        }
+        while (reader.Read()) providers.Add(ReadModelProvider(reader).ToDto());
 
         return providers;
     }
@@ -945,19 +933,20 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, driver, display_name, connection_kind, base_url, model, encrypted_api_key, binary_path, home_path,
-                   server_url, launch_args, capabilities_json, enabled, health_status, cooldown_until, failure_count,
-                   last_failure_at, last_error_category, created_at, updated_at
-            from model_provider_instances
-            where id = $id
-            """;
+                              select id, driver, display_name, connection_kind, base_url, model, encrypted_api_key, binary_path, home_path,
+                                     server_url, launch_args, capabilities_json, enabled, health_status, cooldown_until, failure_count,
+                                     last_failure_at, last_error_category, created_at, updated_at
+                              from model_provider_instances
+                              where id = $id
+                              """;
         command.Parameters.AddWithValue("$id", providerInstanceId);
 
         using var reader = command.ExecuteReader();
         return reader.Read() ? ReadModelProvider(reader) : null;
     }
 
-    public ModelProviderInstanceDto SaveModelProviderInstance(SaveModelProviderInstanceRequest request, string? encryptedApiKey)
+    public ModelProviderInstanceDto SaveModelProviderInstance(SaveModelProviderInstanceRequest request,
+        string? encryptedApiKey)
     {
         var now = DateTimeOffset.UtcNow;
         var id = string.IsNullOrWhiteSpace(request.Id)
@@ -969,7 +958,8 @@ public sealed class CoreStore : IModelStore
         var baseUrl = NormalizeOptionalUrl(request.BaseUrl);
         var model = NormalizeOptional(request.Model);
         var capabilities = request.Capabilities is { Count: > 0 }
-            ? request.Capabilities.Select(NormalizeOptional).Where(value => !string.IsNullOrWhiteSpace(value)).Cast<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
+            ? request.Capabilities.Select(NormalizeOptional).Where(value => !string.IsNullOrWhiteSpace(value))
+                .Cast<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray()
             : InferCapabilities(driver, connectionKind);
         var capabilitiesJson = JsonSerializer.Serialize(capabilities, TinadecJson.Options);
         var existing = GetStoredModelProviderInstance(id);
@@ -979,70 +969,70 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into model_provider_instances (
-                    id,
-                    driver,
-                    display_name,
-                    connection_kind,
-                    base_url,
-                    model,
-                    encrypted_api_key,
-                    binary_path,
-                    home_path,
-                    server_url,
-                    launch_args,
-                    capabilities_json,
-                    enabled,
-                    health_status,
-                    cooldown_until,
-                    failure_count,
-                    last_failure_at,
-                    last_error_category,
-                    created_at,
-                    updated_at
-                )
-                values (
-                    $id,
-                    $driver,
-                    $display_name,
-                    $connection_kind,
-                    $base_url,
-                    $model,
-                    $encrypted_api_key,
-                    $binary_path,
-                    $home_path,
-                    $server_url,
-                    $launch_args,
-                    $capabilities_json,
-                    $enabled,
-                    $health_status,
-                    $cooldown_until,
-                    $failure_count,
-                    $last_failure_at,
-                    $last_error_category,
-                    $created_at,
-                    $updated_at
-                )
-                on conflict(id) do update set
-                    driver = excluded.driver,
-                    display_name = excluded.display_name,
-                    connection_kind = excluded.connection_kind,
-                    base_url = excluded.base_url,
-                    model = excluded.model,
-                    encrypted_api_key = excluded.encrypted_api_key,
-                    binary_path = excluded.binary_path,
-                    home_path = excluded.home_path,
-                    server_url = excluded.server_url,
-                    launch_args = excluded.launch_args,
-                    capabilities_json = excluded.capabilities_json,
-                    enabled = excluded.enabled,
-                    health_status = excluded.health_status,
-                    cooldown_until = excluded.cooldown_until,
-                    failure_count = excluded.failure_count,
-                    last_failure_at = excluded.last_failure_at,
-                    last_error_category = excluded.last_error_category,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into model_provider_instances (
+                                    id,
+                                    driver,
+                                    display_name,
+                                    connection_kind,
+                                    base_url,
+                                    model,
+                                    encrypted_api_key,
+                                    binary_path,
+                                    home_path,
+                                    server_url,
+                                    launch_args,
+                                    capabilities_json,
+                                    enabled,
+                                    health_status,
+                                    cooldown_until,
+                                    failure_count,
+                                    last_failure_at,
+                                    last_error_category,
+                                    created_at,
+                                    updated_at
+                                )
+                                values (
+                                    $id,
+                                    $driver,
+                                    $display_name,
+                                    $connection_kind,
+                                    $base_url,
+                                    $model,
+                                    $encrypted_api_key,
+                                    $binary_path,
+                                    $home_path,
+                                    $server_url,
+                                    $launch_args,
+                                    $capabilities_json,
+                                    $enabled,
+                                    $health_status,
+                                    $cooldown_until,
+                                    $failure_count,
+                                    $last_failure_at,
+                                    $last_error_category,
+                                    $created_at,
+                                    $updated_at
+                                )
+                                on conflict(id) do update set
+                                    driver = excluded.driver,
+                                    display_name = excluded.display_name,
+                                    connection_kind = excluded.connection_kind,
+                                    base_url = excluded.base_url,
+                                    model = excluded.model,
+                                    encrypted_api_key = excluded.encrypted_api_key,
+                                    binary_path = excluded.binary_path,
+                                    home_path = excluded.home_path,
+                                    server_url = excluded.server_url,
+                                    launch_args = excluded.launch_args,
+                                    capabilities_json = excluded.capabilities_json,
+                                    enabled = excluded.enabled,
+                                    health_status = excluded.health_status,
+                                    cooldown_until = excluded.cooldown_until,
+                                    failure_count = excluded.failure_count,
+                                    last_failure_at = excluded.last_failure_at,
+                                    last_error_category = excluded.last_error_category,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", id);
                 command.Parameters.AddWithValue("$driver", driver);
@@ -1051,33 +1041,40 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$base_url", (object?)baseUrl ?? DBNull.Value);
                 command.Parameters.AddWithValue("$model", (object?)model ?? DBNull.Value);
                 command.Parameters.AddWithValue("$encrypted_api_key", (object?)encryptedApiKey ?? DBNull.Value);
-                command.Parameters.AddWithValue("$binary_path", (object?)NormalizeOptional(request.BinaryPath) ?? DBNull.Value);
-                command.Parameters.AddWithValue("$home_path", (object?)NormalizeOptional(request.HomePath) ?? DBNull.Value);
-                command.Parameters.AddWithValue("$server_url", (object?)NormalizeOptionalUrl(request.ServerUrl) ?? DBNull.Value);
-                command.Parameters.AddWithValue("$launch_args", (object?)NormalizeOptional(request.LaunchArgs) ?? DBNull.Value);
+                command.Parameters.AddWithValue("$binary_path",
+                    (object?)NormalizeOptional(request.BinaryPath) ?? DBNull.Value);
+                command.Parameters.AddWithValue("$home_path",
+                    (object?)NormalizeOptional(request.HomePath) ?? DBNull.Value);
+                command.Parameters.AddWithValue("$server_url",
+                    (object?)NormalizeOptionalUrl(request.ServerUrl) ?? DBNull.Value);
+                command.Parameters.AddWithValue("$launch_args",
+                    (object?)NormalizeOptional(request.LaunchArgs) ?? DBNull.Value);
                 command.Parameters.AddWithValue("$capabilities_json", capabilitiesJson);
                 command.Parameters.AddWithValue("$enabled", request.Enabled ? 1 : 0);
-                command.Parameters.AddWithValue("$health_status", ToProviderHealthStatusStorageValue(health.HealthStatus));
-                command.Parameters.AddWithValue("$cooldown_until", health.CooldownUntil is null ? DBNull.Value : health.CooldownUntil.Value.ToString("O"));
+                command.Parameters.AddWithValue("$health_status",
+                    ToProviderHealthStatusStorageValue(health.HealthStatus));
+                command.Parameters.AddWithValue("$cooldown_until",
+                    health.CooldownUntil is null ? DBNull.Value : health.CooldownUntil.Value.ToString("O"));
                 command.Parameters.AddWithValue("$failure_count", health.FailureCount);
-                command.Parameters.AddWithValue("$last_failure_at", health.LastFailureAt is null ? DBNull.Value : health.LastFailureAt.Value.ToString("O"));
-                command.Parameters.AddWithValue("$last_error_category", health.LastErrorCategory is null ? DBNull.Value : ToProviderErrorCategoryStorageValue(health.LastErrorCategory.Value));
+                command.Parameters.AddWithValue("$last_failure_at",
+                    health.LastFailureAt is null ? DBNull.Value : health.LastFailureAt.Value.ToString("O"));
+                command.Parameters.AddWithValue("$last_error_category",
+                    health.LastErrorCategory is null
+                        ? DBNull.Value
+                        : ToProviderErrorCategoryStorageValue(health.LastErrorCategory.Value));
                 command.Parameters.AddWithValue("$created_at", now.ToString("O"));
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
             });
         }
 
         return GetStoredModelProviderInstance(id)?.ToDto()
-            ?? throw new InvalidOperationException("Saved model provider instance was not found.");
+               ?? throw new InvalidOperationException("Saved model provider instance was not found.");
     }
 
     public bool DeleteModelProviderInstance(string providerInstanceId)
     {
         var existing = GetStoredModelProviderInstance(providerInstanceId);
-        if (existing is null)
-        {
-            return false;
-        }
+        if (existing is null) return false;
 
         lock (_gate)
         {
@@ -1093,17 +1090,18 @@ public sealed class CoreStore : IModelStore
         return true;
     }
 
-    public void RecordModelProviderFailure(string providerInstanceId, ProviderErrorCategory category, DateTimeOffset now)
+    public void RecordModelProviderFailure(string providerInstanceId, ProviderErrorCategory category,
+        DateTimeOffset now)
     {
         var provider = GetStoredModelProviderInstance(providerInstanceId)
-            ?? throw new InvalidOperationException($"Model provider '{providerInstanceId}' was not found.");
+                       ?? throw new InvalidOperationException($"Model provider '{providerInstanceId}' was not found.");
         var failureCount = provider.FailureCount + 1;
         var capabilities = provider.Capabilities
             .Where(capability => !HasCapabilityKey(capability, "health")
-                && !HasCapabilityKey(capability, "cooldown_started_at")
-                && !HasCapabilityKey(capability, "cooldown_until")
-                && !HasCapabilityKey(capability, "last_error")
-                && !HasCapabilityKey(capability, "failure_count"))
+                                 && !HasCapabilityKey(capability, "cooldown_started_at")
+                                 && !HasCapabilityKey(capability, "cooldown_until")
+                                 && !HasCapabilityKey(capability, "last_error")
+                                 && !HasCapabilityKey(capability, "failure_count"))
             .Concat([
                 "health:cooldown",
                 $"cooldown_started_at:{now:O}",
@@ -1119,14 +1117,14 @@ public sealed class CoreStore : IModelStore
             provider.ConnectionKind,
             provider.BaseUrl,
             provider.Model,
-            ApiKey: null,
-            ClearApiKey: false,
+            null,
+            false,
             provider.BinaryPath,
             provider.HomePath,
             provider.ServerUrl,
             provider.LaunchArgs,
             capabilities,
-                provider.Enabled);
+            provider.Enabled);
 
         SaveModelProviderInstance(request, provider.EncryptedApiKey);
     }
@@ -1134,21 +1132,19 @@ public sealed class CoreStore : IModelStore
     public void RecordModelProviderSuccess(string providerInstanceId)
     {
         var provider = GetStoredModelProviderInstance(providerInstanceId)
-            ?? throw new InvalidOperationException($"Model provider '{providerInstanceId}' was not found.");
+                       ?? throw new InvalidOperationException($"Model provider '{providerInstanceId}' was not found.");
 
         if (provider.HealthStatus is not ProviderHealthStatus.Cooldown
             && provider.HealthStatus is not ProviderHealthStatus.Unhealthy)
-        {
             return;
-        }
 
         var now = DateTimeOffset.UtcNow;
         var capabilities = provider.Capabilities
             .Where(capability => !HasCapabilityKey(capability, "health")
-                && !HasCapabilityKey(capability, "cooldown_started_at")
-                && !HasCapabilityKey(capability, "cooldown_until")
-                && !HasCapabilityKey(capability, "last_error")
-                && !HasCapabilityKey(capability, "failure_count"))
+                                 && !HasCapabilityKey(capability, "cooldown_started_at")
+                                 && !HasCapabilityKey(capability, "cooldown_until")
+                                 && !HasCapabilityKey(capability, "last_error")
+                                 && !HasCapabilityKey(capability, "failure_count"))
             .Concat([
                 "health:healthy",
                 "failure_count:0"
@@ -1160,16 +1156,16 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update model_provider_instances
-                set health_status = $health_status,
-                    cooldown_until = null,
-                    failure_count = 0,
-                    last_failure_at = null,
-                    last_error_category = null,
-                    capabilities_json = $capabilities_json,
-                    updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update model_provider_instances
+                                set health_status = $health_status,
+                                    cooldown_until = null,
+                                    failure_count = 0,
+                                    last_failure_at = null,
+                                    last_error_category = null,
+                                    capabilities_json = $capabilities_json,
+                                    updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$health_status", "healthy");
                 command.Parameters.AddWithValue("$capabilities_json", capabilitiesJson);
@@ -1183,14 +1179,12 @@ public sealed class CoreStore : IModelStore
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = "select purpose, provider_instance_id, model, updated_at from model_routes order by purpose";
+        command.CommandText =
+            "select purpose, provider_instance_id, model, updated_at from model_routes order by purpose";
 
         using var reader = command.ExecuteReader();
         var routes = new List<ModelRouteDto>();
-        while (reader.Read())
-        {
-            routes.Add(ReadModelRoute(reader));
-        }
+        while (reader.Read()) routes.Add(ReadModelRoute(reader));
 
         return routes;
     }
@@ -1199,7 +1193,8 @@ public sealed class CoreStore : IModelStore
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = "select purpose, provider_instance_id, model, updated_at from model_routes where purpose = $purpose";
+        command.CommandText =
+            "select purpose, provider_instance_id, model, updated_at from model_routes where purpose = $purpose";
         command.Parameters.AddWithValue("$purpose", NormalizeRoutePurpose(purpose));
 
         using var reader = command.ExecuteReader();
@@ -1216,13 +1211,13 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into model_routes (purpose, provider_instance_id, model, updated_at)
-                values ($purpose, $provider_instance_id, $model, $updated_at)
-                on conflict(purpose) do update set
-                    provider_instance_id = excluded.provider_instance_id,
-                    model = excluded.model,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into model_routes (purpose, provider_instance_id, model, updated_at)
+                                values ($purpose, $provider_instance_id, $model, $updated_at)
+                                on conflict(purpose) do update set
+                                    provider_instance_id = excluded.provider_instance_id,
+                                    model = excluded.model,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$purpose", normalizedPurpose);
                 command.Parameters.AddWithValue("$provider_instance_id", providerInstanceId);
@@ -1239,17 +1234,14 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, name, kind, location, enabled, last_refreshed_at, created_at
-            from extension_sources
-            order by name
-            """;
+                              select id, name, kind, location, enabled, last_refreshed_at, created_at
+                              from extension_sources
+                              order by name
+                              """;
 
         using var reader = command.ExecuteReader();
         var sources = new List<ExtensionSourceDto>();
-        while (reader.Read())
-        {
-            sources.Add(ReadExtensionSource(reader));
-        }
+        while (reader.Read()) sources.Add(ReadExtensionSource(reader));
 
         return sources;
     }
@@ -1260,16 +1252,17 @@ public sealed class CoreStore : IModelStore
         var name = NormalizePlain(request.Name, "Custom Marketplace");
         var kind = NormalizeExtensionSourceKind(request.Kind);
         var location = NormalizePlain(request.Location, "local");
-        var id = $"source_{ExtensionCatalog.NormalizeId($"{name}-{Guid.NewGuid():N}"[..Math.Min(name.Length + 9, name.Length + 9)])}";
+        var id =
+            $"source_{ExtensionCatalog.NormalizeId($"{name}-{Guid.NewGuid():N}"[..Math.Min(name.Length + 9, name.Length + 9)])}";
 
         var source = new ExtensionSourceDto(id, name, kind, location, request.Enabled, null, now);
         lock (_gate)
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into extension_sources (id, name, kind, location, enabled, last_refreshed_at, created_at)
-                values ($id, $name, $kind, $location, $enabled, null, $created_at)
-                """, command =>
+                                insert into extension_sources (id, name, kind, location, enabled, last_refreshed_at, created_at)
+                                values ($id, $name, $kind, $location, $enabled, null, $created_at)
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", source.Id);
                 command.Parameters.AddWithValue("$name", source.Name);
@@ -1290,10 +1283,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update extension_sources
-                set last_refreshed_at = $last_refreshed_at
-                where id = $id
-                """, command =>
+                                update extension_sources
+                                set last_refreshed_at = $last_refreshed_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", sourceId);
                 command.Parameters.AddWithValue("$last_refreshed_at", now.ToString("O"));
@@ -1301,10 +1294,10 @@ public sealed class CoreStore : IModelStore
 
             using var command = connection.CreateCommand();
             command.CommandText = """
-                select id, name, kind, location, enabled, last_refreshed_at, created_at
-                from extension_sources
-                where id = $id
-                """;
+                                  select id, name, kind, location, enabled, last_refreshed_at, created_at
+                                  from extension_sources
+                                  where id = $id
+                                  """;
             command.Parameters.AddWithValue("$id", sourceId);
             using var reader = command.ExecuteReader();
             return reader.Read() ? ReadExtensionSource(reader) : null;
@@ -1335,21 +1328,18 @@ public sealed class CoreStore : IModelStore
         }
 
         command.CommandText = """
-            select c.catalog_id, c.source_id, c.extension_id, c.kind, c.version, c.publisher, c.display_name,
-                   c.description, c.source_kind, c.source_location, c.capabilities_json, c.permissions_json,
-                   i.id
-            from extension_catalog_cache c
-            left join installed_extensions i on i.extension_id = c.extension_id
-            """
-            + (where.Count == 0 ? string.Empty : " where " + string.Join(" and ", where))
-            + " order by c.kind, c.display_name";
+                              select c.catalog_id, c.source_id, c.extension_id, c.kind, c.version, c.publisher, c.display_name,
+                                     c.description, c.source_kind, c.source_location, c.capabilities_json, c.permissions_json,
+                                     i.id
+                              from extension_catalog_cache c
+                              left join installed_extensions i on i.extension_id = c.extension_id
+                              """
+                              + (where.Count == 0 ? string.Empty : " where " + string.Join(" and ", where))
+                              + " order by c.kind, c.display_name";
 
         using var reader = command.ExecuteReader();
         var items = new List<MarketCatalogItemDto>();
-        while (reader.Read())
-        {
-            items.Add(ReadMarketCatalogItem(reader));
-        }
+        while (reader.Read()) items.Add(ReadMarketCatalogItem(reader));
 
         return items;
     }
@@ -1359,13 +1349,13 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select c.catalog_id, c.source_id, c.extension_id, c.kind, c.version, c.publisher, c.display_name,
-                   c.description, c.source_kind, c.source_location, c.capabilities_json, c.permissions_json,
-                   i.id
-            from extension_catalog_cache c
-            left join installed_extensions i on i.extension_id = c.extension_id
-            where c.catalog_id = $catalog_id
-            """;
+                              select c.catalog_id, c.source_id, c.extension_id, c.kind, c.version, c.publisher, c.display_name,
+                                     c.description, c.source_kind, c.source_location, c.capabilities_json, c.permissions_json,
+                                     i.id
+                              from extension_catalog_cache c
+                              left join installed_extensions i on i.extension_id = c.extension_id
+                              where c.catalog_id = $catalog_id
+                              """;
         command.Parameters.AddWithValue("$catalog_id", catalogId);
 
         using var reader = command.ExecuteReader();
@@ -1376,9 +1366,7 @@ public sealed class CoreStore : IModelStore
     {
         var catalogItem = string.IsNullOrWhiteSpace(request.CatalogId) ? null : GetMarketCatalogItem(request.CatalogId);
         if (!string.IsNullOrWhiteSpace(request.CatalogId) && catalogItem is null)
-        {
             throw new InvalidOperationException("Market catalog item was not found.");
-        }
 
         var descriptor = ExtensionCatalog.DescriptorFromRequest(request, catalogItem);
         ValidateExtensionDescriptor(descriptor);
@@ -1387,7 +1375,8 @@ public sealed class CoreStore : IModelStore
 
     public ExtensionInstallResultDto InstallExtension(InstallExtensionRequest request)
     {
-        var previewRequest = new InstallExtensionPreviewRequest(request.CatalogId, request.SourceKind, request.SourceLocation, request.ManifestJson);
+        var previewRequest = new InstallExtensionPreviewRequest(request.CatalogId, request.SourceKind,
+            request.SourceLocation, request.ManifestJson);
         var catalogItem = string.IsNullOrWhiteSpace(request.CatalogId) ? null : GetMarketCatalogItem(request.CatalogId);
         var descriptor = ExtensionCatalog.DescriptorFromRequest(previewRequest, catalogItem);
         ValidateExtensionDescriptor(descriptor);
@@ -1411,7 +1400,8 @@ public sealed class CoreStore : IModelStore
             return new ExtensionInstallResultDto(true, approval, null, preview);
         }
 
-        var installed = SaveInstalledExtension(catalogItem?.CatalogId, descriptor, enabled: false, "installed_disabled", "Installed and waiting for explicit enablement.");
+        var installed = SaveInstalledExtension(catalogItem?.CatalogId, descriptor, false, "installed_disabled",
+            "Installed and waiting for explicit enablement.");
         return new ExtensionInstallResultDto(false, null, installed, preview);
     }
 
@@ -1420,18 +1410,15 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, catalog_id, extension_id, kind, version, publisher, display_name, description, source_kind,
-                   source_location, capabilities_json, permissions_json, enabled, status, status_message, installed_at, updated_at
-            from installed_extensions
-            order by updated_at desc, display_name
-            """;
+                              select id, catalog_id, extension_id, kind, version, publisher, display_name, description, source_kind,
+                                     source_location, capabilities_json, permissions_json, enabled, status, status_message, installed_at, updated_at
+                              from installed_extensions
+                              order by updated_at desc, display_name
+                              """;
 
         using var reader = command.ExecuteReader();
         var items = new List<InstalledExtensionDto>();
-        while (reader.Read())
-        {
-            items.Add(ReadInstalledExtension(reader));
-        }
+        while (reader.Read()) items.Add(ReadInstalledExtension(reader));
 
         return items;
     }
@@ -1440,10 +1427,7 @@ public sealed class CoreStore : IModelStore
     {
         var now = DateTimeOffset.UtcNow;
         var existing = GetInstalledExtension(installedExtensionId);
-        if (existing is null)
-        {
-            return null;
-        }
+        if (existing is null) return null;
 
         var status = enabled ? "enabled" : "installed_disabled";
         var statusMessage = enabled
@@ -1454,10 +1438,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update installed_extensions
-                set enabled = $enabled, status = $status, status_message = $status_message, updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update installed_extensions
+                                set enabled = $enabled, status = $status, status_message = $status_message, updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", installedExtensionId);
                 command.Parameters.AddWithValue("$enabled", enabled ? 1 : 0);
@@ -1467,13 +1451,9 @@ public sealed class CoreStore : IModelStore
             });
 
             if (enabled)
-            {
                 UpsertRuntimeCache(connection, existing, now);
-            }
             else
-            {
                 RemoveRuntimeCache(connection, existing.Id);
-            }
         }
 
         return GetInstalledExtension(installedExtensionId);
@@ -1482,16 +1462,14 @@ public sealed class CoreStore : IModelStore
     public bool DeleteInstalledExtension(string installedExtensionId)
     {
         var existing = GetInstalledExtension(installedExtensionId);
-        if (existing is null)
-        {
-            return false;
-        }
+        if (existing is null) return false;
 
         lock (_gate)
         {
             using var connection = OpenConnection();
             RemoveRuntimeCache(connection, installedExtensionId);
-            Execute(connection, "delete from installed_extensions where id = $id", command => command.Parameters.AddWithValue("$id", installedExtensionId));
+            Execute(connection, "delete from installed_extensions where id = $id",
+                command => command.Parameters.AddWithValue("$id", installedExtensionId));
         }
 
         return true;
@@ -1502,17 +1480,14 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select m.id, m.extension_id, m.name, m.transport, m.status, m.tools_json, m.updated_at, e.manifest_json
-            from mcp_servers m
-            left join installed_extensions e on e.id = m.extension_id
-            order by m.name
-            """;
+                              select m.id, m.extension_id, m.name, m.transport, m.status, m.tools_json, m.updated_at, e.manifest_json
+                              from mcp_servers m
+                              left join installed_extensions e on e.id = m.extension_id
+                              order by m.name
+                              """;
         using var reader = command.ExecuteReader();
         var servers = new List<McpServerDto>();
-        while (reader.Read())
-        {
-            servers.Add(ReadMcpServer(reader));
-        }
+        while (reader.Read()) servers.Add(ReadMcpServer(reader));
 
         return servers;
     }
@@ -1524,10 +1499,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update mcp_servers
-                set status = 'pending_connect', updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update mcp_servers
+                                set status = 'pending_connect', updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", serverId);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
@@ -1544,10 +1519,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update mcp_servers
-                set status = $status, updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update mcp_servers
+                                set status = $status, updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", serverId);
                 command.Parameters.AddWithValue("$status", status);
@@ -1565,10 +1540,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update mcp_servers
-                set tools_json = $tools_json, updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update mcp_servers
+                                set tools_json = $tools_json, updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", serverId);
                 command.Parameters.AddWithValue("$tools_json", JsonSerializer.Serialize(tools, TinadecJson.Options));
@@ -1583,13 +1558,11 @@ public sealed class CoreStore : IModelStore
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
-        command.CommandText = "select id, extension_id, name, command, status, status_message, capabilities_json, updated_at from acp_adapters order by name";
+        command.CommandText =
+            "select id, extension_id, name, command, status, status_message, capabilities_json, updated_at from acp_adapters order by name";
         using var reader = command.ExecuteReader();
         var adapters = new List<AcpAdapterDto>();
-        while (reader.Read())
-        {
-            adapters.Add(ReadAcpAdapter(reader));
-        }
+        while (reader.Read()) adapters.Add(ReadAcpAdapter(reader));
 
         return adapters;
     }
@@ -1601,10 +1574,10 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update acp_adapters
-                set status = 'ready', status_message = 'Probe completed against declarative adapter metadata.', updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update acp_adapters
+                                set status = 'ready', status_message = 'Probe completed against declarative adapter metadata.', updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", adapterId);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
@@ -1614,24 +1587,24 @@ public sealed class CoreStore : IModelStore
         return ListAcpAdapters().FirstOrDefault(adapter => adapter.Id == adapterId);
     }
 
-    public IReadOnlyList<AgentModeDto> ListAgentModes() => AgentCatalog.Modes;
+    public IReadOnlyList<AgentModeDto> ListAgentModes()
+    {
+        return AgentCatalog.Modes;
+    }
 
     public IReadOnlyList<AgentProfileDto> ListAgentProfiles()
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, name, layer, agent_type, mode, description, model_route_purpose, allowed_tools_json,
-                   capabilities_json, system_prompt, enabled, is_builtin, updated_at
-            from agent_profiles
-            order by case layer when 'planning' then 0 else 1 end, name
-            """;
+                              select id, name, layer, agent_type, mode, description, model_route_purpose, allowed_tools_json,
+                                     capabilities_json, system_prompt, enabled, is_builtin, updated_at
+                              from agent_profiles
+                              order by case layer when 'planning' then 0 else 1 end, name
+                              """;
         using var reader = command.ExecuteReader();
         var agents = new List<AgentProfileDto>();
-        while (reader.Read())
-        {
-            agents.Add(ReadAgentProfile(reader));
-        }
+        while (reader.Read()) agents.Add(ReadAgentProfile(reader));
 
         return agents;
     }
@@ -1639,10 +1612,7 @@ public sealed class CoreStore : IModelStore
     public AgentProfileDto? SaveAgentProfile(string agentId, SaveAgentProfileRequest request)
     {
         var existing = ListAgentProfiles().FirstOrDefault(agent => agent.Id == agentId);
-        if (existing is null)
-        {
-            return null;
-        }
+        if (existing is null) return null;
 
         var now = DateTimeOffset.UtcNow;
         var mode = AgentCatalog.Modes.Any(item => item.Id == request.Mode) ? request.Mode : existing.Mode;
@@ -1654,30 +1624,34 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                update agent_profiles
-                set name = $name,
-                    layer = $layer,
-                    agent_type = $agent_type,
-                    mode = $mode,
-                    description = $description,
-                    model_route_purpose = $model_route_purpose,
-                    allowed_tools_json = $allowed_tools_json,
-                    capabilities_json = $capabilities_json,
-                    system_prompt = $system_prompt,
-                    enabled = $enabled,
-                    updated_at = $updated_at
-                where id = $id
-                """, command =>
+                                update agent_profiles
+                                set name = $name,
+                                    layer = $layer,
+                                    agent_type = $agent_type,
+                                    mode = $mode,
+                                    description = $description,
+                                    model_route_purpose = $model_route_purpose,
+                                    allowed_tools_json = $allowed_tools_json,
+                                    capabilities_json = $capabilities_json,
+                                    system_prompt = $system_prompt,
+                                    enabled = $enabled,
+                                    updated_at = $updated_at
+                                where id = $id
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", agentId);
                 command.Parameters.AddWithValue("$name", NormalizePlain(request.Name, existing.Name));
                 command.Parameters.AddWithValue("$layer", layer);
                 command.Parameters.AddWithValue("$agent_type", NormalizePlain(request.AgentType, existing.AgentType));
                 command.Parameters.AddWithValue("$mode", mode);
-                command.Parameters.AddWithValue("$description", NormalizePlain(request.Description, existing.Description));
-                command.Parameters.AddWithValue("$model_route_purpose", NormalizeRoutePurpose(request.ModelRoutePurpose));
-                command.Parameters.AddWithValue("$allowed_tools_json", JsonSerializer.Serialize(tools, TinadecJson.Options));
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$description",
+                    NormalizePlain(request.Description, existing.Description));
+                command.Parameters.AddWithValue("$model_route_purpose",
+                    NormalizeRoutePurpose(request.ModelRoutePurpose));
+                command.Parameters.AddWithValue("$allowed_tools_json",
+                    JsonSerializer.Serialize(tools, TinadecJson.Options));
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(capabilities, TinadecJson.Options));
                 command.Parameters.AddWithValue("$system_prompt", (object?)request.SystemPrompt ?? DBNull.Value);
                 command.Parameters.AddWithValue("$enabled", request.Enabled ? 1 : 0);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
@@ -1692,10 +1666,7 @@ public sealed class CoreStore : IModelStore
     public AgentProfileDto? UpdateAgentMode(string agentId, string mode)
     {
         var existing = ListAgentProfiles().FirstOrDefault(agent => agent.Id == agentId);
-        if (existing is null)
-        {
-            return null;
-        }
+        if (existing is null) return null;
 
         return SaveAgentProfile(agentId, new SaveAgentProfileRequest(
             existing.Name,
@@ -1715,17 +1686,14 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, generated_by_agent_id, name, layer, agent_type, description, suggested_tools_json,
-                   evaluation_notes_json, status, created_at
-            from agent_candidates
-            order by created_at desc
-            """;
+                              select id, generated_by_agent_id, name, layer, agent_type, description, suggested_tools_json,
+                                     evaluation_notes_json, status, created_at
+                              from agent_candidates
+                              order by created_at desc
+                              """;
         using var reader = command.ExecuteReader();
         var candidates = new List<AgentCandidateDto>();
-        while (reader.Read())
-        {
-            candidates.Add(ReadAgentCandidate(reader));
-        }
+        while (reader.Read()) candidates.Add(ReadAgentCandidate(reader));
 
         return candidates;
     }
@@ -1764,19 +1732,16 @@ public sealed class CoreStore : IModelStore
         }
 
         command.CommandText = $"""
-            select id, key, title, scope, target_agent_id, category, content, priority,
-                   enabled, is_builtin, created_at, updated_at
-            from prompt_fragments
-            {(filters.Count == 0 ? "" : $"where {string.Join(" and ", filters)}")}
-            order by priority desc, is_builtin asc, title
-            """;
+                               select id, key, title, scope, target_agent_id, category, content, priority,
+                                      enabled, is_builtin, created_at, updated_at
+                               from prompt_fragments
+                               {(filters.Count == 0 ? "" : $"where {string.Join(" and ", filters)}")}
+                               order by priority desc, is_builtin asc, title
+                               """;
 
         using var reader = command.ExecuteReader();
         var fragments = new List<PromptFragmentDto>();
-        while (reader.Read())
-        {
-            fragments.Add(ReadPromptFragment(reader));
-        }
+        while (reader.Read()) fragments.Add(ReadPromptFragment(reader));
 
         return fragments;
     }
@@ -1786,11 +1751,11 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, key, title, scope, target_agent_id, category, content, priority,
-                   enabled, is_builtin, created_at, updated_at
-            from prompt_fragments
-            where id = $id
-            """;
+                              select id, key, title, scope, target_agent_id, category, content, priority,
+                                     enabled, is_builtin, created_at, updated_at
+                              from prompt_fragments
+                              where id = $id
+                              """;
         command.Parameters.AddWithValue("$id", fragmentId);
 
         using var reader = command.ExecuteReader();
@@ -1817,7 +1782,7 @@ public sealed class CoreStore : IModelStore
         lock (_gate)
         {
             using var connection = OpenConnection();
-            InsertPromptFragment(connection, fragment, updateBuiltin: false);
+            InsertPromptFragment(connection, fragment, false);
         }
 
         return fragment;
@@ -1826,15 +1791,11 @@ public sealed class CoreStore : IModelStore
     public PromptFragmentDto? UpdatePromptFragment(string fragmentId, SavePromptFragmentRequest request)
     {
         var existing = GetPromptFragment(fragmentId);
-        if (existing is null)
-        {
-            return null;
-        }
+        if (existing is null) return null;
 
         if (existing.IsBuiltIn)
-        {
-            throw new InvalidOperationException("Built-in prompt fragments are read-only. Clone the fragment before editing.");
-        }
+            throw new InvalidOperationException(
+                "Built-in prompt fragments are read-only. Clone the fragment before editing.");
 
         var now = DateTimeOffset.UtcNow;
         var updated = existing with
@@ -1853,7 +1814,7 @@ public sealed class CoreStore : IModelStore
         lock (_gate)
         {
             using var connection = OpenConnection();
-            InsertPromptFragment(connection, updated, updateBuiltin: false);
+            InsertPromptFragment(connection, updated, false);
         }
 
         return GetPromptFragment(fragmentId);
@@ -1862,15 +1823,11 @@ public sealed class CoreStore : IModelStore
     public bool DeletePromptFragment(string fragmentId)
     {
         var existing = GetPromptFragment(fragmentId);
-        if (existing is null)
-        {
-            return false;
-        }
+        if (existing is null) return false;
 
         if (existing.IsBuiltIn)
-        {
-            throw new InvalidOperationException("Built-in prompt fragments are read-only. Clone the fragment before deleting a custom copy.");
-        }
+            throw new InvalidOperationException(
+                "Built-in prompt fragments are read-only. Clone the fragment before deleting a custom copy.");
 
         lock (_gate)
         {
@@ -1887,10 +1844,7 @@ public sealed class CoreStore : IModelStore
     public PromptFragmentDto? ClonePromptFragment(string fragmentId)
     {
         var source = GetPromptFragment(fragmentId);
-        if (source is null)
-        {
-            return null;
-        }
+        if (source is null) return null;
 
         var now = DateTimeOffset.UtcNow;
         var cloneKey = NormalizePromptKey($"{source.Key}.custom.{Guid.NewGuid():N}", $"custom.{Guid.NewGuid():N}");
@@ -1909,7 +1863,7 @@ public sealed class CoreStore : IModelStore
         lock (_gate)
         {
             using var connection = OpenConnection();
-            InsertPromptFragment(connection, clone, updateBuiltin: false);
+            InsertPromptFragment(connection, clone, false);
         }
 
         return clone;
@@ -1921,33 +1875,34 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into prompt_context_plans (
-                    id,
-                    run_id,
-                    agent_id,
-                    strategy,
-                    selected_fragment_ids_json,
-                    summary,
-                    created_by_agent_id,
-                    created_at
-                )
-                values (
-                    $id,
-                    $run_id,
-                    $agent_id,
-                    $strategy,
-                    $selected_fragment_ids_json,
-                    $summary,
-                    $created_by_agent_id,
-                    $created_at
-                )
-                """, command =>
+                                insert into prompt_context_plans (
+                                    id,
+                                    run_id,
+                                    agent_id,
+                                    strategy,
+                                    selected_fragment_ids_json,
+                                    summary,
+                                    created_by_agent_id,
+                                    created_at
+                                )
+                                values (
+                                    $id,
+                                    $run_id,
+                                    $agent_id,
+                                    $strategy,
+                                    $selected_fragment_ids_json,
+                                    $summary,
+                                    $created_by_agent_id,
+                                    $created_at
+                                )
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", $"prompt_plan_{Guid.NewGuid():N}");
                 command.Parameters.AddWithValue("$run_id", plan.RunId);
                 command.Parameters.AddWithValue("$agent_id", plan.AgentId);
                 command.Parameters.AddWithValue("$strategy", plan.Strategy);
-                command.Parameters.AddWithValue("$selected_fragment_ids_json", JsonSerializer.Serialize(plan.SelectedFragmentIds, TinadecJson.Options));
+                command.Parameters.AddWithValue("$selected_fragment_ids_json",
+                    JsonSerializer.Serialize(plan.SelectedFragmentIds, TinadecJson.Options));
                 command.Parameters.AddWithValue("$summary", plan.Summary);
                 command.Parameters.AddWithValue("$created_by_agent_id", plan.CreatedByAgentId);
                 command.Parameters.AddWithValue("$created_at", DateTimeOffset.UtcNow.ToString("O"));
@@ -2013,10 +1968,7 @@ public sealed class CoreStore : IModelStore
                 InsertTaskNode(connection, node);
 
                 var agent = ResolveExecutionAgent(enabledAgents, spec.AgentType, spec.RequiredCapabilities);
-                if (agent is null)
-                {
-                    continue;
-                }
+                if (agent is null) continue;
 
                 var assignment = new AgentAssignmentDto(
                     $"assign_{Guid.NewGuid():N}",
@@ -2041,7 +1993,10 @@ public sealed class CoreStore : IModelStore
                     agent.Id,
                     "stubbed",
                     $"{agent.Name} is assigned. Runtime execution remains read-only until the task requests approved tools.",
-                    ["assignment recorded", $"permission mode: {spec.PermissionMode}", $"model route: {agent.ModelRoutePurpose}"],
+                    [
+                        "assignment recorded", $"permission mode: {spec.PermissionMode}",
+                        $"model route: {agent.ModelRoutePurpose}"
+                    ],
                     now);
                 stepResults.Add(result);
                 InsertStepResult(connection, result);
@@ -2078,10 +2033,7 @@ public sealed class CoreStore : IModelStore
     public OrchestrationSnapshotDto GetOrchestrationSnapshot(string sessionId)
     {
         var run = ListRuns(sessionId).FirstOrDefault();
-        if (run is null)
-        {
-            return new OrchestrationSnapshotDto(null, null, [], [], [], [], []);
-        }
+        if (run is null) return new OrchestrationSnapshotDto(null, null, [], [], [], [], []);
 
         var graph = GetTaskGraph(run.Id);
         return new OrchestrationSnapshotDto(
@@ -2097,10 +2049,7 @@ public sealed class CoreStore : IModelStore
     public OrchestrationSnapshotDto? GetOrchestrationSnapshotByRun(string runId)
     {
         var run = GetRun(runId);
-        if (run is null)
-        {
-            return null;
-        }
+        if (run is null) return null;
 
         var graph = GetTaskGraph(run.Id);
         return new OrchestrationSnapshotDto(
@@ -2118,19 +2067,16 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, session_id, user_message_id, status, summary, created_at, updated_at
-            from orchestration_runs
-            where session_id = $session_id
-            order by created_at desc
-            """;
+                              select id, session_id, user_message_id, status, summary, created_at, updated_at
+                              from orchestration_runs
+                              where session_id = $session_id
+                              order by created_at desc
+                              """;
         command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var runs = new List<OrchestrationRunDto>();
-        while (reader.Read())
-        {
-            runs.Add(ReadOrchestrationRun(reader));
-        }
+        while (reader.Read()) runs.Add(ReadOrchestrationRun(reader));
 
         return runs;
     }
@@ -2140,10 +2086,10 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, session_id, user_message_id, status, summary, created_at, updated_at
-            from orchestration_runs
-            where id = $id
-            """;
+                              select id, session_id, user_message_id, status, summary, created_at, updated_at
+                              from orchestration_runs
+                              where id = $id
+                              """;
         command.Parameters.AddWithValue("$id", runId);
 
         using var reader = command.ExecuteReader();
@@ -2182,20 +2128,17 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, graph_id, run_id, session_id, title, description, status, priority, risk,
-                   success_criteria_json, dependencies_json, required_capabilities_json, created_at, updated_at
-            from task_nodes
-            where session_id = $session_id
-            order by priority asc, created_at asc
-            """;
+                              select id, graph_id, run_id, session_id, title, description, status, priority, risk,
+                                     success_criteria_json, dependencies_json, required_capabilities_json, created_at, updated_at
+                              from task_nodes
+                              where session_id = $session_id
+                              order by priority asc, created_at asc
+                              """;
         command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var nodes = new List<TaskNodeDto>();
-        while (reader.Read())
-        {
-            nodes.Add(ReadTaskNode(reader));
-        }
+        while (reader.Read()) nodes.Add(ReadTaskNode(reader));
 
         return nodes;
     }
@@ -2205,20 +2148,17 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, run_id, session_id, created_by_agent_id, summary, token_budget,
-                   compression_ratio, evidence_map_json, created_at
-            from context_packs
-            where session_id = $session_id
-            order by created_at desc
-            """;
+                              select id, run_id, session_id, created_by_agent_id, summary, token_budget,
+                                     compression_ratio, evidence_map_json, created_at
+                              from context_packs
+                              where session_id = $session_id
+                              order by created_at desc
+                              """;
         command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var packs = new List<ContextPackDto>();
-        while (reader.Read())
-        {
-            packs.Add(ReadContextPack(reader));
-        }
+        while (reader.Read()) packs.Add(ReadContextPack(reader));
 
         return packs;
     }
@@ -2228,19 +2168,16 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, run_id, session_id, severity, category, summary, recommendation, status, created_at
-            from supervision_findings
-            where session_id = $session_id
-            order by created_at desc
-            """;
+                              select id, run_id, session_id, severity, category, summary, recommendation, status, created_at
+                              from supervision_findings
+                              where session_id = $session_id
+                              order by created_at desc
+                              """;
         command.Parameters.AddWithValue("$session_id", sessionId);
 
         using var reader = command.ExecuteReader();
         var findings = new List<SupervisionFindingDto>();
-        while (reader.Read())
-        {
-            findings.Add(ReadSupervisionFinding(reader));
-        }
+        while (reader.Read()) findings.Add(ReadSupervisionFinding(reader));
 
         return findings;
     }
@@ -2250,12 +2187,12 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, run_id, session_id, title, status, created_at, updated_at
-            from task_graphs
-            where run_id = $run_id
-            order by created_at desc
-            limit 1
-            """;
+                              select id, run_id, session_id, title, status, created_at, updated_at
+                              from task_graphs
+                              where run_id = $run_id
+                              order by created_at desc
+                              limit 1
+                              """;
         command.Parameters.AddWithValue("$run_id", runId);
 
         using var reader = command.ExecuteReader();
@@ -2267,20 +2204,17 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, run_id, task_node_id, agent_id, agent_name, agent_layer, agent_type,
-                   model_route_purpose, permission_mode, allowed_tools_json, status, created_at
-            from agent_assignments
-            where run_id = $run_id
-            order by created_at asc
-            """;
+                              select id, run_id, task_node_id, agent_id, agent_name, agent_layer, agent_type,
+                                     model_route_purpose, permission_mode, allowed_tools_json, status, created_at
+                              from agent_assignments
+                              where run_id = $run_id
+                              order by created_at asc
+                              """;
         command.Parameters.AddWithValue("$run_id", runId);
 
         using var reader = command.ExecuteReader();
         var assignments = new List<AgentAssignmentDto>();
-        while (reader.Read())
-        {
-            assignments.Add(ReadAgentAssignment(reader));
-        }
+        while (reader.Read()) assignments.Add(ReadAgentAssignment(reader));
 
         return assignments;
     }
@@ -2290,19 +2224,16 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, run_id, task_node_id, agent_id, status, summary, evidence_json, created_at
-            from step_results
-            where run_id = $run_id
-            order by created_at asc
-            """;
+                              select id, run_id, task_node_id, agent_id, status, summary, evidence_json, created_at
+                              from step_results
+                              where run_id = $run_id
+                              order by created_at asc
+                              """;
         command.Parameters.AddWithValue("$run_id", runId);
 
         using var reader = command.ExecuteReader();
         var results = new List<StepResultDto>();
-        while (reader.Read())
-        {
-            results.Add(ReadStepResult(reader));
-        }
+        while (reader.Read()) results.Add(ReadStepResult(reader));
 
         return results;
     }
@@ -2352,23 +2283,24 @@ public sealed class CoreStore : IModelStore
                 "approval-gated",
                 "approval",
                 ["Validation commands are named", "Shell execution remains approval-gated"],
-                ["test.run", "failure.classify"]),
+                ["test.run", "failure.classify"])
         };
 
         if (NeedsGitManager(userContent))
-        {
-            specs.Add(new(
+            specs.Add(new TaskSpec(
                 "Prepare Git handoff",
                 "Review branch, diff, commit, push readiness, and user-facing Git explanation under Core approval policy.",
                 "git-manager",
                 "approval-gated",
                 "approval",
-                ["Git state is explained", "Push or history mutation remains approval-gated", "Handoff notes are ready"],
+                [
+                    "Git state is explained", "Push or history mutation remains approval-gated",
+                    "Handoff notes are ready"
+                ],
                 ["git.status", "git.diff", "git.push", "handoff.explain"]));
-        }
 
         specs.Add(
-            new(
+            new TaskSpec(
                 "Synthesize execution guidance",
                 "Combine planning, evidence, supervision, and model reasoning into the next actionable step.",
                 "code-writer",
@@ -2382,7 +2314,8 @@ public sealed class CoreStore : IModelStore
 
     private static bool NeedsGitManager(string userContent)
     {
-        return ContainsAny(userContent, ["git", "commit", "push", "branch", "worktree", "merge", "rebase", "pull request", "pr "]);
+        return ContainsAny(userContent,
+            ["git", "commit", "push", "branch", "worktree", "merge", "rebase", "pull request", "pr "]);
     }
 
     private static bool ContainsAny(string content, IReadOnlyList<string> terms)
@@ -2396,9 +2329,9 @@ public sealed class CoreStore : IModelStore
         IReadOnlyList<string> requiredCapabilities)
     {
         return agents.FirstOrDefault(agent => agent.AgentType == preferredAgentType)
-            ?? agents.FirstOrDefault(agent =>
-                agent.AgentType != preferredAgentType &&
-                requiredCapabilities.Any(required => agent.Capabilities.Contains(required)));
+               ?? agents.FirstOrDefault(agent =>
+                   agent.AgentType != preferredAgentType &&
+                   requiredCapabilities.Any(required => agent.Capabilities.Contains(required)));
     }
 
     private static string SummarizeUserGoal(string content)
@@ -2411,9 +2344,9 @@ public sealed class CoreStore : IModelStore
     private static void InsertRun(SqliteConnection connection, OrchestrationRunDto run)
     {
         Execute(connection, """
-            insert into orchestration_runs (id, session_id, user_message_id, status, summary, created_at, updated_at)
-            values ($id, $session_id, $user_message_id, $status, $summary, $created_at, $updated_at)
-            """, command =>
+                            insert into orchestration_runs (id, session_id, user_message_id, status, summary, created_at, updated_at)
+                            values ($id, $session_id, $user_message_id, $status, $summary, $created_at, $updated_at)
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", run.Id);
             command.Parameters.AddWithValue("$session_id", run.SessionId);
@@ -2428,9 +2361,9 @@ public sealed class CoreStore : IModelStore
     private static void InsertTaskGraph(SqliteConnection connection, TaskGraphDto graph)
     {
         Execute(connection, """
-            insert into task_graphs (id, run_id, session_id, title, status, created_at, updated_at)
-            values ($id, $run_id, $session_id, $title, $status, $created_at, $updated_at)
-            """, command =>
+                            insert into task_graphs (id, run_id, session_id, title, status, created_at, updated_at)
+                            values ($id, $run_id, $session_id, $title, $status, $created_at, $updated_at)
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", graph.Id);
             command.Parameters.AddWithValue("$run_id", graph.RunId);
@@ -2445,15 +2378,15 @@ public sealed class CoreStore : IModelStore
     private static void InsertTaskNode(SqliteConnection connection, TaskNodeDto node)
     {
         Execute(connection, """
-            insert into task_nodes (
-                id, graph_id, run_id, session_id, title, description, status, priority, risk,
-                success_criteria_json, dependencies_json, required_capabilities_json, created_at, updated_at
-            )
-            values (
-                $id, $graph_id, $run_id, $session_id, $title, $description, $status, $priority, $risk,
-                $success_criteria_json, $dependencies_json, $required_capabilities_json, $created_at, $updated_at
-            )
-            """, command =>
+                            insert into task_nodes (
+                                id, graph_id, run_id, session_id, title, description, status, priority, risk,
+                                success_criteria_json, dependencies_json, required_capabilities_json, created_at, updated_at
+                            )
+                            values (
+                                $id, $graph_id, $run_id, $session_id, $title, $description, $status, $priority, $risk,
+                                $success_criteria_json, $dependencies_json, $required_capabilities_json, $created_at, $updated_at
+                            )
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", node.Id);
             command.Parameters.AddWithValue("$graph_id", node.GraphId);
@@ -2464,9 +2397,12 @@ public sealed class CoreStore : IModelStore
             command.Parameters.AddWithValue("$status", node.Status);
             command.Parameters.AddWithValue("$priority", node.Priority);
             command.Parameters.AddWithValue("$risk", node.Risk);
-            command.Parameters.AddWithValue("$success_criteria_json", JsonSerializer.Serialize(node.SuccessCriteria, TinadecJson.Options));
-            command.Parameters.AddWithValue("$dependencies_json", JsonSerializer.Serialize(node.Dependencies, TinadecJson.Options));
-            command.Parameters.AddWithValue("$required_capabilities_json", JsonSerializer.Serialize(node.RequiredCapabilities, TinadecJson.Options));
+            command.Parameters.AddWithValue("$success_criteria_json",
+                JsonSerializer.Serialize(node.SuccessCriteria, TinadecJson.Options));
+            command.Parameters.AddWithValue("$dependencies_json",
+                JsonSerializer.Serialize(node.Dependencies, TinadecJson.Options));
+            command.Parameters.AddWithValue("$required_capabilities_json",
+                JsonSerializer.Serialize(node.RequiredCapabilities, TinadecJson.Options));
             command.Parameters.AddWithValue("$created_at", node.CreatedAt.ToString("O"));
             command.Parameters.AddWithValue("$updated_at", node.UpdatedAt.ToString("O"));
         });
@@ -2475,15 +2411,15 @@ public sealed class CoreStore : IModelStore
     private static void InsertAgentAssignment(SqliteConnection connection, AgentAssignmentDto assignment)
     {
         Execute(connection, """
-            insert into agent_assignments (
-                id, run_id, task_node_id, agent_id, agent_name, agent_layer, agent_type,
-                model_route_purpose, permission_mode, allowed_tools_json, status, created_at
-            )
-            values (
-                $id, $run_id, $task_node_id, $agent_id, $agent_name, $agent_layer, $agent_type,
-                $model_route_purpose, $permission_mode, $allowed_tools_json, $status, $created_at
-            )
-            """, command =>
+                            insert into agent_assignments (
+                                id, run_id, task_node_id, agent_id, agent_name, agent_layer, agent_type,
+                                model_route_purpose, permission_mode, allowed_tools_json, status, created_at
+                            )
+                            values (
+                                $id, $run_id, $task_node_id, $agent_id, $agent_name, $agent_layer, $agent_type,
+                                $model_route_purpose, $permission_mode, $allowed_tools_json, $status, $created_at
+                            )
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", assignment.Id);
             command.Parameters.AddWithValue("$run_id", assignment.RunId);
@@ -2494,7 +2430,8 @@ public sealed class CoreStore : IModelStore
             command.Parameters.AddWithValue("$agent_type", assignment.AgentType);
             command.Parameters.AddWithValue("$model_route_purpose", assignment.ModelRoutePurpose);
             command.Parameters.AddWithValue("$permission_mode", assignment.PermissionMode);
-            command.Parameters.AddWithValue("$allowed_tools_json", JsonSerializer.Serialize(assignment.AllowedTools, TinadecJson.Options));
+            command.Parameters.AddWithValue("$allowed_tools_json",
+                JsonSerializer.Serialize(assignment.AllowedTools, TinadecJson.Options));
             command.Parameters.AddWithValue("$status", assignment.Status);
             command.Parameters.AddWithValue("$created_at", assignment.CreatedAt.ToString("O"));
         });
@@ -2503,9 +2440,9 @@ public sealed class CoreStore : IModelStore
     private static void InsertStepResult(SqliteConnection connection, StepResultDto result)
     {
         Execute(connection, """
-            insert into step_results (id, run_id, task_node_id, agent_id, status, summary, evidence_json, created_at)
-            values ($id, $run_id, $task_node_id, $agent_id, $status, $summary, $evidence_json, $created_at)
-            """, command =>
+                            insert into step_results (id, run_id, task_node_id, agent_id, status, summary, evidence_json, created_at)
+                            values ($id, $run_id, $task_node_id, $agent_id, $status, $summary, $evidence_json, $created_at)
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", result.Id);
             command.Parameters.AddWithValue("$run_id", result.RunId);
@@ -2513,7 +2450,8 @@ public sealed class CoreStore : IModelStore
             command.Parameters.AddWithValue("$agent_id", result.AgentId);
             command.Parameters.AddWithValue("$status", result.Status);
             command.Parameters.AddWithValue("$summary", result.Summary);
-            command.Parameters.AddWithValue("$evidence_json", JsonSerializer.Serialize(result.Evidence, TinadecJson.Options));
+            command.Parameters.AddWithValue("$evidence_json",
+                JsonSerializer.Serialize(result.Evidence, TinadecJson.Options));
             command.Parameters.AddWithValue("$created_at", result.CreatedAt.ToString("O"));
         });
     }
@@ -2521,15 +2459,15 @@ public sealed class CoreStore : IModelStore
     private static void InsertContextPack(SqliteConnection connection, ContextPackDto pack)
     {
         Execute(connection, """
-            insert into context_packs (
-                id, run_id, session_id, created_by_agent_id, summary, token_budget,
-                compression_ratio, evidence_map_json, created_at
-            )
-            values (
-                $id, $run_id, $session_id, $created_by_agent_id, $summary, $token_budget,
-                $compression_ratio, $evidence_map_json, $created_at
-            )
-            """, command =>
+                            insert into context_packs (
+                                id, run_id, session_id, created_by_agent_id, summary, token_budget,
+                                compression_ratio, evidence_map_json, created_at
+                            )
+                            values (
+                                $id, $run_id, $session_id, $created_by_agent_id, $summary, $token_budget,
+                                $compression_ratio, $evidence_map_json, $created_at
+                            )
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", pack.Id);
             command.Parameters.AddWithValue("$run_id", pack.RunId);
@@ -2538,49 +2476,51 @@ public sealed class CoreStore : IModelStore
             command.Parameters.AddWithValue("$summary", pack.Summary);
             command.Parameters.AddWithValue("$token_budget", pack.TokenBudget);
             command.Parameters.AddWithValue("$compression_ratio", pack.CompressionRatio);
-            command.Parameters.AddWithValue("$evidence_map_json", JsonSerializer.Serialize(pack.EvidenceMap, TinadecJson.Options));
+            command.Parameters.AddWithValue("$evidence_map_json",
+                JsonSerializer.Serialize(pack.EvidenceMap, TinadecJson.Options));
             command.Parameters.AddWithValue("$created_at", pack.CreatedAt.ToString("O"));
         });
     }
 
-    private static void InsertPromptFragment(SqliteConnection connection, PromptFragmentDto fragment, bool updateBuiltin)
+    private static void InsertPromptFragment(SqliteConnection connection, PromptFragmentDto fragment,
+        bool updateBuiltin)
     {
         var conflictUpdate = updateBuiltin
             ? """
-                    title = excluded.title,
-                    scope = excluded.scope,
-                    target_agent_id = excluded.target_agent_id,
-                    category = excluded.category,
-                    content = excluded.content,
-                    priority = excluded.priority,
-                    enabled = excluded.enabled,
-                    is_builtin = excluded.is_builtin,
-                    updated_at = excluded.updated_at
-                """
+                  title = excluded.title,
+                  scope = excluded.scope,
+                  target_agent_id = excluded.target_agent_id,
+                  category = excluded.category,
+                  content = excluded.content,
+                  priority = excluded.priority,
+                  enabled = excluded.enabled,
+                  is_builtin = excluded.is_builtin,
+                  updated_at = excluded.updated_at
+              """
             : """
-                    key = excluded.key,
-                    title = excluded.title,
-                    scope = excluded.scope,
-                    target_agent_id = excluded.target_agent_id,
-                    category = excluded.category,
-                    content = excluded.content,
-                    priority = excluded.priority,
-                    enabled = excluded.enabled,
-                    updated_at = excluded.updated_at
-                """;
+                  key = excluded.key,
+                  title = excluded.title,
+                  scope = excluded.scope,
+                  target_agent_id = excluded.target_agent_id,
+                  category = excluded.category,
+                  content = excluded.content,
+                  priority = excluded.priority,
+                  enabled = excluded.enabled,
+                  updated_at = excluded.updated_at
+              """;
 
         Execute(connection, $$"""
-            insert into prompt_fragments (
-                id, key, title, scope, target_agent_id, category, content, priority,
-                enabled, is_builtin, created_at, updated_at
-            )
-            values (
-                $id, $key, $title, $scope, $target_agent_id, $category, $content, $priority,
-                $enabled, $is_builtin, $created_at, $updated_at
-            )
-            on conflict(id) do update set
-            {{conflictUpdate}}
-            """, command =>
+                              insert into prompt_fragments (
+                                  id, key, title, scope, target_agent_id, category, content, priority,
+                                  enabled, is_builtin, created_at, updated_at
+                              )
+                              values (
+                                  $id, $key, $title, $scope, $target_agent_id, $category, $content, $priority,
+                                  $enabled, $is_builtin, $created_at, $updated_at
+                              )
+                              on conflict(id) do update set
+                              {{conflictUpdate}}
+                              """, command =>
         {
             command.Parameters.AddWithValue("$id", fragment.Id);
             command.Parameters.AddWithValue("$key", fragment.Key);
@@ -2625,19 +2565,19 @@ public sealed class CoreStore : IModelStore
             true,
             false,
             now,
-            now), updateBuiltin: false);
+            now), false);
     }
 
     private static void InsertSupervisionFinding(SqliteConnection connection, SupervisionFindingDto finding)
     {
         Execute(connection, """
-            insert into supervision_findings (
-                id, run_id, session_id, severity, category, summary, recommendation, status, created_at
-            )
-            values (
-                $id, $run_id, $session_id, $severity, $category, $summary, $recommendation, $status, $created_at
-            )
-            """, command =>
+                            insert into supervision_findings (
+                                id, run_id, session_id, severity, category, summary, recommendation, status, created_at
+                            )
+                            values (
+                                $id, $run_id, $session_id, $severity, $category, $summary, $recommendation, $status, $created_at
+                            )
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", finding.Id);
             command.Parameters.AddWithValue("$run_id", finding.RunId);
@@ -2656,22 +2596,23 @@ public sealed class CoreStore : IModelStore
         var now = DateTimeOffset.UtcNow;
         var source = ExtensionCatalog.BuiltinSource(now);
         Execute(connection, """
-            insert into extension_sources (id, name, kind, location, enabled, last_refreshed_at, created_at)
-            values ($id, $name, $kind, $location, $enabled, $last_refreshed_at, $created_at)
-            on conflict(id) do update set
-                name = excluded.name,
-                kind = excluded.kind,
-                location = excluded.location,
-                enabled = excluded.enabled,
-                last_refreshed_at = excluded.last_refreshed_at
-            """, command =>
+                            insert into extension_sources (id, name, kind, location, enabled, last_refreshed_at, created_at)
+                            values ($id, $name, $kind, $location, $enabled, $last_refreshed_at, $created_at)
+                            on conflict(id) do update set
+                                name = excluded.name,
+                                kind = excluded.kind,
+                                location = excluded.location,
+                                enabled = excluded.enabled,
+                                last_refreshed_at = excluded.last_refreshed_at
+                            """, command =>
         {
             command.Parameters.AddWithValue("$id", source.Id);
             command.Parameters.AddWithValue("$name", source.Name);
             command.Parameters.AddWithValue("$kind", source.Kind);
             command.Parameters.AddWithValue("$location", source.Location);
             command.Parameters.AddWithValue("$enabled", source.Enabled ? 1 : 0);
-            command.Parameters.AddWithValue("$last_refreshed_at", source.LastRefreshedAt?.ToString("O") ?? (object)DBNull.Value);
+            command.Parameters.AddWithValue("$last_refreshed_at",
+                source.LastRefreshedAt?.ToString("O") ?? (object)DBNull.Value);
             command.Parameters.AddWithValue("$created_at", source.CreatedAt.ToString("O"));
         });
 
@@ -2679,53 +2620,53 @@ public sealed class CoreStore : IModelStore
         {
             var catalogId = $"catalog_{descriptor.ExtensionId}";
             Execute(connection, """
-                insert into extension_catalog_cache (
-                    catalog_id,
-                    source_id,
-                    extension_id,
-                    kind,
-                    version,
-                    publisher,
-                    display_name,
-                    description,
-                    source_kind,
-                    source_location,
-                    capabilities_json,
-                    permissions_json,
-                    manifest_json,
-                    updated_at
-                )
-                values (
-                    $catalog_id,
-                    $source_id,
-                    $extension_id,
-                    $kind,
-                    $version,
-                    $publisher,
-                    $display_name,
-                    $description,
-                    $source_kind,
-                    $source_location,
-                    $capabilities_json,
-                    $permissions_json,
-                    $manifest_json,
-                    $updated_at
-                )
-                on conflict(catalog_id) do update set
-                    source_id = excluded.source_id,
-                    extension_id = excluded.extension_id,
-                    kind = excluded.kind,
-                    version = excluded.version,
-                    publisher = excluded.publisher,
-                    display_name = excluded.display_name,
-                    description = excluded.description,
-                    source_kind = excluded.source_kind,
-                    source_location = excluded.source_location,
-                    capabilities_json = excluded.capabilities_json,
-                    permissions_json = excluded.permissions_json,
-                    manifest_json = excluded.manifest_json,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into extension_catalog_cache (
+                                    catalog_id,
+                                    source_id,
+                                    extension_id,
+                                    kind,
+                                    version,
+                                    publisher,
+                                    display_name,
+                                    description,
+                                    source_kind,
+                                    source_location,
+                                    capabilities_json,
+                                    permissions_json,
+                                    manifest_json,
+                                    updated_at
+                                )
+                                values (
+                                    $catalog_id,
+                                    $source_id,
+                                    $extension_id,
+                                    $kind,
+                                    $version,
+                                    $publisher,
+                                    $display_name,
+                                    $description,
+                                    $source_kind,
+                                    $source_location,
+                                    $capabilities_json,
+                                    $permissions_json,
+                                    $manifest_json,
+                                    $updated_at
+                                )
+                                on conflict(catalog_id) do update set
+                                    source_id = excluded.source_id,
+                                    extension_id = excluded.extension_id,
+                                    kind = excluded.kind,
+                                    version = excluded.version,
+                                    publisher = excluded.publisher,
+                                    display_name = excluded.display_name,
+                                    description = excluded.description,
+                                    source_kind = excluded.source_kind,
+                                    source_location = excluded.source_location,
+                                    capabilities_json = excluded.capabilities_json,
+                                    permissions_json = excluded.permissions_json,
+                                    manifest_json = excluded.manifest_json,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$catalog_id", catalogId);
                 command.Parameters.AddWithValue("$source_id", ExtensionCatalog.BuiltinSourceId);
@@ -2737,8 +2678,10 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$description", descriptor.Description);
                 command.Parameters.AddWithValue("$source_kind", descriptor.SourceKind);
                 command.Parameters.AddWithValue("$source_location", descriptor.SourceLocation);
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(descriptor.Capabilities, TinadecJson.Options));
-                command.Parameters.AddWithValue("$permissions_json", JsonSerializer.Serialize(descriptor.Permissions, TinadecJson.Options));
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(descriptor.Capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$permissions_json",
+                    JsonSerializer.Serialize(descriptor.Permissions, TinadecJson.Options));
                 command.Parameters.AddWithValue("$manifest_json", descriptor.ManifestJson);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
             });
@@ -2751,49 +2694,49 @@ public sealed class CoreStore : IModelStore
         foreach (var profile in AgentCatalog.Profiles)
         {
             Execute(connection, """
-                insert into agent_profiles (
-                    id,
-                    name,
-                    layer,
-                    agent_type,
-                    mode,
-                    description,
-                    model_route_purpose,
-                    allowed_tools_json,
-                    capabilities_json,
-                    system_prompt,
-                    enabled,
-                    is_builtin,
-                    updated_at
-                )
-                values (
-                    $id,
-                    $name,
-                    $layer,
-                    $agent_type,
-                    $mode,
-                    $description,
-                    $model_route_purpose,
-                    $allowed_tools_json,
-                    $capabilities_json,
-                    $system_prompt,
-                    1,
-                    1,
-                    $updated_at
-                )
-                on conflict(id) do update set
-                    name = excluded.name,
-                    layer = excluded.layer,
-                    agent_type = excluded.agent_type,
-                    mode = excluded.mode,
-                    description = excluded.description,
-                    model_route_purpose = excluded.model_route_purpose,
-                    allowed_tools_json = excluded.allowed_tools_json,
-                    capabilities_json = excluded.capabilities_json,
-                    system_prompt = excluded.system_prompt,
-                    is_builtin = 1,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into agent_profiles (
+                                    id,
+                                    name,
+                                    layer,
+                                    agent_type,
+                                    mode,
+                                    description,
+                                    model_route_purpose,
+                                    allowed_tools_json,
+                                    capabilities_json,
+                                    system_prompt,
+                                    enabled,
+                                    is_builtin,
+                                    updated_at
+                                )
+                                values (
+                                    $id,
+                                    $name,
+                                    $layer,
+                                    $agent_type,
+                                    $mode,
+                                    $description,
+                                    $model_route_purpose,
+                                    $allowed_tools_json,
+                                    $capabilities_json,
+                                    $system_prompt,
+                                    1,
+                                    1,
+                                    $updated_at
+                                )
+                                on conflict(id) do update set
+                                    name = excluded.name,
+                                    layer = excluded.layer,
+                                    agent_type = excluded.agent_type,
+                                    mode = excluded.mode,
+                                    description = excluded.description,
+                                    model_route_purpose = excluded.model_route_purpose,
+                                    allowed_tools_json = excluded.allowed_tools_json,
+                                    capabilities_json = excluded.capabilities_json,
+                                    system_prompt = excluded.system_prompt,
+                                    is_builtin = 1,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", profile.Id);
                 command.Parameters.AddWithValue("$name", profile.Name);
@@ -2802,19 +2745,21 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$mode", profile.Mode);
                 command.Parameters.AddWithValue("$description", profile.Description);
                 command.Parameters.AddWithValue("$model_route_purpose", profile.ModelRoutePurpose);
-                command.Parameters.AddWithValue("$allowed_tools_json", JsonSerializer.Serialize(profile.AllowedTools, TinadecJson.Options));
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(profile.Capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$allowed_tools_json",
+                    JsonSerializer.Serialize(profile.AllowedTools, TinadecJson.Options));
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(profile.Capabilities, TinadecJson.Options));
                 command.Parameters.AddWithValue("$system_prompt", (object?)profile.SystemPrompt ?? DBNull.Value);
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
             });
 
             Execute(connection, """
-                insert into model_routes (purpose, provider_instance_id, model, updated_at)
-                select $purpose, 'openai_default', model, $updated_at
-                from model_provider_instances
-                where id = 'openai_default'
-                on conflict(purpose) do nothing
-                """, command =>
+                                insert into model_routes (purpose, provider_instance_id, model, updated_at)
+                                select $purpose, 'openai_default', model, $updated_at
+                                from model_provider_instances
+                                where id = 'openai_default'
+                                on conflict(purpose) do nothing
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$purpose", NormalizeRoutePurpose(profile.ModelRoutePurpose));
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
@@ -2822,41 +2767,40 @@ public sealed class CoreStore : IModelStore
         }
 
         foreach (var candidate in AgentCatalog.Candidates)
-        {
             Execute(connection, """
-                insert into agent_candidates (
-                    id,
-                    generated_by_agent_id,
-                    name,
-                    layer,
-                    agent_type,
-                    description,
-                    suggested_tools_json,
-                    evaluation_notes_json,
-                    status,
-                    created_at
-                )
-                values (
-                    $id,
-                    $generated_by_agent_id,
-                    $name,
-                    $layer,
-                    $agent_type,
-                    $description,
-                    $suggested_tools_json,
-                    $evaluation_notes_json,
-                    'proposed',
-                    $created_at
-                )
-                on conflict(id) do update set
-                    generated_by_agent_id = excluded.generated_by_agent_id,
-                    name = excluded.name,
-                    layer = excluded.layer,
-                    agent_type = excluded.agent_type,
-                    description = excluded.description,
-                    suggested_tools_json = excluded.suggested_tools_json,
-                    evaluation_notes_json = excluded.evaluation_notes_json
-                """, command =>
+                                insert into agent_candidates (
+                                    id,
+                                    generated_by_agent_id,
+                                    name,
+                                    layer,
+                                    agent_type,
+                                    description,
+                                    suggested_tools_json,
+                                    evaluation_notes_json,
+                                    status,
+                                    created_at
+                                )
+                                values (
+                                    $id,
+                                    $generated_by_agent_id,
+                                    $name,
+                                    $layer,
+                                    $agent_type,
+                                    $description,
+                                    $suggested_tools_json,
+                                    $evaluation_notes_json,
+                                    'proposed',
+                                    $created_at
+                                )
+                                on conflict(id) do update set
+                                    generated_by_agent_id = excluded.generated_by_agent_id,
+                                    name = excluded.name,
+                                    layer = excluded.layer,
+                                    agent_type = excluded.agent_type,
+                                    description = excluded.description,
+                                    suggested_tools_json = excluded.suggested_tools_json,
+                                    evaluation_notes_json = excluded.evaluation_notes_json
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", candidate.Id);
                 command.Parameters.AddWithValue("$generated_by_agent_id", candidate.GeneratedByAgentId);
@@ -2864,11 +2808,12 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$layer", candidate.Layer);
                 command.Parameters.AddWithValue("$agent_type", candidate.AgentType);
                 command.Parameters.AddWithValue("$description", candidate.Description);
-                command.Parameters.AddWithValue("$suggested_tools_json", JsonSerializer.Serialize(candidate.SuggestedTools, TinadecJson.Options));
-                command.Parameters.AddWithValue("$evaluation_notes_json", JsonSerializer.Serialize(candidate.EvaluationNotes, TinadecJson.Options));
+                command.Parameters.AddWithValue("$suggested_tools_json",
+                    JsonSerializer.Serialize(candidate.SuggestedTools, TinadecJson.Options));
+                command.Parameters.AddWithValue("$evaluation_notes_json",
+                    JsonSerializer.Serialize(candidate.EvaluationNotes, TinadecJson.Options));
                 command.Parameters.AddWithValue("$created_at", now.ToString("O"));
             });
-        }
     }
 
     private void SeedBuiltinPromptFragments(SqliteConnection connection)
@@ -2930,54 +2875,52 @@ public sealed class CoreStore : IModelStore
                 now)
         };
 
-        foreach (var fragment in fragments)
-        {
-            InsertPromptFragment(connection, fragment, updateBuiltin: true);
-        }
+        foreach (var fragment in fragments) InsertPromptFragment(connection, fragment, true);
     }
 
     private static void NormalizeLegacyAgentSeeds(SqliteConnection connection)
     {
         Execute(connection, """
-            update agent_profiles
-            set id = 'agent_evolution_algorithm',
-                name = 'Evolution Algorithm Agent',
-                agent_type = 'evolution-algorithm',
-                model_route_purpose = 'evolution',
-                description = 'Observes repeated workflow patterns and proposes candidate skills, MCP manifests, prompts, or agent specs without hot-path publishing.'
-            where id = 'agent_purifier'
-              and not exists (select 1 from agent_profiles where id = 'agent_evolution_algorithm')
-            """);
+                            update agent_profiles
+                            set id = 'agent_evolution_algorithm',
+                                name = 'Evolution Algorithm Agent',
+                                agent_type = 'evolution-algorithm',
+                                model_route_purpose = 'evolution',
+                                description = 'Observes repeated workflow patterns and proposes candidate skills, MCP manifests, prompts, or agent specs without hot-path publishing.'
+                            where id = 'agent_purifier'
+                              and not exists (select 1 from agent_profiles where id = 'agent_evolution_algorithm')
+                            """);
 
         Execute(connection, """
-            delete from agent_profiles
-            where id = 'agent_purifier'
-              and exists (select 1 from agent_profiles where id = 'agent_evolution_algorithm')
-            """);
+                            delete from agent_profiles
+                            where id = 'agent_purifier'
+                              and exists (select 1 from agent_profiles where id = 'agent_evolution_algorithm')
+                            """);
 
         Execute(connection, """
-            update agent_candidates
-            set id = 'cand_evolution_review_agent',
-                generated_by_agent_id = 'agent_evolution_algorithm',
-                name = 'Evolved Review Agent'
-            where id = 'cand_purified_review_agent'
-              and not exists (select 1 from agent_candidates where id = 'cand_evolution_review_agent')
-            """);
+                            update agent_candidates
+                            set id = 'cand_evolution_review_agent',
+                                generated_by_agent_id = 'agent_evolution_algorithm',
+                                name = 'Evolved Review Agent'
+                            where id = 'cand_purified_review_agent'
+                              and not exists (select 1 from agent_candidates where id = 'cand_evolution_review_agent')
+                            """);
 
         Execute(connection, """
-            delete from agent_candidates
-            where id = 'cand_purified_review_agent'
-              and exists (select 1 from agent_candidates where id = 'cand_evolution_review_agent')
-            """);
+                            delete from agent_candidates
+                            where id = 'cand_purified_review_agent'
+                              and exists (select 1 from agent_candidates where id = 'cand_evolution_review_agent')
+                            """);
 
         Execute(connection, """
-            update agent_candidates
-            set generated_by_agent_id = 'agent_evolution_algorithm'
-            where generated_by_agent_id = 'agent_purifier'
-            """);
+                            update agent_candidates
+                            set generated_by_agent_id = 'agent_evolution_algorithm'
+                            where generated_by_agent_id = 'agent_purifier'
+                            """);
     }
 
-    private InstalledExtensionDto SaveInstalledExtension(string? catalogId, ExtensionDescriptor descriptor, bool enabled, string status, string statusMessage)
+    private InstalledExtensionDto SaveInstalledExtension(string? catalogId, ExtensionDescriptor descriptor,
+        bool enabled, string status, string statusMessage)
     {
         var now = DateTimeOffset.UtcNow;
         var id = $"ext_{ExtensionCatalog.NormalizeId(descriptor.ExtensionId)}";
@@ -2985,64 +2928,64 @@ public sealed class CoreStore : IModelStore
         {
             using var connection = OpenConnection();
             Execute(connection, """
-                insert into installed_extensions (
-                    id,
-                    catalog_id,
-                    extension_id,
-                    kind,
-                    version,
-                    publisher,
-                    display_name,
-                    description,
-                    source_kind,
-                    source_location,
-                    capabilities_json,
-                    permissions_json,
-                    manifest_json,
-                    config_json,
-                    enabled,
-                    status,
-                    status_message,
-                    installed_at,
-                    updated_at
-                )
-                values (
-                    $id,
-                    $catalog_id,
-                    $extension_id,
-                    $kind,
-                    $version,
-                    $publisher,
-                    $display_name,
-                    $description,
-                    $source_kind,
-                    $source_location,
-                    $capabilities_json,
-                    $permissions_json,
-                    $manifest_json,
-                    null,
-                    $enabled,
-                    $status,
-                    $status_message,
-                    $installed_at,
-                    $updated_at
-                )
-                on conflict(id) do update set
-                    catalog_id = excluded.catalog_id,
-                    version = excluded.version,
-                    publisher = excluded.publisher,
-                    display_name = excluded.display_name,
-                    description = excluded.description,
-                    source_kind = excluded.source_kind,
-                    source_location = excluded.source_location,
-                    capabilities_json = excluded.capabilities_json,
-                    permissions_json = excluded.permissions_json,
-                    manifest_json = excluded.manifest_json,
-                    enabled = excluded.enabled,
-                    status = excluded.status,
-                    status_message = excluded.status_message,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into installed_extensions (
+                                    id,
+                                    catalog_id,
+                                    extension_id,
+                                    kind,
+                                    version,
+                                    publisher,
+                                    display_name,
+                                    description,
+                                    source_kind,
+                                    source_location,
+                                    capabilities_json,
+                                    permissions_json,
+                                    manifest_json,
+                                    config_json,
+                                    enabled,
+                                    status,
+                                    status_message,
+                                    installed_at,
+                                    updated_at
+                                )
+                                values (
+                                    $id,
+                                    $catalog_id,
+                                    $extension_id,
+                                    $kind,
+                                    $version,
+                                    $publisher,
+                                    $display_name,
+                                    $description,
+                                    $source_kind,
+                                    $source_location,
+                                    $capabilities_json,
+                                    $permissions_json,
+                                    $manifest_json,
+                                    null,
+                                    $enabled,
+                                    $status,
+                                    $status_message,
+                                    $installed_at,
+                                    $updated_at
+                                )
+                                on conflict(id) do update set
+                                    catalog_id = excluded.catalog_id,
+                                    version = excluded.version,
+                                    publisher = excluded.publisher,
+                                    display_name = excluded.display_name,
+                                    description = excluded.description,
+                                    source_kind = excluded.source_kind,
+                                    source_location = excluded.source_location,
+                                    capabilities_json = excluded.capabilities_json,
+                                    permissions_json = excluded.permissions_json,
+                                    manifest_json = excluded.manifest_json,
+                                    enabled = excluded.enabled,
+                                    status = excluded.status,
+                                    status_message = excluded.status_message,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", id);
                 command.Parameters.AddWithValue("$catalog_id", (object?)catalogId ?? DBNull.Value);
@@ -3054,8 +2997,10 @@ public sealed class CoreStore : IModelStore
                 command.Parameters.AddWithValue("$description", descriptor.Description);
                 command.Parameters.AddWithValue("$source_kind", descriptor.SourceKind);
                 command.Parameters.AddWithValue("$source_location", descriptor.SourceLocation);
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(descriptor.Capabilities, TinadecJson.Options));
-                command.Parameters.AddWithValue("$permissions_json", JsonSerializer.Serialize(descriptor.Permissions, TinadecJson.Options));
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(descriptor.Capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$permissions_json",
+                    JsonSerializer.Serialize(descriptor.Permissions, TinadecJson.Options));
                 command.Parameters.AddWithValue("$manifest_json", descriptor.ManifestJson);
                 command.Parameters.AddWithValue("$enabled", enabled ? 1 : 0);
                 command.Parameters.AddWithValue("$status", status);
@@ -3066,7 +3011,7 @@ public sealed class CoreStore : IModelStore
         }
 
         return GetInstalledExtension(id)
-            ?? throw new InvalidOperationException("Installed extension was not found.");
+               ?? throw new InvalidOperationException("Installed extension was not found.");
     }
 
     private InstalledExtensionDto? GetInstalledExtension(string installedExtensionId)
@@ -3074,23 +3019,27 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, catalog_id, extension_id, kind, version, publisher, display_name, description, source_kind,
-                   source_location, capabilities_json, permissions_json, enabled, status, status_message, installed_at, updated_at
-            from installed_extensions
-            where id = $id
-            """;
+                              select id, catalog_id, extension_id, kind, version, publisher, display_name, description, source_kind,
+                                     source_location, capabilities_json, permissions_json, enabled, status, status_message, installed_at, updated_at
+                              from installed_extensions
+                              where id = $id
+                              """;
         command.Parameters.AddWithValue("$id", installedExtensionId);
 
         using var reader = command.ExecuteReader();
         return reader.Read() ? ReadInstalledExtension(reader) : null;
     }
 
-    private string? GetApprovalStatus(string approvalId) => GetApproval(approvalId)?.Status;
+    private string? GetApprovalStatus(string approvalId)
+    {
+        return GetApproval(approvalId)?.Status;
+    }
 
     private static ApprovalDto? GetApproval(SqliteConnection connection, string approvalId)
     {
         using var command = connection.CreateCommand();
-        command.CommandText = "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals where id = $id";
+        command.CommandText =
+            "select id, session_id, kind, summary, command, cwd, status, created_at, decided_at from approvals where id = $id";
         command.Parameters.AddWithValue("$id", approvalId);
         using var reader = command.ExecuteReader();
         return reader.Read() ? ReadApproval(reader) : null;
@@ -3099,44 +3048,41 @@ public sealed class CoreStore : IModelStore
     private static void ValidateExtensionDescriptor(ExtensionDescriptor descriptor)
     {
         if (string.IsNullOrWhiteSpace(descriptor.ExtensionId))
-        {
             throw new InvalidOperationException("Extension id is required.");
-        }
 
         if (descriptor.ExtensionId.Any(ch => !char.IsAsciiLetterOrDigit(ch) && ch is not '-' and not '_'))
-        {
             throw new InvalidOperationException("Extension id may only contain ASCII letters, numbers, '-' and '_'.");
-        }
 
         if (descriptor.SourceLocation.Contains("..", StringComparison.Ordinal) ||
             descriptor.SourceLocation.Contains('\r', StringComparison.Ordinal) ||
             descriptor.SourceLocation.Contains('\n', StringComparison.Ordinal))
-        {
             throw new InvalidOperationException("Extension source location is not safe.");
-        }
     }
 
-    private static void UpsertRuntimeCache(SqliteConnection connection, InstalledExtensionDto extension, DateTimeOffset now)
+    private static void UpsertRuntimeCache(SqliteConnection connection, InstalledExtensionDto extension,
+        DateTimeOffset now)
     {
         if (extension.Kind == "mcp-server")
         {
             var serverId = $"mcp_{extension.Id}";
             Execute(connection, """
-                insert into mcp_servers (id, extension_id, name, transport, status, tools_json, updated_at)
-                values ($id, $extension_id, $name, $transport, 'pending_connect', $tools_json, $updated_at)
-                on conflict(id) do update set
-                    name = excluded.name,
-                    transport = excluded.transport,
-                    status = excluded.status,
-                    tools_json = excluded.tools_json,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into mcp_servers (id, extension_id, name, transport, status, tools_json, updated_at)
+                                values ($id, $extension_id, $name, $transport, 'pending_connect', $tools_json, $updated_at)
+                                on conflict(id) do update set
+                                    name = excluded.name,
+                                    transport = excluded.transport,
+                                    status = excluded.status,
+                                    tools_json = excluded.tools_json,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", serverId);
                 command.Parameters.AddWithValue("$extension_id", extension.Id);
                 command.Parameters.AddWithValue("$name", extension.DisplayName);
-                command.Parameters.AddWithValue("$transport", extension.Capabilities.Contains("stdio") ? "stdio" : "http");
-                command.Parameters.AddWithValue("$tools_json", JsonSerializer.Serialize(Array.Empty<string>(), TinadecJson.Options));
+                command.Parameters.AddWithValue("$transport",
+                    extension.Capabilities.Contains("stdio") ? "stdio" : "http");
+                command.Parameters.AddWithValue("$tools_json",
+                    JsonSerializer.Serialize(Array.Empty<string>(), TinadecJson.Options));
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
             });
         }
@@ -3145,23 +3091,25 @@ public sealed class CoreStore : IModelStore
         {
             var adapterId = $"acp_{extension.Id}";
             Execute(connection, """
-                insert into acp_adapters (id, extension_id, name, command, status, status_message, capabilities_json, updated_at)
-                values ($id, $extension_id, $name, $command, 'pending_connect', $status_message, $capabilities_json, $updated_at)
-                on conflict(id) do update set
-                    name = excluded.name,
-                    command = excluded.command,
-                    status = excluded.status,
-                    status_message = excluded.status_message,
-                    capabilities_json = excluded.capabilities_json,
-                    updated_at = excluded.updated_at
-                """, command =>
+                                insert into acp_adapters (id, extension_id, name, command, status, status_message, capabilities_json, updated_at)
+                                values ($id, $extension_id, $name, $command, 'pending_connect', $status_message, $capabilities_json, $updated_at)
+                                on conflict(id) do update set
+                                    name = excluded.name,
+                                    command = excluded.command,
+                                    status = excluded.status,
+                                    status_message = excluded.status_message,
+                                    capabilities_json = excluded.capabilities_json,
+                                    updated_at = excluded.updated_at
+                                """, command =>
             {
                 command.Parameters.AddWithValue("$id", adapterId);
                 command.Parameters.AddWithValue("$extension_id", extension.Id);
                 command.Parameters.AddWithValue("$name", extension.DisplayName);
                 command.Parameters.AddWithValue("$command", "agent acp");
-                command.Parameters.AddWithValue("$status_message", "Adapter metadata is enabled. Awaiting Gateway connect.");
-                command.Parameters.AddWithValue("$capabilities_json", JsonSerializer.Serialize(extension.Capabilities, TinadecJson.Options));
+                command.Parameters.AddWithValue("$status_message",
+                    "Adapter metadata is enabled. Awaiting Gateway connect.");
+                command.Parameters.AddWithValue("$capabilities_json",
+                    JsonSerializer.Serialize(extension.Capabilities, TinadecJson.Options));
                 command.Parameters.AddWithValue("$updated_at", now.ToString("O"));
             });
         }
@@ -3169,24 +3117,21 @@ public sealed class CoreStore : IModelStore
 
     private static void RemoveRuntimeCache(SqliteConnection connection, string installedExtensionId)
     {
-        Execute(connection, "delete from mcp_servers where extension_id = $extension_id", command => command.Parameters.AddWithValue("$extension_id", installedExtensionId));
-        Execute(connection, "delete from mcp_capabilities_cache where server_id = $server_id", command => command.Parameters.AddWithValue("$server_id", $"mcp_{installedExtensionId}"));
-        Execute(connection, "delete from acp_adapters where extension_id = $extension_id", command => command.Parameters.AddWithValue("$extension_id", installedExtensionId));
+        Execute(connection, "delete from mcp_servers where extension_id = $extension_id",
+            command => command.Parameters.AddWithValue("$extension_id", installedExtensionId));
+        Execute(connection, "delete from mcp_capabilities_cache where server_id = $server_id",
+            command => command.Parameters.AddWithValue("$server_id", $"mcp_{installedExtensionId}"));
+        Execute(connection, "delete from acp_adapters where extension_id = $extension_id",
+            command => command.Parameters.AddWithValue("$extension_id", installedExtensionId));
     }
 
     public static string ResolveDatabasePath(IConfiguration configuration)
     {
         var configured = configuration["Tinadec:DatabasePath"] ?? Environment.GetEnvironmentVariable("TINADEC_DB");
-        if (!string.IsNullOrWhiteSpace(configured))
-        {
-            return configured;
-        }
+        if (!string.IsNullOrWhiteSpace(configured)) return configured;
 
         var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        if (string.IsNullOrWhiteSpace(root))
-        {
-            root = AppContext.BaseDirectory;
-        }
+        if (string.IsNullOrWhiteSpace(root)) root = AppContext.BaseDirectory;
 
         return Path.Combine(root, "TinadecCode", "tinadec.db");
     }
@@ -3585,9 +3530,7 @@ public sealed class CoreStore : IModelStore
             .Select(ch => char.IsAsciiLetterOrDigit(ch) || ch is '.' or '_' or '-' ? ch : '.')
             .ToArray());
         while (normalized.Contains("..", StringComparison.Ordinal))
-        {
             normalized = normalized.Replace("..", ".", StringComparison.Ordinal);
-        }
 
         normalized = normalized.Trim('.', '_', '-');
         return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
@@ -3612,7 +3555,8 @@ public sealed class CoreStore : IModelStore
     private static string NormalizeExtensionSourceKind(string? value)
     {
         var normalized = ExtensionCatalog.NormalizeId(value);
-        return normalized is "local-directory" or "local-archive" or "github" or "git" or "https-archive" or "marketplace-url" or "mcpb" or "dxt" or "builtin"
+        return normalized is "local-directory" or "local-archive" or "github" or "git" or "https-archive"
+            or "marketplace-url" or "mcpb" or "dxt" or "builtin"
             ? normalized
             : "local-directory";
     }
@@ -3620,7 +3564,9 @@ public sealed class CoreStore : IModelStore
     private static string NormalizeConnectionKind(string? value, string driver)
     {
         var normalized = NormalizePlain(value, InferConnectionKind(driver)).ToLowerInvariant();
-        return normalized is "api-key" or "cli" or "local-server" or "http" or "public-api" ? normalized : InferConnectionKind(driver);
+        return normalized is "api-key" or "cli" or "local-server" or "http" or "public-api"
+            ? normalized
+            : InferConnectionKind(driver);
     }
 
     private static string InferConnectionKind(string driver)
@@ -3629,19 +3575,11 @@ public sealed class CoreStore : IModelStore
         if (normalized.Contains("cli", StringComparison.OrdinalIgnoreCase) ||
             normalized.Contains("cursor", StringComparison.OrdinalIgnoreCase) ||
             normalized.Contains("opencode", StringComparison.OrdinalIgnoreCase))
-        {
             return "cli";
-        }
 
-        if (ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(normalized))
-        {
-            return "local-server";
-        }
+        if (ProviderTemplateRules.IsLocalOpenAiCompatibleDriver(normalized)) return "local-server";
 
-        if (normalized is "pollinations")
-        {
-            return "public-api";
-        }
+        if (normalized is "pollinations") return "public-api";
 
         return "api-key";
     }
@@ -3649,19 +3587,15 @@ public sealed class CoreStore : IModelStore
     private static string[] InferCapabilities(string driver, string connectionKind)
     {
         if (connectionKind.Equals("cli", StringComparison.OrdinalIgnoreCase))
-        {
             return driver.Contains("cursor", StringComparison.OrdinalIgnoreCase)
                 ? ["agent", "cli", "acp"]
                 : ["agent", "cli", "workspace"];
-        }
 
         if (connectionKind.Equals("local-server", StringComparison.OrdinalIgnoreCase)
             || connectionKind.Equals("public-api", StringComparison.OrdinalIgnoreCase))
-        {
             return connectionKind.Equals("local-server", StringComparison.OrdinalIgnoreCase)
                 ? ["chat", "local", "no-api-key"]
                 : ["chat", "streaming", "public-api", "no-api-key"];
-        }
 
         return ["chat", "streaming", "tool-calls"];
     }
@@ -3676,7 +3610,8 @@ public sealed class CoreStore : IModelStore
         var cooldownUntil = ResolveCapabilityValue(capabilities, "cooldown_until") is { } cooldownValue
             ? ParseTime(cooldownValue)
             : existing?.CooldownUntil;
-        var failureCount = ResolveCapabilityValue(capabilities, "failure_count") is { } failureValue && int.TryParse(failureValue, out var parsedFailureCount)
+        var failureCount = ResolveCapabilityValue(capabilities, "failure_count") is { } failureValue &&
+                           int.TryParse(failureValue, out var parsedFailureCount)
             ? parsedFailureCount
             : existing?.FailureCount ?? 0;
         var lastFailureAt = ResolveCapabilityValue(capabilities, "cooldown_started_at") is { } failureAtValue
@@ -3744,7 +3679,8 @@ public sealed class CoreStore : IModelStore
     private static string? ResolveCapabilityValue(IReadOnlyList<string> capabilities, string key)
     {
         var prefix = key + ":";
-        return capabilities.FirstOrDefault(capability => capability.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
+        return capabilities.FirstOrDefault(capability =>
+            capability.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
     }
 
     private static bool HasCapabilityKey(string capability, string key)
@@ -3755,7 +3691,8 @@ public sealed class CoreStore : IModelStore
     private static int ResolveCapabilityInt(IReadOnlyList<string> capabilities, string key)
     {
         var prefix = key + ":";
-        var value = capabilities.FirstOrDefault(capability => capability.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
+        var value = capabilities.FirstOrDefault(capability =>
+            capability.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))?[prefix.Length..];
         return int.TryParse(value, out var parsed) ? parsed : 0;
     }
 
@@ -3773,11 +3710,11 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            insert into agent_candidates (id, generated_by_agent_id, name, layer, agent_type, description,
-                                          suggested_tools_json, evaluation_notes_json, status, created_at)
-            values ($id, $generated_by_agent_id, $name, $layer, $agent_type, $description,
-                    $suggested_tools_json, $evaluation_notes_json, $status, $created_at)
-            """;
+                              insert into agent_candidates (id, generated_by_agent_id, name, layer, agent_type, description,
+                                                            suggested_tools_json, evaluation_notes_json, status, created_at)
+                              values ($id, $generated_by_agent_id, $name, $layer, $agent_type, $description,
+                                      $suggested_tools_json, $evaluation_notes_json, $status, $created_at)
+                              """;
         command.Parameters.AddWithValue("$id", seed.Id);
         command.Parameters.AddWithValue("$generated_by_agent_id", seed.GeneratedByAgentId);
         command.Parameters.AddWithValue("$name", seed.Name);
@@ -3808,17 +3745,16 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select id, fragment_id, version, content, changed_fields_json, change_summary,
-                   is_active, created_at
-            from prompt_fragment_versions
-            where fragment_id = $fragment_id
-            order by version desc
-            """;
+                              select id, fragment_id, version, content, changed_fields_json, change_summary,
+                                     is_active, created_at
+                              from prompt_fragment_versions
+                              where fragment_id = $fragment_id
+                              order by version desc
+                              """;
         command.Parameters.AddWithValue("$fragment_id", fragmentId);
         using var reader = command.ExecuteReader();
         var versions = new List<PromptFragmentVersionDto>();
         while (reader.Read())
-        {
             versions.Add(new PromptFragmentVersionDto(
                 reader.GetString(0),
                 reader.GetString(1),
@@ -3828,7 +3764,6 @@ public sealed class CoreStore : IModelStore
                 reader.GetString(5),
                 reader.GetBoolean(6),
                 DateTimeOffset.Parse(reader.GetString(7), null, System.Globalization.DateTimeStyles.RoundtripKind)));
-        }
         return versions;
     }
 
@@ -3837,11 +3772,11 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            insert into prompt_fragment_versions (id, fragment_id, version, content, changed_fields_json,
-                                                   change_summary, is_active, created_at)
-            values ($id, $fragment_id, $version, $content, $changed_fields_json,
-                    $change_summary, $is_active, $created_at)
-            """;
+                              insert into prompt_fragment_versions (id, fragment_id, version, content, changed_fields_json,
+                                                                     change_summary, is_active, created_at)
+                              values ($id, $fragment_id, $version, $content, $changed_fields_json,
+                                      $change_summary, $is_active, $created_at)
+                              """;
         command.Parameters.AddWithValue("$id", version.Id);
         command.Parameters.AddWithValue("$fragment_id", version.FragmentId);
         command.Parameters.AddWithValue("$version", version.Version);
@@ -3862,27 +3797,31 @@ public sealed class CoreStore : IModelStore
         command.ExecuteNonQuery();
     }
 
-    public (int PositiveCount, int NegativeCount, DateTimeOffset LastEvaluatedAt) GetPromptFragmentSignalStats(string fragmentId)
+    public (int PositiveCount, int NegativeCount, DateTimeOffset LastEvaluatedAt) GetPromptFragmentSignalStats(
+        string fragmentId)
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select
-                sum(case when signal = 'positive' then 1 else 0 end) as positive,
-                sum(case when signal = 'negative' then 1 else 0 end) as negative,
-                max(created_at) as last_at
-            from prompt_fragment_signals
-            where fragment_id = $fragment_id
-            """;
+                              select
+                                  sum(case when signal = 'positive' then 1 else 0 end) as positive,
+                                  sum(case when signal = 'negative' then 1 else 0 end) as negative,
+                                  max(created_at) as last_at
+                              from prompt_fragment_signals
+                              where fragment_id = $fragment_id
+                              """;
         command.Parameters.AddWithValue("$fragment_id", fragmentId);
         using var reader = command.ExecuteReader();
         if (reader.Read())
         {
             var positive = reader.IsDBNull(0) ? 0 : reader.GetInt32(0);
             var negative = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
-            var lastAt = reader.IsDBNull(2) ? DateTimeOffset.UtcNow : DateTimeOffset.Parse(reader.GetString(2), null, System.Globalization.DateTimeStyles.RoundtripKind);
+            var lastAt = reader.IsDBNull(2)
+                ? DateTimeOffset.UtcNow
+                : DateTimeOffset.Parse(reader.GetString(2), null, System.Globalization.DateTimeStyles.RoundtripKind);
             return (positive, negative, lastAt);
         }
+
         return (0, 0, DateTimeOffset.UtcNow);
     }
 
@@ -3891,12 +3830,12 @@ public sealed class CoreStore : IModelStore
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            select
-                sum(case when signal = 'positive' then 1 else 0 end) as positive,
-                sum(case when signal = 'negative' then 1 else 0 end) as negative
-            from prompt_fragment_signals
-            where fragment_id = $fragment_id and version = $version
-            """;
+                              select
+                                  sum(case when signal = 'positive' then 1 else 0 end) as positive,
+                                  sum(case when signal = 'negative' then 1 else 0 end) as negative
+                              from prompt_fragment_signals
+                              where fragment_id = $fragment_id and version = $version
+                              """;
         command.Parameters.AddWithValue("$fragment_id", fragmentId);
         command.Parameters.AddWithValue("$version", version);
         using var reader = command.ExecuteReader();
@@ -3906,17 +3845,19 @@ public sealed class CoreStore : IModelStore
             var negative = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
             return (positive, negative);
         }
+
         return (0, 0);
     }
 
-    public void RecordPromptFragmentSignal(string fragmentId, string signal, string? runId, string? sessionId, string? note, int? version = null)
+    public void RecordPromptFragmentSignal(string fragmentId, string signal, string? runId, string? sessionId,
+        string? note, int? version = null)
     {
         using var connection = OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            insert into prompt_fragment_signals (id, fragment_id, version, signal, run_id, session_id, note, created_at)
-            values ($id, $fragment_id, $version, $signal, $run_id, $session_id, $note, $created_at)
-            """;
+                              insert into prompt_fragment_signals (id, fragment_id, version, signal, run_id, session_id, note, created_at)
+                              values ($id, $fragment_id, $version, $signal, $run_id, $session_id, $note, $created_at)
+                              """;
         command.Parameters.AddWithValue("$id", $"sig_{Guid.NewGuid():N}");
         command.Parameters.AddWithValue("$fragment_id", fragmentId);
         command.Parameters.AddWithValue("$version", (object?)version ?? DBNull.Value);

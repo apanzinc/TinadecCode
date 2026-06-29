@@ -28,10 +28,7 @@ public sealed class ToolExecutionService(
 
         var run = store.GetRun(runId);
         var tool = tools.Resolve(toolId);
-        if (run is null || tool is null)
-        {
-            return null;
-        }
+        if (run is null || tool is null) return null;
 
         var sessionId = string.IsNullOrWhiteSpace(request.SessionId) ? run.SessionId : request.SessionId;
         var normalizedRequest = request with
@@ -106,10 +103,7 @@ public sealed class ToolExecutionService(
 
     private ApprovalDto? ResolveApprovedApproval(string? approvalId)
     {
-        if (string.IsNullOrWhiteSpace(approvalId))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(approvalId)) return null;
 
         var approval = store.GetApproval(approvalId);
         return string.Equals(approval?.Status, "approved", StringComparison.OrdinalIgnoreCase)
@@ -124,7 +118,6 @@ public sealed class ToolExecutionService(
     {
         var adapter = invocationAdapters.FirstOrDefault(item => item.CanInvoke(tool));
         if (adapter is null)
-        {
             return new CodeToolExecuteResultDto(
                 tool.Id,
                 "failed",
@@ -133,7 +126,6 @@ public sealed class ToolExecutionService(
                 new Dictionary<string, object?>(),
                 false,
                 null);
-        }
 
         try
         {
@@ -154,10 +146,7 @@ public sealed class ToolExecutionService(
 
     private static string SummarizeCommand(string toolId, IReadOnlyDictionary<string, object?>? arguments)
     {
-        if (arguments is null || arguments.Count == 0)
-        {
-            return toolId;
-        }
+        if (arguments is null || arguments.Count == 0) return toolId;
 
         return JsonSerializer.Serialize(new
         {

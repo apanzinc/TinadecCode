@@ -31,7 +31,8 @@ public sealed class SecretProtector
         if (protectedSecret.StartsWith("dpapi:", StringComparison.OrdinalIgnoreCase))
         {
             if (!OperatingSystem.IsWindows())
-                throw new PlatformNotSupportedException("DPAPI-protected TinadecOffice secrets can only be opened on Windows.");
+                throw new PlatformNotSupportedException(
+                    "DPAPI-protected TinadecOffice secrets can only be opened on Windows.");
 
             var bytes = Convert.FromBase64String(protectedSecret["dpapi:".Length..]);
             var unprotected = UnprotectDpapi(bytes);

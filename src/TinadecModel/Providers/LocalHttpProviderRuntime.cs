@@ -17,7 +17,8 @@ public sealed record LocalHttpHealthProbeResult(
     int? StatusCode,
     string? SafeMessage);
 
-public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompatibleClient openAiCompatibleClient) : IModelProviderRuntime
+public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompatibleClient openAiCompatibleClient)
+    : IModelProviderRuntime
 {
     public const string RuntimeId = "local-http";
 
@@ -26,8 +27,8 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
     public bool CanHandle(ResolvedModelInvocationContextDto context)
     {
         return (IsLocalHttpDriver(context.Driver) || IsLocalServerOpenAiCompatibleDriver(context.Driver))
-            && (string.Equals(context.ConnectionKind, "http", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(context.ConnectionKind, "local-server", StringComparison.OrdinalIgnoreCase));
+               && (string.Equals(context.ConnectionKind, "http", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(context.ConnectionKind, "local-server", StringComparison.OrdinalIgnoreCase));
     }
 
     public async Task<ModelInvocationResultDto> GenerateAsync(
@@ -66,17 +67,18 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
             using var request = new HttpRequestMessage(HttpMethod.Get, BuildEndpoint(context.EffectiveBaseUrl));
             using var response = await httpClient.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode)
-            {
-                return new LocalHttpHealthProbeResult(ProviderHealthStatus.Healthy, null, false, (int)response.StatusCode, null);
-            }
+                return new LocalHttpHealthProbeResult(ProviderHealthStatus.Healthy, null, false,
+                    (int)response.StatusCode, null);
 
             var failure = ProviderErrorMapper.FromHttpStatus(context.ProviderInstanceId, (int)response.StatusCode);
-            return new LocalHttpHealthProbeResult(ProviderHealthStatus.Unhealthy, failure.Category, failure.Retryable, failure.StatusCode, failure.SafeMessage);
+            return new LocalHttpHealthProbeResult(ProviderHealthStatus.Unhealthy, failure.Category, failure.Retryable,
+                failure.StatusCode, failure.SafeMessage);
         }
         catch (Exception exception)
         {
             var failure = MapFailure(context.ProviderInstanceId, exception, cancellationToken);
-            return new LocalHttpHealthProbeResult(ProviderHealthStatus.Unhealthy, failure.Category, failure.Retryable, failure.StatusCode, failure.SafeMessage);
+            return new LocalHttpHealthProbeResult(ProviderHealthStatus.Unhealthy, failure.Category, failure.Retryable,
+                failure.StatusCode, failure.SafeMessage);
         }
     }
 
@@ -92,9 +94,8 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
         IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
         if (ResolveAdapterStrategy(context.Driver) != LocalHttpAdapterStrategy.OpenAiCompatible)
-        {
-            throw new NotSupportedException("Local HTTP streaming is only supported for OpenAI-compatible adapter strategy.");
-        }
+            throw new NotSupportedException(
+                "Local HTTP streaming is only supported for OpenAI-compatible adapter strategy.");
 
         var settings = new StoredModelSettings(
             context.EffectiveBaseUrl,
@@ -135,12 +136,10 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
         using var request = BuildBasicHttpRequest(context, apiKey, messages);
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
-        {
             throw new HttpRequestException(
                 $"Local HTTP provider request failed with {(int)response.StatusCode}.",
                 null,
                 response.StatusCode);
-        }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         var content = ExtractBasicResponseText(body);
@@ -166,9 +165,7 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
     {
         var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(context.EffectiveBaseUrl));
         if (!string.IsNullOrWhiteSpace(apiKey))
-        {
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-        }
 
         var payload = new
         {
@@ -191,37 +188,28 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
     private static Uri BuildEndpoint(string baseUrl)
     {
         if (string.IsNullOrWhiteSpace(baseUrl))
-        {
-            throw new HttpRequestException("Local HTTP provider base URL is not configured.", null, HttpStatusCode.BadRequest);
-        }
+            throw new HttpRequestException("Local HTTP provider base URL is not configured.", null,
+                HttpStatusCode.BadRequest);
 
         return new Uri(baseUrl.Trim(), UriKind.Absolute);
     }
 
     private static string ExtractBasicResponseText(string body)
     {
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return "The model returned an empty response.";
-        }
+        if (string.IsNullOrWhiteSpace(body)) return "The model returned an empty response.";
 
         try
         {
             using var document = JsonDocument.Parse(body);
             if (document.RootElement.ValueKind == JsonValueKind.String)
-            {
                 return document.RootElement.GetString() ?? "The model returned an empty response.";
-            }
 
             foreach (var propertyName in new[] { "text", "content", "response", "message", "result" })
-            {
-                if (document.RootElement.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String)
-                {
+                if (document.RootElement.TryGetProperty(propertyName, out var property) &&
+                    property.ValueKind == JsonValueKind.String)
                     return string.IsNullOrWhiteSpace(property.GetString())
                         ? "The model returned an empty response."
                         : property.GetString()!;
-                }
-            }
         }
         catch (JsonException)
         {
@@ -231,10 +219,10 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
         return body;
     }
 
-    private static ProviderFailureDetails MapFailure(string providerId, Exception exception, CancellationToken cancellationToken)
+    private static ProviderFailureDetails MapFailure(string providerId, Exception exception,
+        CancellationToken cancellationToken)
     {
         if (exception is TaskCanceledException && !cancellationToken.IsCancellationRequested)
-        {
             return new ProviderFailureDetails(
                 ProviderErrorCategory.Timeout,
                 ProviderErrorMapper.IsRetryable(ProviderErrorCategory.Timeout),
@@ -242,10 +230,8 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
                 null,
                 providerId,
                 "Provider request timed out.");
-        }
 
         if (exception is HttpRequestException { StatusCode: null })
-        {
             return new ProviderFailureDetails(
                 ProviderErrorCategory.ProviderUnavailable,
                 ProviderErrorMapper.IsRetryable(ProviderErrorCategory.ProviderUnavailable),
@@ -253,7 +239,6 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
                 null,
                 providerId,
                 "Provider is temporarily unavailable.");
-        }
 
         return ProviderErrorMapper.FromException(providerId, exception);
     }
@@ -279,9 +264,9 @@ public sealed class LocalHttpProviderRuntime(HttpClient httpClient, OpenAiCompat
     private static bool IsLocalHttpDriver(string? driver)
     {
         return string.Equals(driver, "local-http", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(driver, "local-http-generic", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(driver, "local-http-openai-compatible", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(driver, "local-http-ollama", StringComparison.OrdinalIgnoreCase);
+               || string.Equals(driver, "local-http-generic", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(driver, "local-http-openai-compatible", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(driver, "local-http-ollama", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsLocalServerOpenAiCompatibleDriver(string? driver)
@@ -309,20 +294,21 @@ public sealed class LocalHttpModule : IModelProviderModule
     {
         services.AddHttpClient<OpenAiCompatibleClient>();
         services.AddHttpClient<LocalHttpProviderRuntime>();
-        services.AddSingleton<IModelProviderRuntime>(provider => provider.GetRequiredService<LocalHttpProviderRuntime>());
+        services.AddSingleton<IModelProviderRuntime>(provider =>
+            provider.GetRequiredService<LocalHttpProviderRuntime>());
     }
 
     public ProviderCapabilityDto GetCapabilities()
     {
         return new ProviderCapabilityDto(
-            SupportsStreaming: true,
-            SupportsTools: false,
-            SupportsJsonMode: false,
-            SupportsSystemPrompt: true,
-            MaxContextTokens: null,
-            RequiresWorkspace: false,
-            CredentialKind: "none",
-            HealthStatus: ProviderHealthStatus.Unknown);
+            true,
+            false,
+            false,
+            true,
+            null,
+            false,
+            "none",
+            ProviderHealthStatus.Unknown);
     }
 }
 

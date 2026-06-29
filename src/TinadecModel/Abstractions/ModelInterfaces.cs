@@ -23,6 +23,7 @@ public interface IModelProviderRuntime
 {
     string Id { get; }
     bool CanHandle(ResolvedModelInvocationContextDto context);
+
     Task<ModelInvocationResultDto> GenerateAsync(
         ResolvedModelInvocationContextDto context,
         string? apiKey,

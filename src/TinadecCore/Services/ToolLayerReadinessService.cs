@@ -118,7 +118,8 @@ public sealed class ToolLayerReadinessService(
         {
             "blocked" => "Tool is registered but has no execution endpoint.",
             "warning" => "Tool is declared for future integration and should not be treated as an active runtime.",
-            _ when requiresHumanCheckpoint => "Tool is dispatchable only after the Core human-checkpoint policy is satisfied.",
+            _ when requiresHumanCheckpoint =>
+                "Tool is dispatchable only after the Core human-checkpoint policy is satisfied.",
             _ => "Tool is dispatchable as a read-only Core-approved capability."
         };
 
@@ -179,7 +180,8 @@ public sealed class ToolLayerReadinessService(
         var summary = status switch
         {
             "blocked" => "Execution agent has no dispatchable tools or recognized internal Core capabilities.",
-            "warning" when !agent.Enabled => "Execution agent is disabled; its tool scope is visible but not dispatchable.",
+            "warning" when !agent.Enabled =>
+                "Execution agent is disabled; its tool scope is visible but not dispatchable.",
             "warning" => "Execution agent has unresolved tool scope entries that Core will not expand implicitly.",
             _ => "Execution agent scope resolves to Core tools or recognized internal capabilities."
         };
@@ -216,27 +218,18 @@ public sealed class ToolLayerReadinessService(
     {
         var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var agent in executionAgents.Where(agent => agent.Enabled))
-        {
-            foreach (var toolId in agent.AllowedTools.SelectMany(scope => ResolveToolIds(scope, toolIds)).Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                result[toolId] = result.TryGetValue(toolId, out var count) ? count + 1 : 1;
-            }
-        }
+        foreach (var toolId in agent.AllowedTools.SelectMany(scope => ResolveToolIds(scope, toolIds))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+            result[toolId] = result.TryGetValue(toolId, out var count) ? count + 1 : 1;
 
         return result;
     }
 
     private static IReadOnlyList<string> ResolveToolIds(string scope, IReadOnlySet<string> toolIds)
     {
-        if (toolIds.Contains(scope))
-        {
-            return [scope];
-        }
+        if (toolIds.Contains(scope)) return [scope];
 
-        if (!ScopeToolAliases.TryGetValue(scope, out var aliases))
-        {
-            return [];
-        }
+        if (!ScopeToolAliases.TryGetValue(scope, out var aliases)) return [];
 
         return aliases.Where(toolIds.Contains).ToArray();
     }

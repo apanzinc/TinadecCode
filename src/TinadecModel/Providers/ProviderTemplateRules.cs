@@ -38,28 +38,26 @@ public static class ProviderTemplateRules
         return !string.IsNullOrWhiteSpace(driver) && LocalOpenAiCompatibleDrivers.Contains(driver);
     }
 
-    public static bool RequiresApiKey(string? driver, string? connectionKind, IReadOnlyList<string>? capabilities = null)
+    public static bool RequiresApiKey(string? driver, string? connectionKind,
+        IReadOnlyList<string>? capabilities = null)
     {
-        if (capabilities?.Any(capability => capability.Equals("no-api-key", StringComparison.OrdinalIgnoreCase)) is true)
-        {
-            return false;
-        }
+        if (capabilities?.Any(capability =>
+                capability.Equals("no-api-key", StringComparison.OrdinalIgnoreCase)) is true) return false;
 
         if (capabilities?.Any(capability => capability.Equals("api-key", StringComparison.OrdinalIgnoreCase)
-            || capability.Equals("credential:api-key", StringComparison.OrdinalIgnoreCase)
-            || capability.Equals("credential:api_key", StringComparison.OrdinalIgnoreCase)) is true)
-        {
+                                            || capability.Equals("credential:api-key",
+                                                StringComparison.OrdinalIgnoreCase)
+                                            || capability.Equals("credential:api_key",
+                                                StringComparison.OrdinalIgnoreCase)) is true)
             return true;
-        }
 
         var template = string.IsNullOrWhiteSpace(driver) ? null : ModelProviderCatalog.FindTemplate(driver);
         if (template is not null)
-        {
             return string.Equals(template.CredentialKind, "api_key", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(template.CredentialKind, "api-key", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(template.Capabilities.CredentialKind, "api_key", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(template.Capabilities.CredentialKind, "api-key", StringComparison.OrdinalIgnoreCase);
-        }
+                   || string.Equals(template.CredentialKind, "api-key", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(template.Capabilities.CredentialKind, "api_key", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(template.Capabilities.CredentialKind, "api-key",
+                       StringComparison.OrdinalIgnoreCase);
 
         return false;
     }

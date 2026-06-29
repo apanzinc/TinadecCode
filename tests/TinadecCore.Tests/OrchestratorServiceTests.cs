@@ -20,7 +20,7 @@ public sealed class OrchestratorServiceTests
     public async Task CompleteRunWithModelAsync_ChoosesHealthyProviderAndStoresAssistantResponse()
     {
         var harness = CreateHarness();
-        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", priority: 10);
+        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", 10);
         harness.Runtime.Responses[PrimaryProviderId] = SuccessfulResponse("primary response");
         var session = CreateSession(harness.Store);
         var userMessage = harness.Store.AddMessage(session.Id, "user", "Plan a small refactor.");
@@ -32,16 +32,18 @@ public sealed class OrchestratorServiceTests
         Assert.Equal("assistant", completion.AssistantMessage.Role);
         Assert.Contains("primary response", completion.AssistantMessage.Content);
         Assert.Equal(PrimaryProviderId, completion.Invocation?.Context.ProviderInstanceId);
-        Assert.Contains(harness.Store.ListMessages(session.Id), message => message.Role == "assistant" && message.Content.Contains("primary response"));
+        Assert.Contains(harness.Store.ListMessages(session.Id),
+            message => message.Role == "assistant" && message.Content.Contains("primary response"));
     }
 
     [Fact]
     public async Task CompleteRunWithModelAsync_FallsBackAfterRetryableProviderFailure()
     {
         var harness = CreateHarness();
-        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", priority: 10);
-        SaveProvider(harness.Store, FallbackProviderId, "fallback-model", priority: 20);
-        harness.Runtime.Responses[PrimaryProviderId] = FailedResponse("primary unavailable", ProviderErrorCategory.ProviderUnavailable, retryable: true);
+        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", 10);
+        SaveProvider(harness.Store, FallbackProviderId, "fallback-model", 20);
+        harness.Runtime.Responses[PrimaryProviderId] =
+            FailedResponse("primary unavailable", ProviderErrorCategory.ProviderUnavailable, true);
         harness.Runtime.Responses[FallbackProviderId] = SuccessfulResponse("fallback response");
         var session = CreateSession(harness.Store);
         var userMessage = harness.Store.AddMessage(session.Id, "user", "Use a fallback if needed.");
@@ -62,10 +64,11 @@ public sealed class OrchestratorServiceTests
     public async Task CompleteRunWithModelAsync_FailedInvocationRecordsSafeErrorWithoutAssistantCompletion()
     {
         var harness = CreateHarness();
-        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", priority: 10);
+        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", 10);
         const string rawPrompt = "secret prompt text must not be logged";
         const string rawCredential = "sk-test-raw-secret";
-        harness.Runtime.Responses[PrimaryProviderId] = FailedResponse("Provider request timed out.", ProviderErrorCategory.Timeout, retryable: false);
+        harness.Runtime.Responses[PrimaryProviderId] =
+            FailedResponse("Provider request timed out.", ProviderErrorCategory.Timeout, false);
         var session = CreateSession(harness.Store);
         var userMessage = harness.Store.AddMessage(session.Id, "user", rawPrompt);
         var snapshot = harness.Orchestrator.CreateRunForMessage(session.Id, userMessage.Id, userMessage.Content);
@@ -90,10 +93,12 @@ public sealed class OrchestratorServiceTests
     public async Task CompleteRunWithModelAsync_ReportsFallbackFailureWhenAllRetryableProvidersFail()
     {
         var harness = CreateHarness();
-        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", priority: 10);
-        SaveProvider(harness.Store, FallbackProviderId, "fallback-model", priority: 20);
-        harness.Runtime.Responses[PrimaryProviderId] = FailedResponse("primary unavailable", ProviderErrorCategory.ProviderUnavailable, retryable: true);
-        harness.Runtime.Responses[FallbackProviderId] = FailedResponse("fallback timed out", ProviderErrorCategory.Timeout, retryable: true);
+        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", 10);
+        SaveProvider(harness.Store, FallbackProviderId, "fallback-model", 20);
+        harness.Runtime.Responses[PrimaryProviderId] =
+            FailedResponse("primary unavailable", ProviderErrorCategory.ProviderUnavailable, true);
+        harness.Runtime.Responses[FallbackProviderId] =
+            FailedResponse("fallback timed out", ProviderErrorCategory.Timeout, true);
         var session = CreateSession(harness.Store);
         var userMessage = harness.Store.AddMessage(session.Id, "user", "Try all available providers.");
         var snapshot = harness.Orchestrator.CreateRunForMessage(session.Id, userMessage.Id, userMessage.Content);
@@ -114,8 +119,9 @@ public sealed class OrchestratorServiceTests
     public async Task CompleteRunWithModelAsync_RecordsRouteProviderModelAndErrorCategoryInEvents()
     {
         var harness = CreateHarness();
-        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", priority: 10);
-        harness.Runtime.Responses[PrimaryProviderId] = FailedResponse("Provider is rate limited.", ProviderErrorCategory.RateLimited, retryable: false);
+        SaveProvider(harness.Store, PrimaryProviderId, "primary-model", 10);
+        harness.Runtime.Responses[PrimaryProviderId] =
+            FailedResponse("Provider is rate limited.", ProviderErrorCategory.RateLimited, false);
         var session = CreateSession(harness.Store);
         var userMessage = harness.Store.AddMessage(session.Id, "user", "Capture safe event metadata.");
         var snapshot = harness.Orchestrator.CreateRunForMessage(session.Id, userMessage.Id, userMessage.Content);
@@ -176,20 +182,21 @@ public sealed class OrchestratorServiceTests
                 "test-connection",
                 $"https://{id}.example.test/v1",
                 model,
-                ApiKey: null,
-                ClearApiKey: false,
-                BinaryPath: null,
-                HomePath: null,
-                ServerUrl: null,
-                LaunchArgs: null,
-                Capabilities: ["chat", $"route:{PlannerPurpose}", $"priority:{priority}", "no-api-key"],
-                Enabled: true),
-            encryptedApiKey: null);
+                null,
+                false,
+                null,
+                null,
+                null,
+                null,
+                ["chat", $"route:{PlannerPurpose}", $"priority:{priority}", "no-api-key"],
+                true),
+            null);
     }
 
     private static Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto> SuccessfulResponse(string content)
     {
-        return context => new ModelInvocationResultDto("executed", content, context, false, FakeProviderRuntime.RuntimeId);
+        return context =>
+            new ModelInvocationResultDto("executed", content, context, false, FakeProviderRuntime.RuntimeId);
     }
 
     private static Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto> FailedResponse(
@@ -211,13 +218,17 @@ public sealed class OrchestratorServiceTests
             context.ProviderInstanceId);
     }
 
-    private sealed record OrchestratorHarness(CoreStore Store, OrchestratorService Orchestrator, FakeProviderRuntime Runtime);
+    private sealed record OrchestratorHarness(
+        CoreStore Store,
+        OrchestratorService Orchestrator,
+        FakeProviderRuntime Runtime);
 
     private sealed class FakeProviderRuntime : IModelProviderRuntime
     {
         public const string RuntimeId = "fake-provider-runtime";
 
-        public Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>> Responses { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>
+            Responses { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public string Id => RuntimeId;
 
@@ -235,7 +246,7 @@ public sealed class OrchestratorServiceTests
         {
             var response = Responses.TryGetValue(context.ProviderInstanceId, out var handler)
                 ? handler(context)
-                : FailedResponse("No fake response configured.", ProviderErrorCategory.Unknown, retryable: false)(context);
+                : FailedResponse("No fake response configured.", ProviderErrorCategory.Unknown, false)(context);
             return Task.FromResult(response);
         }
 
@@ -245,7 +256,9 @@ public sealed class OrchestratorServiceTests
             IReadOnlyList<MessageDto> messages,
             CancellationToken cancellationToken = default,
             IReadOnlyList<ModelToolSpecDto>? tools = null)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class NullCredentialResolver : IModelCredentialResolver

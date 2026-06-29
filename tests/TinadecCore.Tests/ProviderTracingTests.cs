@@ -24,13 +24,17 @@ public sealed class ProviderTracingTests
         var store = CreateStore();
         SaveProvider(store, PrimaryProviderId, "model-a", 10);
         SaveProvider(store, FallbackProviderId, "model-b", 20);
-        var runtime = new TraceRuntime(new Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>(StringComparer.OrdinalIgnoreCase)
-        {
-            [PrimaryProviderId] = context => Failed(context, ProviderErrorCategory.Timeout, retryable: true, "Provider request timed out."),
-            [FallbackProviderId] = context => Executed(context, "safe reply")
-        });
+        var runtime = new TraceRuntime(
+            new Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>(StringComparer
+                .OrdinalIgnoreCase)
+            {
+                [PrimaryProviderId] = context =>
+                    Failed(context, ProviderErrorCategory.Timeout, true, "Provider request timed out."),
+                [FallbackProviderId] = context => Executed(context, "safe reply")
+            });
 
-        var sut = new ModelInvocationRuntime(new ModelRouteResolver(store), new NullCredentialResolver(), [runtime], store);
+        var sut = new ModelInvocationRuntime(new ModelRouteResolver(store), new NullCredentialResolver(), [runtime],
+            store);
 
         const string sessionId = "session-trace";
         var result = await sut.InvokeAsync(
@@ -41,7 +45,7 @@ public sealed class ProviderTracingTests
         Assert.Equal("executed", result.Status);
         var invocation = collector.Completed
             .Last(activity => activity.OperationName == SpanNames.ModelProviderInvocation
-                && ReadTag(activity, SpanAttrs.SessionId) == sessionId);
+                              && ReadTag(activity, SpanAttrs.SessionId) == sessionId);
         AssertTag(invocation, SpanAttrs.ProviderInstanceId, FallbackProviderId);
         AssertTag(invocation, SpanAttrs.ProviderId, FallbackProviderId);
         AssertTag(invocation, SpanAttrs.RoutePurpose, Purpose);
@@ -71,24 +75,31 @@ public sealed class ProviderTracingTests
         var store = CreateStore();
         SaveProvider(store, PrimaryProviderId, "model-a", 10);
 
-        var runtime = new TraceRuntime(new Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>(StringComparer.OrdinalIgnoreCase)
-        {
-            [PrimaryProviderId] = context => Failed(context, ProviderErrorCategory.Timeout, retryable: false, "Provider request timed out.")
-        });
+        var runtime = new TraceRuntime(
+            new Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>(StringComparer
+                .OrdinalIgnoreCase)
+            {
+                [PrimaryProviderId] = context =>
+                    Failed(context, ProviderErrorCategory.Timeout, false, "Provider request timed out.")
+            });
 
-        var sut = new ModelInvocationRuntime(new ModelRouteResolver(store), new NullCredentialResolver(), [runtime], store);
+        var sut = new ModelInvocationRuntime(new ModelRouteResolver(store), new NullCredentialResolver(), [runtime],
+            store);
         var timeoutResult = await sut.InvokeAsync("session-timeout", Purpose, [Message("session-timeout", "test")]);
         Assert.Equal(ProviderErrorCategory.Timeout, timeoutResult.ErrorCategory);
 
-        runtime.Responses[PrimaryProviderId] = context => Failed(context, ProviderErrorCategory.Cancelled, retryable: false, "Provider request was cancelled.");
+        runtime.Responses[PrimaryProviderId] = context =>
+            Failed(context, ProviderErrorCategory.Cancelled, false, "Provider request was cancelled.");
         var cancelledResult = await sut.InvokeAsync("session-cancel", Purpose, [Message("session-cancel", "test")]);
         Assert.Equal(ProviderErrorCategory.Cancelled, cancelledResult.ErrorCategory);
 
         var invocationSpans = collector.Completed
             .Where(activity => activity.OperationName == SpanNames.ModelProviderInvocation)
             .ToArray();
-        Assert.Contains(invocationSpans, span => ReadTag(span, SpanAttrs.ErrorCategory) == ProviderErrorCategory.Timeout.ToString());
-        Assert.Contains(invocationSpans, span => ReadTag(span, SpanAttrs.ErrorCategory) == ProviderErrorCategory.Cancelled.ToString());
+        Assert.Contains(invocationSpans,
+            span => ReadTag(span, SpanAttrs.ErrorCategory) == ProviderErrorCategory.Timeout.ToString());
+        Assert.Contains(invocationSpans,
+            span => ReadTag(span, SpanAttrs.ErrorCategory) == ProviderErrorCategory.Cancelled.ToString());
         Assert.Contains(invocationSpans, span => ReadTag(span, SpanAttrs.Status) == "failed");
         Assert.All(invocationSpans, span => AssertNoSensitiveData(span, "sk-", "secret", "Authorization"));
     }
@@ -105,8 +116,8 @@ public sealed class ProviderTracingTests
         Assert.Equal(PrimaryProviderId, context.ProviderInstanceId);
         var routeSpan = collector.Completed
             .Last(activity => activity.OperationName == SpanNames.ModelRouteSelection
-                && ReadTag(activity, SpanAttrs.ProviderInstanceId) == PrimaryProviderId
-                && ReadTag(activity, SpanAttrs.RoutePurpose) == Purpose);
+                              && ReadTag(activity, SpanAttrs.ProviderInstanceId) == PrimaryProviderId
+                              && ReadTag(activity, SpanAttrs.RoutePurpose) == Purpose);
         AssertTag(routeSpan, SpanAttrs.RoutePurpose, Purpose);
         AssertTag(routeSpan, SpanAttrs.ProviderId, PrimaryProviderId);
         AssertTag(routeSpan, SpanAttrs.ProviderInstanceId, PrimaryProviderId);
@@ -162,15 +173,15 @@ public sealed class ProviderTracingTests
                 "test-connection",
                 $"https://{id}.example.test/v1",
                 model,
-                ApiKey: null,
-                ClearApiKey: false,
-                BinaryPath: null,
-                HomePath: null,
-                ServerUrl: null,
-                LaunchArgs: null,
-                Capabilities: ["chat", $"route:{Purpose}", $"priority:{priority}", "no-api-key"],
-                Enabled: true),
-            encryptedApiKey: null);
+                null,
+                false,
+                null,
+                null,
+                null,
+                null,
+                ["chat", $"route:{Purpose}", $"priority:{priority}", "no-api-key"],
+                true),
+            null);
     }
 
     private static string? ReadTag(Activity activity, string key)
@@ -210,11 +221,14 @@ public sealed class ProviderTracingTests
         }
     }
 
-    private sealed class TraceRuntime(Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>> responses) : IModelProviderRuntime
+    private sealed class TraceRuntime(
+        Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>> responses)
+        : IModelProviderRuntime
     {
         public const string RuntimeId = "trace-runtime";
 
-        public Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>> Responses { get; } = responses;
+        public Dictionary<string, Func<ResolvedModelInvocationContextDto, ModelInvocationResultDto>>
+            Responses { get; } = responses;
 
         public string Id => RuntimeId;
 
@@ -240,7 +254,9 @@ public sealed class ProviderTracingTests
             IReadOnlyList<MessageDto> messages,
             CancellationToken cancellationToken = default,
             IReadOnlyList<ModelToolSpecDto>? tools = null)
-            => throw new NotSupportedException();
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class ActivityCollector : IDisposable
@@ -252,8 +268,10 @@ public sealed class ProviderTracingTests
             _listener = new ActivityListener
             {
                 ShouldListenTo = source => source.Name == TinadecActivitySource.SourceName,
-                Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.AllDataAndRecorded,
+                Sample = static (ref ActivityCreationOptions<ActivityContext> _) =>
+                    ActivitySamplingResult.AllDataAndRecorded,
+                SampleUsingParentId = static (ref ActivityCreationOptions<string> _) =>
+                    ActivitySamplingResult.AllDataAndRecorded,
                 ActivityStopped = activity => Completed.Add(activity)
             };
 

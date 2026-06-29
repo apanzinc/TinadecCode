@@ -21,14 +21,17 @@ public static class ExtensionCatalog
 {
     public const string BuiltinSourceId = "source_builtin";
 
-    public static ExtensionSourceDto BuiltinSource(DateTimeOffset now) => new(
-        BuiltinSourceId,
-        "Tinadec Curated",
-        "builtin",
-        "tinadec://marketplace/curated",
-        true,
-        now,
-        now);
+    public static ExtensionSourceDto BuiltinSource(DateTimeOffset now)
+    {
+        return new ExtensionSourceDto(
+            BuiltinSourceId,
+            "Tinadec Curated",
+            "builtin",
+            "tinadec://marketplace/curated",
+            true,
+            now,
+            now);
+    }
 
     public static IReadOnlyList<ExtensionDescriptor> BuiltinDescriptors { get; } =
     [
@@ -50,7 +53,8 @@ public static class ExtensionCatalog
                 ["version"] = "0.1.0",
                 ["publisher"] = "Tinadec",
                 ["display_name"] = "Agent Market Research",
-                ["description"] = "A planning-layer skill for comparing agent tools, model providers, and extension ecosystems.",
+                ["description"] =
+                    "A planning-layer skill for comparing agent tools, model providers, and extension ecosystems.",
                 ["entrypoints"] = new JsonObject { ["skill"] = "SKILL.md" },
                 ["capabilities"] = new JsonArray("skill", "planning-layer", "market"),
                 ["permissions"] = new JsonArray("context.read")
@@ -73,7 +77,8 @@ public static class ExtensionCatalog
                 ["version"] = "0.1.0",
                 ["publisher"] = "Tinadec",
                 ["display_name"] = "Filesystem MCP Bridge",
-                ["description"] = "Declarative MCP stdio server template for exposing selected filesystem tools through Core policy.",
+                ["description"] =
+                    "Declarative MCP stdio server template for exposing selected filesystem tools through Core policy.",
                 ["entrypoints"] = new JsonObject
                 {
                     ["mcp"] = new JsonObject
@@ -104,7 +109,8 @@ public static class ExtensionCatalog
                 ["version"] = "0.1.0",
                 ["publisher"] = "Tinadec",
                 ["display_name"] = "Cursor ACP Adapter",
-                ["description"] = "ACP adapter template for launching a Cursor-compatible agent subprocess and routing events through Core.",
+                ["description"] =
+                    "ACP adapter template for launching a Cursor-compatible agent subprocess and routing events through Core.",
                 ["entrypoints"] = new JsonObject
                 {
                     ["acp"] = new JsonObject
@@ -118,10 +124,10 @@ public static class ExtensionCatalog
             }))
     ];
 
-    public static ExtensionDescriptor DescriptorFromRequest(InstallExtensionPreviewRequest request, MarketCatalogItemDto? catalogItem)
+    public static ExtensionDescriptor DescriptorFromRequest(InstallExtensionPreviewRequest request,
+        MarketCatalogItemDto? catalogItem)
     {
         if (catalogItem is not null)
-        {
             return new ExtensionDescriptor(
                 catalogItem.ExtensionId,
                 catalogItem.Kind,
@@ -134,12 +140,9 @@ public static class ExtensionCatalog
                 catalogItem.Capabilities,
                 catalogItem.Permissions,
                 ManifestFromCatalog(catalogItem));
-        }
 
         if (!string.IsNullOrWhiteSpace(request.ManifestJson))
-        {
             return DescriptorFromManifest(request.ManifestJson, request.SourceKind, request.SourceLocation);
-        }
 
         var sourceKind = NormalizeKind(request.SourceKind, "local-directory");
         var sourceLocation = request.SourceLocation?.Trim() ?? string.Empty;
@@ -147,9 +150,7 @@ public static class ExtensionCatalog
         {
             var manifestPath = Path.Combine(sourceLocation, "tinadec.extension.json");
             if (File.Exists(manifestPath))
-            {
                 return DescriptorFromManifest(File.ReadAllText(manifestPath), sourceKind, sourceLocation);
-            }
 
             var skillPath = Path.Combine(sourceLocation, "SKILL.md");
             if (File.Exists(skillPath))
@@ -182,10 +183,7 @@ public static class ExtensionCatalog
         }
 
         var fallbackId = NormalizeId(Path.GetFileNameWithoutExtension(sourceLocation));
-        if (string.IsNullOrWhiteSpace(fallbackId))
-        {
-            fallbackId = $"extension-{Guid.NewGuid():N}"[..24];
-        }
+        if (string.IsNullOrWhiteSpace(fallbackId)) fallbackId = $"extension-{Guid.NewGuid():N}"[..24];
 
         return new ExtensionDescriptor(
             fallbackId,
@@ -216,34 +214,21 @@ public static class ExtensionCatalog
     {
         var risks = new List<string>();
         if (IsRemoteSource(descriptor.SourceKind))
-        {
             risks.Add("Downloads extension metadata or package content from an external network host.");
-        }
 
         if (descriptor.Permissions.Any(p => p.Contains("process", StringComparison.OrdinalIgnoreCase)))
-        {
             risks.Add("May launch a local child process when enabled.");
-        }
 
         if (descriptor.Permissions.Any(p => p.Contains("file.write", StringComparison.OrdinalIgnoreCase)))
-        {
             risks.Add("May request write access through Core approval policy.");
-        }
 
         if (descriptor.Kind == "mcp-server")
-        {
             risks.Add("Adds external MCP tools to the execution-layer tool catalog after enablement.");
-        }
 
         if (descriptor.Kind == "acp-adapter")
-        {
             risks.Add("Adds an external agent runtime that can request file, terminal, and permission operations.");
-        }
 
-        if (risks.Count == 0)
-        {
-            risks.Add("Installs metadata and keeps the extension disabled until you enable it.");
-        }
+        if (risks.Count == 0) risks.Add("Installs metadata and keeps the extension disabled until you enable it.");
 
         return new ExtensionInstallPreviewDto(
             descriptor.ExtensionId,
@@ -266,9 +251,7 @@ public static class ExtensionCatalog
         var normalized = new string((value ?? string.Empty).Trim().ToLowerInvariant().Select(ch =>
             char.IsAsciiLetterOrDigit(ch) || ch is '-' or '_' ? ch : '-').ToArray());
         while (normalized.Contains("--", StringComparison.Ordinal))
-        {
             normalized = normalized.Replace("--", "-", StringComparison.Ordinal);
-        }
 
         normalized = normalized.Trim('-', '_');
         return normalized.Length > 80 ? normalized[..80] : normalized;
@@ -279,15 +262,13 @@ public static class ExtensionCatalog
         return sourceKind is "github" or "git" or "https-archive" or "marketplace-url" or "mcpb" or "dxt";
     }
 
-    private static ExtensionDescriptor DescriptorFromManifest(string manifestJson, string? sourceKind, string? sourceLocation)
+    private static ExtensionDescriptor DescriptorFromManifest(string manifestJson, string? sourceKind,
+        string? sourceLocation)
     {
         var node = JsonNode.Parse(manifestJson)?.AsObject()
-            ?? throw new InvalidOperationException("Extension manifest must be a JSON object.");
+                   ?? throw new InvalidOperationException("Extension manifest must be a JSON object.");
         var id = NormalizeId(GetString(node, "id") ?? GetString(node, "name"));
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            throw new InvalidOperationException("Extension manifest requires an id.");
-        }
+        if (string.IsNullOrWhiteSpace(id)) throw new InvalidOperationException("Extension manifest requires an id.");
 
         var kind = NormalizeKind(GetString(node, "kind"), "skill");
         var capabilities = ReadStringArray(node, "capabilities", InferCapabilities(sourceKind, sourceLocation));
@@ -326,15 +307,15 @@ public static class ExtensionCatalog
         });
     }
 
-    private static string ManifestFrom(JsonObject obj) => obj.ToJsonString(TinadecJson.Options);
+    private static string ManifestFrom(JsonObject obj)
+    {
+        return obj.ToJsonString(TinadecJson.Options);
+    }
 
     private static JsonArray ToJsonArray(IEnumerable<string> values)
     {
         var array = new JsonArray();
-        foreach (var value in values)
-        {
-            array.Add(value);
-        }
+        foreach (var value in values) array.Add(value);
 
         return array;
     }
@@ -349,13 +330,11 @@ public static class ExtensionCatalog
     private static IReadOnlyList<string> ReadStringArray(JsonObject node, string name, IReadOnlyList<string> fallback)
     {
         if (node.TryGetPropertyValue(name, out var value) && value is JsonArray array)
-        {
             return array.Select(item => item?.GetValue<string>())
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .Select(item => item!.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-        }
 
         return fallback;
     }
@@ -364,7 +343,8 @@ public static class ExtensionCatalog
     {
         var normalized = NormalizeId(value);
         return normalized is "skill" or "mcp-server" or "acp-adapter" or "tool-pack" or
-            "local-directory" or "local-archive" or "github" or "git" or "https-archive" or "marketplace-url" or "mcpb" or "dxt" or "builtin"
+            "local-directory" or "local-archive" or "github" or "git" or "https-archive" or "marketplace-url" or "mcpb"
+            or "dxt" or "builtin"
             ? normalized
             : fallback;
     }
@@ -373,7 +353,8 @@ public static class ExtensionCatalog
     {
         var source = $"{sourceKind} {sourceLocation}".ToLowerInvariant();
         if (source.Contains("acp", StringComparison.Ordinal)) return "acp-adapter";
-        if (source.Contains("mcp", StringComparison.Ordinal) || source.EndsWith(".mcpb", StringComparison.Ordinal) || source.EndsWith(".dxt", StringComparison.Ordinal)) return "mcp-server";
+        if (source.Contains("mcp", StringComparison.Ordinal) || source.EndsWith(".mcpb", StringComparison.Ordinal) ||
+            source.EndsWith(".dxt", StringComparison.Ordinal)) return "mcp-server";
         return "skill";
     }
 
@@ -407,12 +388,8 @@ public static class ExtensionCatalog
     {
         var lines = File.ReadLines(skillPath).Take(40).ToArray();
         foreach (var line in lines)
-        {
             if (line.TrimStart().StartsWith("description:", StringComparison.OrdinalIgnoreCase))
-            {
                 return line.Split(':', 2)[1].Trim().Trim('"', '\'');
-            }
-        }
 
         return "Local SKILL.md extension.";
     }

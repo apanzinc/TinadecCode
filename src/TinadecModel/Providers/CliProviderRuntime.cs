@@ -42,10 +42,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
         IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
         var validationFailure = ValidateConfiguration(context);
-        if (validationFailure is not null)
-        {
-            return validationFailure;
-        }
+        if (validationFailure is not null) return validationFailure;
 
         var provider = context.Provider!;
         var sessionId = messages.FirstOrDefault()?.SessionId ?? "sessionless";
@@ -67,12 +64,10 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
             cancellationToken);
 
         if (!execution.Succeeded)
-        {
             return CreateFailure(
                 context,
                 execution.Failure!,
                 null);
-        }
 
         var processResult = execution.Value!;
         if (processResult.ExitCode == 0)
@@ -88,9 +83,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
 
         var failure = ProviderErrorMapper.FromCliExitCode(context.ProviderInstanceId, processResult.ExitCode);
         if (failure.Retryable && _store is not null)
-        {
             _store.RecordModelProviderFailure(context.ProviderInstanceId, failure.Category, DateTimeOffset.UtcNow);
-        }
 
         return CreateFailure(
             context,
@@ -108,40 +101,31 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
         CancellationToken cancellationToken = default,
         IReadOnlyList<ModelToolSpecDto>? tools = null)
     {
-        throw new NotSupportedException("CLI provider does not support streaming. Falling back to non-streaming generation.");
+        throw new NotSupportedException(
+            "CLI provider does not support streaming. Falling back to non-streaming generation.");
     }
 
     private ModelInvocationResultDto? ValidateConfiguration(ResolvedModelInvocationContextDto context)
     {
-        if (context.Provider is null)
-        {
-            return CreateInvalidRequest(context, "CLI provider instance is missing.");
-        }
+        if (context.Provider is null) return CreateInvalidRequest(context, "CLI provider instance is missing.");
 
         if (string.IsNullOrWhiteSpace(context.Provider.BinaryPath))
-        {
             return CreateInvalidRequest(context, "CLI provider executable path is required.");
-        }
 
         if (!File.Exists(context.Provider.BinaryPath))
-        {
             return CreateInvalidRequest(context, "CLI provider executable path does not exist.");
-        }
 
         if (string.IsNullOrWhiteSpace(context.Provider.HomePath))
-        {
             return CreateInvalidRequest(context, "CLI provider workspace path is required.");
-        }
 
         if (!Directory.Exists(context.Provider.HomePath))
-        {
             return CreateInvalidRequest(context, "CLI provider workspace path does not exist.");
-        }
 
         return null;
     }
 
-    private static ModelInvocationResultDto CreateInvalidRequest(ResolvedModelInvocationContextDto context, string message)
+    private static ModelInvocationResultDto CreateInvalidRequest(ResolvedModelInvocationContextDto context,
+        string message)
     {
         var failure = ProviderErrorMapper.FromCliExitCode(context.ProviderInstanceId, 2);
         return CreateFailure(context, failure, message);
@@ -177,10 +161,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
         string runId)
     {
         var arguments = new List<string>();
-        if (!string.IsNullOrWhiteSpace(provider.LaunchArgs))
-        {
-            arguments.AddRange(SplitCommandLine(provider.LaunchArgs));
-        }
+        if (!string.IsNullOrWhiteSpace(provider.LaunchArgs)) arguments.AddRange(SplitCommandLine(provider.LaunchArgs));
 
         arguments.Add("--model");
         arguments.Add(context.EffectiveModel);
@@ -241,15 +222,9 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
             EnableRaisingEvents = true
         };
 
-        foreach (var argument in arguments)
-        {
-            process.StartInfo.ArgumentList.Add(argument);
-        }
+        foreach (var argument in arguments) process.StartInfo.ArgumentList.Add(argument);
 
-        if (!process.Start())
-        {
-            throw new InvalidOperationException("CLI provider process did not start.");
-        }
+        if (!process.Start()) throw new InvalidOperationException("CLI provider process did not start.");
 
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
@@ -265,7 +240,8 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
         {
             await process.WaitForExitAsync(linkedCts.Token);
         }
-        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested &&
+                                                 !cancellationToken.IsCancellationRequested)
         {
             KillProcess(process);
             throw new TimeoutException("CLI provider process timed out.");
@@ -285,10 +261,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
     {
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
+            if (!process.HasExited) process.Kill(true);
         }
         catch (InvalidOperationException)
         {
@@ -303,19 +276,14 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
     {
         var trimmed = stdout.Trim();
         if (trimmed.Length > 0)
-        {
             try
             {
                 var response = JsonSerializer.Deserialize<ModelInvocationResponseDto>(trimmed, TinadecJson.Options);
-                if (response is not null)
-                {
-                    return response;
-                }
+                if (response is not null) return response;
             }
             catch (JsonException)
             {
             }
-        }
 
         var content = string.IsNullOrWhiteSpace(trimmed)
             ? "The CLI model returned an empty response."
@@ -342,10 +310,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
     private static string? BuildFailureMessage(string stderr, string? apiKey)
     {
         var redacted = RedactSecrets(stderr, apiKey).Trim();
-        if (string.IsNullOrWhiteSpace(redacted))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(redacted)) return null;
 
         return $"CLI stderr: {redacted}";
     }
@@ -354,9 +319,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
     {
         var redacted = value;
         if (!string.IsNullOrWhiteSpace(apiKey))
-        {
             redacted = redacted.Replace(apiKey, "[REDACTED]", StringComparison.Ordinal);
-        }
 
         redacted = SecretLikeTokenRegex().Replace(redacted, "$1[REDACTED]");
         redacted = BearerTokenRegex().Replace(redacted, "$1[REDACTED]");
@@ -394,10 +357,7 @@ public sealed partial class CliProviderRuntime : IModelProviderRuntime
 
     private static void AddArgument(List<string> arguments, StringBuilder current)
     {
-        if (current.Length == 0)
-        {
-            return;
-        }
+        if (current.Length == 0) return;
 
         arguments.Add(current.ToString());
         current.Clear();

@@ -48,10 +48,7 @@ public sealed class OrchestratorService
             .SetTag(SpanAttrs.UserMessageId, userMessageId);
 
         var snapshot = _store.CreateOrchestrationRun(sessionId, userMessageId, userContent);
-        if (snapshot.Run is null)
-        {
-            return snapshot;
-        }
+        if (snapshot.Run is null) return snapshot;
 
         Publish("run.started", sessionId, new JsonObject
         {
@@ -61,17 +58,14 @@ public sealed class OrchestratorService
         }, ["agent.run"]);
 
         if (snapshot.Graph is not null)
-        {
             Publish("task_graph.created", sessionId, new JsonObject
             {
                 ["run_id"] = snapshot.Run.Id,
                 ["graph_id"] = snapshot.Graph.Id,
                 ["node_count"] = snapshot.Nodes.Count
             }, ["task_graph.create"]);
-        }
 
         foreach (var assignment in snapshot.Assignments)
-        {
             Publish("task.assigned", sessionId, new JsonObject
             {
                 ["run_id"] = assignment.RunId,
@@ -80,7 +74,6 @@ public sealed class OrchestratorService
                 ["agent_type"] = assignment.AgentType,
                 ["permission_mode"] = assignment.PermissionMode
             }, ["task.assign", "agent.execution"]);
-        }
 
         var workflow = _workflowRuntime.Compile(snapshot);
         Publish("agent.workflow.compiled", sessionId, new JsonObject
@@ -91,7 +84,6 @@ public sealed class OrchestratorService
         }, ["agent.workflow", "runtime.core-workflow"]);
 
         foreach (var result in snapshot.StepResults)
-        {
             Publish("step.result.created", sessionId, new JsonObject
             {
                 ["run_id"] = result.RunId,
@@ -99,10 +91,8 @@ public sealed class OrchestratorService
                 ["agent_id"] = result.AgentId,
                 ["status"] = result.Status
             }, ["step.result"]);
-        }
 
         foreach (var finding in snapshot.SupervisionFindings)
-        {
             Publish("supervision.checked", sessionId, new JsonObject
             {
                 ["run_id"] = finding.RunId,
@@ -110,10 +100,8 @@ public sealed class OrchestratorService
                 ["category"] = finding.Category,
                 ["status"] = finding.Status
             }, ["supervisor.check"]);
-        }
 
         foreach (var pack in snapshot.ContextPacks)
-        {
             Publish("context.pack.created", sessionId, new JsonObject
             {
                 ["run_id"] = pack.RunId,
@@ -121,7 +109,6 @@ public sealed class OrchestratorService
                 ["token_budget"] = pack.TokenBudget,
                 ["compression_ratio"] = pack.CompressionRatio
             }, ["context.compact"]);
-        }
 
         return snapshot;
     }
@@ -130,10 +117,7 @@ public sealed class OrchestratorService
         OrchestrationSnapshotDto snapshot,
         CancellationToken cancellationToken = default)
     {
-        if (snapshot.Run is null)
-        {
-            return new SessionModelOrchestrationResult(null, null);
-        }
+        if (snapshot.Run is null) return new SessionModelOrchestrationResult(null, null);
 
         using var activity = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentInference);
         activity?
@@ -175,11 +159,13 @@ public sealed class OrchestratorService
                 .SetTag(SpanAttrs.ErrorCategory, invocation.ErrorCategory?.ToString())
                 .SetTag(SpanAttrs.FallbackProviderId, IsFallback(invocation) ? invocation.ErrorProviderId : null);
 
-            PublishModelEvent("model.requested", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext, ["agent.meeting", "model.remote"]);
+            PublishModelEvent("model.requested", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext,
+                ["agent.meeting", "model.remote"]);
 
             if (!string.Equals(invocation.Status, "executed", StringComparison.OrdinalIgnoreCase))
             {
-                PublishModelEvent("model.failed", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext, ["agent.meeting", "model.remote", "model.error"]);
+                PublishModelEvent("model.failed", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext,
+                    ["agent.meeting", "model.remote", "model.error"]);
                 return new SessionModelOrchestrationResult(null, invocation);
             }
 
@@ -190,9 +176,8 @@ public sealed class OrchestratorService
                 // No tool calls — final text response
                 var reply = invocation.Content;
                 if (snapshot.Graph is not null && turn == 0)
-                {
-                    reply = $"{reply}\n\nTask graph ready: {snapshot.Graph.Title} with {snapshot.Nodes.Count} nodes and {snapshot.Assignments.Count} execution assignments. Mutating actions remain approval-gated.";
-                }
+                    reply =
+                        $"{reply}\n\nTask graph ready: {snapshot.Graph.Title} with {snapshot.Nodes.Count} nodes and {snapshot.Assignments.Count} execution assignments. Mutating actions remain approval-gated.";
 
                 var assistantMessage = _store.AddMessage(snapshot.Run.SessionId, "assistant", reply);
                 Publish("message.created", snapshot.Run.SessionId, new JsonObject
@@ -207,7 +192,8 @@ public sealed class OrchestratorService
                     ["fallback_provider_selected"] = IsFallback(invocation)
                 }, ["agent.message", "agent.meeting", "model.remote"]);
 
-                PublishModelEvent("model.completed", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext, ["agent.meeting", "model.remote"]);
+                PublishModelEvent("model.completed", snapshot.Run.SessionId, snapshot.Run.Id, invocation, promptContext,
+                    ["agent.meeting", "model.remote"]);
                 return new SessionModelOrchestrationResult(assistantMessage, invocation);
             }
 
@@ -226,7 +212,9 @@ public sealed class OrchestratorService
                 $"asst_tc_{Guid.NewGuid():N}",
                 snapshot.Run.SessionId,
                 "assistant",
-                string.IsNullOrWhiteSpace(invocation.Content) ? toolCallSummary : $"{invocation.Content}\n{toolCallSummary}",
+                string.IsNullOrWhiteSpace(invocation.Content)
+                    ? toolCallSummary
+                    : $"{invocation.Content}\n{toolCallSummary}",
                 DateTimeOffset.UtcNow));
 
             // Execute each tool call
@@ -312,7 +300,8 @@ public sealed class OrchestratorService
             // If any tool required approval, return early with pending approval info
             if (pendingApprovals.Count > 0)
             {
-                var approvalNote = $"I need your approval to execute {pendingApprovals.Count} tool(s): {string.Join(", ", pendingApprovals.Select(tc => tc.ToolId))}. Please review the pending approvals and decide.";
+                var approvalNote =
+                    $"I need your approval to execute {pendingApprovals.Count} tool(s): {string.Join(", ", pendingApprovals.Select(tc => tc.ToolId))}. Please review the pending approvals and decide.";
                 var approvalMessage = _store.AddMessage(snapshot.Run.SessionId, "assistant", approvalNote);
                 Publish("message.created", snapshot.Run.SessionId, new JsonObject
                 {
@@ -348,12 +337,10 @@ public sealed class OrchestratorService
     /// </summary>
     public async IAsyncEnumerable<ModelStreamChunkDto> CompleteRunWithModelStreamAsync(
         OrchestrationSnapshotDto snapshot,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken = default)
     {
-        if (snapshot.Run is null)
-        {
-            yield break;
-        }
+        if (snapshot.Run is null) yield break;
 
         using var activity = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentInference);
         activity?
@@ -379,21 +366,21 @@ public sealed class OrchestratorService
             var collectedToolCalls = new List<ToolCallDto>();
             string? effectiveProviderId = null;
             string? effectiveModel = null;
-            bool fallbackSelected = false;
+            var fallbackSelected = false;
             string? errorProviderId = null;
             ProviderErrorCategory? errorCategory = null;
             string? safeError = null;
             ModelUsageDto? usage = null;
             ModelFinishReason? finishReason = null;
-            bool streamFailed = false;
+            var streamFailed = false;
 
             await foreach (var chunk in _modelRuntime.InvokeStreamAsync(
-                snapshot.Run.SessionId,
-                "planner",
-                conversation,
-                cancellationToken,
-                promptContext.SystemPrompt,
-                hasTools ? toolSpecs : null))
+                               snapshot.Run.SessionId,
+                               "planner",
+                               conversation,
+                               cancellationToken,
+                               promptContext.SystemPrompt,
+                               hasTools ? toolSpecs : null))
             {
                 effectiveProviderId = chunk.ProviderInstanceId;
                 if (chunk.EffectiveModel is not null) effectiveModel = chunk.EffectiveModel;
@@ -412,24 +399,17 @@ public sealed class OrchestratorService
                 }
 
                 if (chunk.Kind == ModelStreamChunkKind.Delta && !string.IsNullOrEmpty(chunk.Delta))
-                {
                     contentBuilder.Append(chunk.Delta);
-                }
 
                 // 收集 tool call：可能出现在 ToolCallDelta / Delta / Done chunk 中
-                if (chunk.ToolCallDelta is not null)
-                {
-                    collectedToolCalls.Add(chunk.ToolCallDelta);
-                }
+                if (chunk.ToolCallDelta is not null) collectedToolCalls.Add(chunk.ToolCallDelta);
 
                 // 透传 context / delta / tool call delta / usage chunk 给前端
                 if (chunk.Kind is ModelStreamChunkKind.Context
                     or ModelStreamChunkKind.Delta
                     or ModelStreamChunkKind.ToolCallDelta
                     or ModelStreamChunkKind.Usage)
-                {
                     yield return chunk;
-                }
             }
 
             if (streamFailed)
@@ -444,30 +424,30 @@ public sealed class OrchestratorService
             var mergedToolCalls = MergeToolCallDeltas(collectedToolCalls);
 
             lastInvocation = new ModelInvocationResultDto(
-                Status: "executed",
-                Content: contentBuilder.ToString(),
-                Context: new ResolvedModelInvocationContextDto(
-                    Purpose: "planner",
-                    Route: null,
-                    Provider: null,
-                    EffectiveBaseUrl: "",
-                    EffectiveModel: effectiveModel ?? "",
-                    EncryptedApiKey: null,
-                    Driver: null,
-                    ConnectionKind: "",
-                    ProviderInstanceId: effectiveProviderId ?? "",
-                    IsFallbackProvider: fallbackSelected),
-                UsedStubResponse: false,
-                RuntimeId: null,
-                ErrorCategory: errorCategory,
-                IsRetryable: false,
-                ProviderStatusCode: null,
-                ProviderExitCode: null,
-                SafeErrorMessage: safeError,
-                ErrorProviderId: errorProviderId,
-                ToolCalls: mergedToolCalls,
-                Usage: usage,
-                FinishReason: finishReason);
+                "executed",
+                contentBuilder.ToString(),
+                new ResolvedModelInvocationContextDto(
+                    "planner",
+                    null,
+                    null,
+                    "",
+                    effectiveModel ?? "",
+                    null,
+                    null,
+                    "",
+                    effectiveProviderId ?? "",
+                    fallbackSelected),
+                false,
+                null,
+                errorCategory,
+                false,
+                null,
+                null,
+                safeError,
+                errorProviderId,
+                mergedToolCalls,
+                usage,
+                finishReason);
 
             activity?
                 .SetTag(SpanAttrs.ProviderId, effectiveProviderId)
@@ -476,17 +456,18 @@ public sealed class OrchestratorService
                 .SetTag(SpanAttrs.Status, lastInvocation.Status)
                 .SetTag(SpanAttrs.FallbackProviderId, fallbackSelected ? errorProviderId : null);
 
-            PublishModelEvent("model.requested", snapshot.Run.SessionId, snapshot.Run.Id, lastInvocation, promptContext, ["agent.meeting", "model.remote"]);
-            PublishModelEvent("model.completed", snapshot.Run.SessionId, snapshot.Run.Id, lastInvocation, promptContext, ["agent.meeting", "model.remote"]);
+            PublishModelEvent("model.requested", snapshot.Run.SessionId, snapshot.Run.Id, lastInvocation, promptContext,
+                ["agent.meeting", "model.remote"]);
+            PublishModelEvent("model.completed", snapshot.Run.SessionId, snapshot.Run.Id, lastInvocation, promptContext,
+                ["agent.meeting", "model.remote"]);
 
             // 无工具调用 → 最终回复，持久化并推送 done chunk
             if (mergedToolCalls.Count == 0)
             {
                 var reply = contentBuilder.ToString();
                 if (snapshot.Graph is not null && turn == 0)
-                {
-                    reply = $"{reply}\n\nTask graph ready: {snapshot.Graph.Title} with {snapshot.Nodes.Count} nodes and {snapshot.Assignments.Count} execution assignments. Mutating actions remain approval-gated.";
-                }
+                    reply =
+                        $"{reply}\n\nTask graph ready: {snapshot.Graph.Title} with {snapshot.Nodes.Count} nodes and {snapshot.Assignments.Count} execution assignments. Mutating actions remain approval-gated.";
 
                 var assistantMessage = _store.AddMessage(snapshot.Run.SessionId, "assistant", reply);
                 Publish("message.created", snapshot.Run.SessionId, new JsonObject
@@ -503,17 +484,17 @@ public sealed class OrchestratorService
                 }, ["agent.message", "agent.meeting", "model.remote"]);
 
                 yield return new ModelStreamChunkDto(
-                    RunId: snapshot.Run.Id,
-                    SessionId: snapshot.Run.SessionId,
-                    Purpose: "planner",
-                    ProviderInstanceId: effectiveProviderId ?? "",
-                    EffectiveModel: effectiveModel,
-                    Kind: ModelStreamChunkKind.Done,
-                    Delta: null,
-                    ToolCallDelta: null,
-                    Usage: usage,
-                    FinishReason: finishReason,
-                    ErrorCategory: null,
+                    snapshot.Run.Id,
+                    snapshot.Run.SessionId,
+                    "planner",
+                    effectiveProviderId ?? "",
+                    effectiveModel,
+                    ModelStreamChunkKind.Done,
+                    null,
+                    null,
+                    usage,
+                    finishReason,
+                    null,
                     SafeErrorMessage: null,
                     FallbackProviderSelected: fallbackSelected,
                     ErrorProviderId: errorProviderId);
@@ -534,7 +515,9 @@ public sealed class OrchestratorService
                 $"asst_tc_{Guid.NewGuid():N}",
                 snapshot.Run.SessionId,
                 "assistant",
-                string.IsNullOrWhiteSpace(contentBuilder.ToString()) ? toolCallSummary : $"{contentBuilder}\n{toolCallSummary}",
+                string.IsNullOrWhiteSpace(contentBuilder.ToString())
+                    ? toolCallSummary
+                    : $"{contentBuilder}\n{toolCallSummary}",
                 DateTimeOffset.UtcNow));
 
             var pendingApprovals = new List<ToolCallDto>();
@@ -610,7 +593,8 @@ public sealed class OrchestratorService
 
             if (pendingApprovals.Count > 0)
             {
-                var approvalNote = $"I need your approval to execute {pendingApprovals.Count} tool(s): {string.Join(", ", pendingApprovals.Select(tc => tc.ToolId))}. Please review the pending approvals and decide.";
+                var approvalNote =
+                    $"I need your approval to execute {pendingApprovals.Count} tool(s): {string.Join(", ", pendingApprovals.Select(tc => tc.ToolId))}. Please review the pending approvals and decide.";
                 var approvalMessage = _store.AddMessage(snapshot.Run.SessionId, "assistant", approvalNote);
                 Publish("message.created", snapshot.Run.SessionId, new JsonObject
                 {
@@ -621,17 +605,17 @@ public sealed class OrchestratorService
                 }, ["agent.message", "approval.ask"]);
 
                 yield return new ModelStreamChunkDto(
-                    RunId: snapshot.Run.Id,
-                    SessionId: snapshot.Run.SessionId,
-                    Purpose: "planner",
-                    ProviderInstanceId: effectiveProviderId ?? "",
-                    EffectiveModel: effectiveModel,
-                    Kind: ModelStreamChunkKind.Done,
-                    Delta: approvalNote,
-                    ToolCallDelta: null,
-                    Usage: usage,
-                    FinishReason: ModelFinishReason.ApprovalRequired,
-                    ErrorCategory: null,
+                    snapshot.Run.Id,
+                    snapshot.Run.SessionId,
+                    "planner",
+                    effectiveProviderId ?? "",
+                    effectiveModel,
+                    ModelStreamChunkKind.Done,
+                    approvalNote,
+                    null,
+                    usage,
+                    ModelFinishReason.ApprovalRequired,
+                    null,
                     SafeErrorMessage: null,
                     FallbackProviderSelected: fallbackSelected,
                     ErrorProviderId: errorProviderId);
@@ -651,17 +635,17 @@ public sealed class OrchestratorService
         }, ["agent.message", "agent.loop.limit"]);
 
         yield return new ModelStreamChunkDto(
-            RunId: snapshot.Run.Id,
-            SessionId: snapshot.Run.SessionId,
-            Purpose: "planner",
-            ProviderInstanceId: "",
-            EffectiveModel: null,
-            Kind: ModelStreamChunkKind.Done,
-            Delta: fallbackReply,
-            ToolCallDelta: null,
-            Usage: null,
-            FinishReason: ModelFinishReason.MaxTurns,
-            ErrorCategory: null,
+            snapshot.Run.Id,
+            snapshot.Run.SessionId,
+            "planner",
+            "",
+            null,
+            ModelStreamChunkKind.Done,
+            fallbackReply,
+            null,
+            null,
+            ModelFinishReason.MaxTurns,
+            null,
             SafeErrorMessage: null,
             FallbackProviderSelected: false,
             ErrorProviderId: null);
@@ -677,10 +661,7 @@ public sealed class OrchestratorService
         foreach (var delta in deltas)
         {
             var callId = delta.CallId;
-            if (string.IsNullOrEmpty(callId))
-            {
-                callId = $"call_{Guid.NewGuid():N}";
-            }
+            if (string.IsNullOrEmpty(callId)) callId = $"call_{Guid.NewGuid():N}";
 
             if (!merged.ContainsKey(callId))
             {
@@ -692,19 +673,16 @@ public sealed class OrchestratorService
                 var existing = merged[callId];
                 var combinedArgs = new Dictionary<string, object?>(existing.Arguments, StringComparer.Ordinal);
                 foreach (var kvp in delta.Arguments)
-                {
-                    if (combinedArgs.TryGetValue(kvp.Key, out var current) && current is string currentStr && kvp.Value is string deltaStr)
-                    {
+                    if (combinedArgs.TryGetValue(kvp.Key, out var current) && current is string currentStr &&
+                        kvp.Value is string deltaStr)
                         combinedArgs[kvp.Key] = currentStr + deltaStr;
-                    }
                     else
-                    {
                         combinedArgs[kvp.Key] = kvp.Value;
-                    }
-                }
+
                 merged[callId] = existing with { Arguments = combinedArgs };
             }
         }
+
         return orderedIds.Select(id => merged[id]).ToList();
     }
 
@@ -715,7 +693,9 @@ public sealed class OrchestratorService
         CancellationToken cancellationToken)
     {
         var session = _store.ListSessions(null).FirstOrDefault(item => item.Id == run.SessionId);
-        var project = session is null ? null : _store.ListProjects().FirstOrDefault(item => item.Id == session.ProjectId);
+        var project = session is null
+            ? null
+            : _store.ListProjects().FirstOrDefault(item => item.Id == session.ProjectId);
         var cwd = project?.Path ?? Directory.GetCurrentDirectory();
 
         var request = new CodeToolExecuteRequest(
@@ -728,7 +708,6 @@ public sealed class OrchestratorService
 
         var adapter = _invocationAdapters.FirstOrDefault(item => item.CanInvoke(tool));
         if (adapter is null)
-        {
             return new CodeToolExecuteResultDto(
                 tool.Id,
                 "failed",
@@ -737,7 +716,6 @@ public sealed class OrchestratorService
                 new Dictionary<string, object?>(),
                 false,
                 null);
-        }
 
         try
         {
@@ -775,10 +753,7 @@ public sealed class OrchestratorService
         string userContent,
         CancellationToken cancellationToken = default)
     {
-        if (snapshot.Run is null)
-        {
-            return;
-        }
+        if (snapshot.Run is null) return;
 
         using var dispatchActivity = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentToolDispatch);
         dispatchActivity?
@@ -793,87 +768,81 @@ public sealed class OrchestratorService
         var cwd = project?.Path ?? Directory.GetCurrentDirectory();
 
         foreach (var step in workflow.Steps)
+        foreach (var toolId in step.ToolIds)
         {
-            foreach (var toolId in step.ToolIds)
+            var tool = _tools.Resolve(toolId);
+            if (tool is null || !_capabilityPolicy.IsReadOnly(tool)) continue;
+
+            using var toolSpan = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentToolExecution);
+            toolSpan?
+                .SetTag(SpanAttrs.ToolId, tool.Id)
+                .SetTag(SpanAttrs.TaskNodeId, step.TaskNodeId)
+                .SetTag(SpanAttrs.PermissionMode, "read-only");
+
+            Publish("tool.execution.requested", snapshot.Run.SessionId, new JsonObject
             {
-                var tool = _tools.Resolve(toolId);
-                if (tool is null || !_capabilityPolicy.IsReadOnly(tool))
-                {
-                    continue;
-                }
+                ["run_id"] = snapshot.Run.Id,
+                ["tool_id"] = tool.Id,
+                ["task_node_id"] = step.TaskNodeId,
+                ["auto_dispatch"] = true
+            }, ["tool.execution", "agent.workflow"]);
 
-                using var toolSpan = TinadecActivitySource.Instance.StartActivity(SpanNames.AgentToolExecution);
-                toolSpan?
-                    .SetTag(SpanAttrs.ToolId, tool.Id)
-                    .SetTag(SpanAttrs.TaskNodeId, step.TaskNodeId)
-                    .SetTag(SpanAttrs.PermissionMode, "read-only");
+            try
+            {
+                var adapter = _invocationAdapters.FirstOrDefault(item => item.CanInvoke(tool));
+                if (adapter is null)
+                    throw new InvalidOperationException(
+                        $"No Core invocation adapter is registered for tool source '{tool.Source}'.");
 
-                Publish("tool.execution.requested", snapshot.Run.SessionId, new JsonObject
-                {
-                    ["run_id"] = snapshot.Run.Id,
-                    ["tool_id"] = tool.Id,
-                    ["task_node_id"] = step.TaskNodeId,
-                    ["auto_dispatch"] = true
-                }, ["tool.execution", "agent.workflow"]);
-
-                try
-                {
-                    var adapter = _invocationAdapters.FirstOrDefault(item => item.CanInvoke(tool));
-                    if (adapter is null)
-                    {
-                        throw new InvalidOperationException($"No Core invocation adapter is registered for tool source '{tool.Source}'.");
-                    }
-
-                    var result = await adapter.InvokeAsync(
-                        tool,
-                        new CodeToolExecuteRequest(
-                            snapshot.Run.SessionId,
-                            snapshot.Run.Id,
-                            step.TaskNodeId,
-                            null,
-                            cwd,
-                            BuildReadOnlyArguments(tool.Id, userContent)),
-                        cancellationToken);
-
-                    var stepResult = _store.AddStepResult(
-                        snapshot.Run.Id,
-                        step.TaskNodeId,
-                        step.AgentId,
-                        result.Status,
-                        result.Summary,
-                        result.Evidence);
-
-                    Publish(result.Status is "failed" or "blocked" ? "tool.execution.failed" : "tool.execution.completed",
+                var result = await adapter.InvokeAsync(
+                    tool,
+                    new CodeToolExecuteRequest(
                         snapshot.Run.SessionId,
-                        new JsonObject
-                        {
-                            ["run_id"] = snapshot.Run.Id,
-                            ["tool_id"] = tool.Id,
-                            ["task_node_id"] = step.TaskNodeId,
-                            ["status"] = result.Status,
-                            ["step_result_id"] = stepResult.Id
-                        },
-                        ["tool.execution", "step.result"]);
-                }
-                catch (Exception ex)
-                {
-                    var stepResult = _store.AddStepResult(
                         snapshot.Run.Id,
                         step.TaskNodeId,
-                        step.AgentId,
-                        "failed",
-                        $"Read-only tool dispatch failed: {ex.Message}",
-                        ["tool dispatch failed", tool.Id]);
+                        null,
+                        cwd,
+                        BuildReadOnlyArguments(tool.Id, userContent)),
+                    cancellationToken);
 
-                    Publish("tool.execution.failed", snapshot.Run.SessionId, new JsonObject
+                var stepResult = _store.AddStepResult(
+                    snapshot.Run.Id,
+                    step.TaskNodeId,
+                    step.AgentId,
+                    result.Status,
+                    result.Summary,
+                    result.Evidence);
+
+                Publish(result.Status is "failed" or "blocked" ? "tool.execution.failed" : "tool.execution.completed",
+                    snapshot.Run.SessionId,
+                    new JsonObject
                     {
                         ["run_id"] = snapshot.Run.Id,
                         ["tool_id"] = tool.Id,
                         ["task_node_id"] = step.TaskNodeId,
-                        ["status"] = "failed",
+                        ["status"] = result.Status,
                         ["step_result_id"] = stepResult.Id
-                    }, ["tool.execution", "step.result"]);
-                }
+                    },
+                    ["tool.execution", "step.result"]);
+            }
+            catch (Exception ex)
+            {
+                var stepResult = _store.AddStepResult(
+                    snapshot.Run.Id,
+                    step.TaskNodeId,
+                    step.AgentId,
+                    "failed",
+                    $"Read-only tool dispatch failed: {ex.Message}",
+                    ["tool dispatch failed", tool.Id]);
+
+                Publish("tool.execution.failed", snapshot.Run.SessionId, new JsonObject
+                {
+                    ["run_id"] = snapshot.Run.Id,
+                    ["tool_id"] = tool.Id,
+                    ["task_node_id"] = step.TaskNodeId,
+                    ["status"] = "failed",
+                    ["step_result_id"] = stepResult.Id
+                }, ["tool.execution", "step.result"]);
             }
         }
     }
@@ -919,21 +888,19 @@ public sealed class OrchestratorService
 
         if (promptContext is not null)
         {
-            payload["prompt_fragment_ids"] = new JsonArray(promptContext.Fragments.Select(fragment => JsonValue.Create(fragment.Id)).ToArray());
+            payload["prompt_fragment_ids"] =
+                new JsonArray(promptContext.Fragments.Select(fragment => JsonValue.Create(fragment.Id)).ToArray());
             payload["prompt_estimated_tokens"] = promptContext.EstimatedTokens;
             payload["prompt_warning_count"] = promptContext.Warnings.Count;
-            payload["prompt_context_pack_ids"] = new JsonArray(promptContext.ContextPackIds.Select(id => JsonValue.Create(id)).ToArray());
+            payload["prompt_context_pack_ids"] =
+                new JsonArray(promptContext.ContextPackIds.Select(id => JsonValue.Create(id)).ToArray());
         }
 
         if (!string.IsNullOrWhiteSpace(invocation.ErrorProviderId))
-        {
             payload["error_provider_instance_id"] = invocation.ErrorProviderId;
-        }
 
         if (!string.IsNullOrWhiteSpace(invocation.SafeErrorMessage))
-        {
             payload["safe_error_message"] = invocation.SafeErrorMessage;
-        }
 
         Publish(type, sessionId, payload, capabilities);
     }
@@ -941,7 +908,8 @@ public sealed class OrchestratorService
     private static bool IsFallback(ModelInvocationResultDto invocation)
     {
         return !string.IsNullOrWhiteSpace(invocation.ErrorProviderId)
-            && !invocation.ErrorProviderId.Equals(invocation.Context.ProviderInstanceId, StringComparison.OrdinalIgnoreCase);
+               && !invocation.ErrorProviderId.Equals(invocation.Context.ProviderInstanceId,
+                   StringComparison.OrdinalIgnoreCase);
     }
 
     private void Publish(string type, string sessionId, JsonObject payload, IReadOnlyList<string> capabilities)

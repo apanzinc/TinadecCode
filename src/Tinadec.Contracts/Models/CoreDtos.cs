@@ -311,7 +311,11 @@ public sealed record McpRuntimeStatusDto(string State, IReadOnlyList<string> Too
 
 public sealed record McpToolCallResultDto(bool Ok, object? Result, string? Error, string? Message);
 
-public sealed record McpReportRequest(string Status, IReadOnlyList<string>? Tools, string? StatusMessage, int? ExitCode);
+public sealed record McpReportRequest(
+    string Status,
+    IReadOnlyList<string>? Tools,
+    string? StatusMessage,
+    int? ExitCode);
 
 public sealed record AcpAdapterDto(
     string Id,
@@ -670,24 +674,25 @@ public sealed record ModelUsageDto(
 [JsonConverter(typeof(JsonStringEnumConverter<ModelFinishReason>))]
 public enum ModelFinishReason
 {
-    [JsonStringEnumMemberName("stop")]
-    Stop,
-    [JsonStringEnumMemberName("length")]
-    Length,
+    [JsonStringEnumMemberName("stop")] Stop,
+    [JsonStringEnumMemberName("length")] Length,
+
     [JsonStringEnumMemberName("content_filter")]
     ContentFilter,
+
     [JsonStringEnumMemberName("tool_calls")]
     ToolCalls,
-    [JsonStringEnumMemberName("error")]
-    Error,
+    [JsonStringEnumMemberName("error")] Error,
+
     [JsonStringEnumMemberName("cancelled")]
     Cancelled,
+
     [JsonStringEnumMemberName("approval_required")]
     ApprovalRequired,
+
     [JsonStringEnumMemberName("max_turns")]
     MaxTurns,
-    [JsonStringEnumMemberName("unknown")]
-    Unknown
+    [JsonStringEnumMemberName("unknown")] Unknown
 }
 
 public sealed record ProviderMetadataDto(
@@ -701,18 +706,20 @@ public enum ProviderErrorCategory
 {
     [JsonStringEnumMemberName("authentication_failed")]
     AuthenticationFailed,
+
     [JsonStringEnumMemberName("rate_limited")]
     RateLimited,
-    [JsonStringEnumMemberName("timeout")]
-    Timeout,
+    [JsonStringEnumMemberName("timeout")] Timeout,
+
     [JsonStringEnumMemberName("provider_unavailable")]
     ProviderUnavailable,
+
     [JsonStringEnumMemberName("invalid_request")]
     InvalidRequest,
+
     [JsonStringEnumMemberName("cancelled")]
     Cancelled,
-    [JsonStringEnumMemberName("unknown")]
-    Unknown
+    [JsonStringEnumMemberName("unknown")] Unknown
 }
 
 public sealed record ProviderCapabilityDto(
@@ -728,16 +735,13 @@ public sealed record ProviderCapabilityDto(
 [JsonConverter(typeof(JsonStringEnumConverter<ProviderHealthStatus>))]
 public enum ProviderHealthStatus
 {
-    [JsonStringEnumMemberName("healthy")]
-    Healthy,
+    [JsonStringEnumMemberName("healthy")] Healthy,
+
     [JsonStringEnumMemberName("unhealthy")]
     Unhealthy,
-    [JsonStringEnumMemberName("unknown")]
-    Unknown,
-    [JsonStringEnumMemberName("disabled")]
-    Disabled,
-    [JsonStringEnumMemberName("cooldown")]
-    Cooldown
+    [JsonStringEnumMemberName("unknown")] Unknown,
+    [JsonStringEnumMemberName("disabled")] Disabled,
+    [JsonStringEnumMemberName("cooldown")] Cooldown
 }
 
 public sealed record ModelStateHandleDto(
@@ -779,18 +783,14 @@ public sealed record ModelStreamChunkDto(
 [JsonConverter(typeof(JsonStringEnumConverter<ModelStreamChunkKind>))]
 public enum ModelStreamChunkKind
 {
-    [JsonStringEnumMemberName("context")]
-    Context,
-    [JsonStringEnumMemberName("delta")]
-    Delta,
+    [JsonStringEnumMemberName("context")] Context,
+    [JsonStringEnumMemberName("delta")] Delta,
+
     [JsonStringEnumMemberName("tool_call_delta")]
     ToolCallDelta,
-    [JsonStringEnumMemberName("usage")]
-    Usage,
-    [JsonStringEnumMemberName("done")]
-    Done,
-    [JsonStringEnumMemberName("error")]
-    Error
+    [JsonStringEnumMemberName("usage")] Usage,
+    [JsonStringEnumMemberName("done")] Done,
+    [JsonStringEnumMemberName("error")] Error
 }
 
 /// <summary>

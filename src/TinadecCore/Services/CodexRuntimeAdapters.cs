@@ -8,6 +8,7 @@ public sealed class CodexRuntimeKernelAdapter : IRuntimeKernelAdapter
 {
     public string Id => "codex-rust";
     public string DisplayName => "Codex Rust Kernel";
+
     public IReadOnlyList<string> Capabilities { get; } =
     [
         "file.search",
@@ -28,7 +29,7 @@ public sealed class CodexToolInvocationAdapter(ICodeToolClient codeToolClient) :
     public bool CanInvoke(ToolDescriptorDto tool)
     {
         return string.Equals(tool.Source, Id, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(tool.Source, "code", StringComparison.OrdinalIgnoreCase);
+               string.Equals(tool.Source, "code", StringComparison.OrdinalIgnoreCase);
     }
 
     public Task<CodeToolExecuteResultDto> InvokeAsync(
@@ -55,7 +56,6 @@ public sealed class CoreToolInvocationAdapter(PromptContextService promptContext
         CancellationToken cancellationToken = default)
     {
         if (!string.Equals(tool.Id, "prompt_context_resolve", StringComparison.OrdinalIgnoreCase))
-        {
             return new CodeToolExecuteResultDto(
                 tool.Id,
                 "failed",
@@ -64,7 +64,6 @@ public sealed class CoreToolInvocationAdapter(PromptContextService promptContext
                 new Dictionary<string, object?>(),
                 false,
                 null);
-        }
 
         var args = request.Arguments ?? new Dictionary<string, object?>();
         var preview = await promptContextService.PreviewAsync(
@@ -109,15 +108,13 @@ public sealed class CoreToolInvocationAdapter(PromptContextService promptContext
 
     private static string? ReadString(IReadOnlyDictionary<string, object?> values, string key)
     {
-        if (!values.TryGetValue(key, out var value) || value is null)
-        {
-            return null;
-        }
+        if (!values.TryGetValue(key, out var value) || value is null) return null;
 
         return value switch
         {
             string text when !string.IsNullOrWhiteSpace(text) => text.Trim(),
-            System.Text.Json.JsonElement element when element.ValueKind == System.Text.Json.JsonValueKind.String => element.GetString()?.Trim(),
+            System.Text.Json.JsonElement element when element.ValueKind == System.Text.Json.JsonValueKind.String =>
+                element.GetString()?.Trim(),
             _ => value.ToString()?.Trim()
         };
     }
