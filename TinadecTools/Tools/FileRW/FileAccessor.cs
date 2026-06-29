@@ -338,9 +338,9 @@ internal class FileAccessor : IDisposable
             if (sortedContent[i].LineNumber != startLine + i)
                 throw new ArgumentException($"内容行号不连续或不匹配，预期 {startLine + i}，实际 {sortedContent[i].LineNumber}");
 
-        //检查：换行符！如果有就REJECT
+        // 检查：换行符！如果有就REJECT
         var bad = content
-            .Where(c => c.Content.Contains('\n'))
+            .Where(c => c.Content.Contains('\n') || c.Content.Contains('\r'))
             .Select(c => c.LineNumber)
             .ToList();
 
@@ -349,24 +349,159 @@ internal class FileAccessor : IDisposable
                 $"Line(s) [{string.Join(", ", bad)}] contain newlines",
                 nameof(content));
 
-        // 计算长度是否一致
-        var writeLength = content.Select(ct => ct.LineLength).Sum();
-        var currentLength = index[endLine].LineEnd - index[startLine].LineStart + 1;
+        var rangeStart = index[startLine].LineStart;
+        var rangeEndExclusive = index[endLine].NextStart;
+        var currentLength = rangeEndExclusive - rangeStart;
+        var hasTrailingNewline = index[endLine].NextStart > index[endLine].LineEnd;
 
-        if (writeLength == currentLength)
+        var replacementLineLengths = sortedContent
+            .Select(ct => Encoding.UTF8.GetByteCount(ct.Content))
+            .ToArray();
+        var replacementLength = replacementLineLengths.Sum()
+            + Math.Max(0, sortedContent.Count - 1)
+            + (hasTrailingNewline ? 1 : 0);
+
+        var rebuiltIndex = new List<LineSpan>(sortedContent.Count);
+        long nextLineStart = rangeStart;
+        for (var i = 0; i < sortedContent.Count; i++)
         {
-            // OK！直接全部覆盖
-            var sooooooolong = string.Join('\n', content.Select(c => c.Content));
-            var strByBytes = Encoding.UTF8.GetBytes(sooooooolong);
-            var buf = strByBytes.AsMemory();
-            await RandomAccess.WriteAsync(handle, buf, index[startLine].LineStart, CancellationToken.None);
+            var lineStart = nextLineStart;
+            var lineEnd = lineStart + replacementLineLengths[i];
+            var lineNextStart = lineEnd;
+
+            if (i < sortedContent.Count - 1 || hasTrailingNewline)
+                lineNextStart++;
+
+            rebuiltIndex.Add(new LineSpan(lineStart, lineEnd, lineNextStart));
+            nextLineStart = lineNextStart;
+        }
+
+        var delta = replacementLength - currentLength;
+
+        if (delta == 0)
+        {
+            await writeReplacementInPlaceAsync(rangeStart, sortedContent, hasTrailingNewline);
         }
         else
         {
-            //TODO: 需要文件中插入内容，比较复杂
+            await rewriteFileWithReplacementAsync(rangeStart, rangeEndExclusive, sortedContent, hasTrailingNewline);
+            applyIndexDelta(startLine, endLine, rebuiltIndex, delta);
         }
 
+        if (delta == 0)
+            applyIndexDelta(startLine, endLine, rebuiltIndex, 0);
+
         return true;
+    }
+
+    private async Task writeReplacementInPlaceAsync(long offset, IReadOnlyList<LineContent> content, bool hasTrailingNewline)
+    {
+        file.Seek(offset, SeekOrigin.Begin);
+        await using var writer = new StreamWriter(file, utf8_no_bom, stream_buffer_size, leaveOpen: true);
+        await writeReplacementSectionAsync(writer, content, hasTrailingNewline);
+        await writer.FlushAsync();
+        file.Seek(0, SeekOrigin.End);
+    }
+
+    private async Task rewriteFileWithReplacementAsync(long rangeStart, long rangeEndExclusive, IReadOnlyList<LineContent> content, bool hasTrailingNewline)
+    {
+        var originalLength = file.Length;
+        var tempPath = getTempPath();
+
+        try
+        {
+            await using (var tempOutput = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                stream_buffer_size, FileOptions.SequentialScan))
+            {
+                await copyRangeToStreamAsync(tempOutput, 0, rangeStart);
+                await using (var writer = new StreamWriter(tempOutput, utf8_no_bom, stream_buffer_size, leaveOpen: true))
+                {
+                    await writeReplacementSectionAsync(writer, content, hasTrailingNewline);
+                    await writer.FlushAsync();
+                }
+                await copyRangeToStreamAsync(tempOutput, rangeEndExclusive, originalLength - rangeEndExclusive);
+                await tempOutput.FlushAsync();
+            }
+
+            file.SetLength(0);
+            file.Seek(0, SeekOrigin.Begin);
+            await using var tempInput = new FileStream(tempPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                stream_buffer_size, FileOptions.SequentialScan);
+            await tempInput.CopyToAsync(file, stream_buffer_size, CancellationToken.None);
+            await file.FlushAsync(CancellationToken.None);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
+            catch (IOException ex)
+            {
+                logger.Warn(ex, $"删除临时文件 {tempPath} 失败");
+            }
+
+            file.Seek(0, SeekOrigin.Begin);
+        }
+    }
+
+    private async Task writeReplacementSectionAsync(StreamWriter writer, IReadOnlyList<LineContent> content, bool hasTrailingNewline)
+    {
+        for (var i = 0; i < content.Count; i++)
+        {
+            await writer.WriteAsync(content[i].Content);
+
+            if (i < content.Count - 1 || hasTrailingNewline)
+                await writer.WriteAsync("\n");
+        }
+    }
+
+    private async Task copyRangeToStreamAsync(Stream destination, long sourceOffset, long length)
+    {
+        if (length <= 0)
+            return;
+
+        var buffer = ArrayPool<byte>.Shared.Rent(stream_buffer_size);
+        try
+        {
+            var currentOffset = sourceOffset;
+            var remaining = length;
+
+            while (remaining > 0)
+            {
+                var chunk = (int)Math.Min(buffer.Length, remaining);
+                var bytesRead = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, chunk), currentOffset, CancellationToken.None);
+                if (bytesRead == 0)
+                    break;
+
+                await destination.WriteAsync(buffer.AsMemory(0, bytesRead), CancellationToken.None);
+                currentOffset += bytesRead;
+                remaining -= bytesRead;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private void applyIndexDelta(int startLine, int endLine, List<LineSpan> rebuiltIndex, long delta)
+    {
+        for (var i = startLine; i <= endLine; i++)
+            index[i] = rebuiltIndex[i - startLine];
+
+        if (delta == 0)
+            return;
+
+        for (var i = endLine + 1; i < index.Count; i++)
+        {
+            var span = index[i];
+            index[i] = new LineSpan(
+                span.LineStart + delta,
+                span.LineEnd + delta,
+                span.NextStart + delta);
+        }
     }
 
     public void Dispose()
