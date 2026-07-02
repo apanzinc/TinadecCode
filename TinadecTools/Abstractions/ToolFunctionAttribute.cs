@@ -9,4 +9,6 @@ internal sealed class ToolFunctionAttribute : Attribute
     }
 
     public string ToolId { get; }
+
+    public bool RequiresApproval { get; set; }
 }

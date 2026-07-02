@@ -63,6 +63,8 @@ public sealed class ToolFunctionGenerator : IIncrementalGenerator
                     continue;
                 }
 
+                var requiresApproval = attr.NamedArguments.FirstOrDefault(a => a.Key == "RequiresApproval").Value.Value as bool? ?? false;
+
                 var argsType = method.Parameters[0].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 var resultType = GetResultType(method.ReturnType);
                 if (resultType is null)
@@ -75,7 +77,7 @@ public sealed class ToolFunctionGenerator : IIncrementalGenerator
                 var contextVar = $"{method.ContainingType.Name.ToLowerInvariant()}_{method.Name.ToLowerInvariant()}Json";
 
                 source.AppendLine($"""        var {contextVar} = new {contextType}();""");
-                source.AppendLine($"""        ToolRegistry.Register<{argsType}, {resultType}>("{escape(toolId!)}", {containingType}.{method.Name}, (JsonTypeInfo<{argsType}>) {contextVar}.GetTypeInfo(typeof({argsType}))!, (JsonTypeInfo<{resultType}>) {contextVar}.GetTypeInfo(typeof({resultType}))!);""");
+                source.AppendLine($"""        ToolRegistry.Register<{argsType}, {resultType}>("{escape(toolId!)}", {containingType}.{method.Name}, (JsonTypeInfo<{argsType}>) {contextVar}.GetTypeInfo(typeof({argsType}))!, (JsonTypeInfo<{resultType}>) {contextVar}.GetTypeInfo(typeof({resultType}))!, requiresApproval: {requiresApproval.ToString().ToLowerInvariant()});""");
             }
 
             source.AppendLine("    }");

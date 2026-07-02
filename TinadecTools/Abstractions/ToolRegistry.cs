@@ -30,7 +30,8 @@ internal static class ToolRegistry
         string toolId,
         Func<TArgs, CancellationToken, ValueTask<TResult>> handler,
         JsonTypeInfo<TArgs> argsTypeInfo,
-        JsonTypeInfo<TResult> resultTypeInfo)
+        JsonTypeInfo<TResult> resultTypeInfo,
+        bool requiresApproval = false)
         where TArgs : notnull
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);
@@ -40,6 +41,16 @@ internal static class ToolRegistry
 
         Register(toolId, async (request, cancellationToken) =>
         {
+            if (requiresApproval && !request.Approved)
+            {
+                return new ToolCallResponse<JsonElement>
+                {
+                    CallId = request.ToolCallId,
+                    IsSuccess = false,
+                    Response = JsonSerializer.SerializeToElement(NotApprovedResponse.MESSAGE, ToolCallJsonContext.Default.String)
+                };
+            }
+
             if (request.Params.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
                 throw new InvalidOperationException($"Tool '{request.ToolId}' requires params.");
 
