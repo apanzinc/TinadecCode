@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Diamond,
   FolderOpen,
+  LayoutGrid,
   MessageSquare,
   Plus,
   Settings,
@@ -13,7 +14,7 @@ import {
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import type { ProjectDto, SessionDto } from '../api'
-import { UiButton, UiSeparator } from '@/components/ui'
+import { UiButton, UiDropdownMenu, UiSeparator } from '@/components/ui'
 
 const { t } = useI18n()
 
@@ -89,6 +90,15 @@ function handleNewThread() {
 }
 
 const tokenUsage = ref<number[]>([])
+
+// ---- Mode switch (placeholder, no actual functionality) ----
+const modeMenuOpen = ref(false)
+const selectedMode = ref<'im' | 'hub'>('im')
+
+function selectMode(mode: 'im' | 'hub') {
+  selectedMode.value = mode
+  modeMenuOpen.value = false
+}
 
 function openDebugStudio() {
   ;(window as unknown as { tinadec?: { openDebugStudio?: () => Promise<boolean> } }).tinadec?.openDebugStudio?.()
@@ -213,15 +223,43 @@ function openDebugStudio() {
     </div>
 
     <div class="sidebar-footer">
-      <UiButton
-        variant="ghost"
-        size="icon"
-        class="sidebar-footer-action"
-        :title="t('sidebar.settings')"
-        @click="emit('go-settings')"
-      >
-        <Settings :size="16" />
-      </UiButton>
+      <div class="sidebar-footer-actions">
+        <UiButton
+          variant="ghost"
+          size="icon"
+          class="sidebar-footer-action"
+          :title="t('sidebar.settings')"
+          @click="emit('go-settings')"
+        >
+          <Settings :size="16" />
+        </UiButton>
+        <UiDropdownMenu v-model:open="modeMenuOpen" placement="top" class="mode-dropdown-menu">
+          <template #trigger>
+            <UiButton
+              variant="ghost"
+              size="icon"
+              class="sidebar-footer-action"
+              title="Mode"
+            >
+              <LayoutGrid :size="16" />
+            </UiButton>
+          </template>
+          <button
+            class="mode-menu-item"
+            :class="{ active: selectedMode === 'im' }"
+            @click="selectMode('im')"
+          >
+            <span>im 模式</span>
+          </button>
+          <button
+            class="mode-menu-item"
+            :class="{ active: selectedMode === 'hub' }"
+            @click="selectMode('hub')"
+          >
+            <span>hub 模式</span>
+          </button>
+        </UiDropdownMenu>
+      </div>
     </div>
   </aside>
 </template>
