@@ -43,6 +43,7 @@ apps/desktop/
 - UI stack: Vue, Tailwind via `@tailwindcss/vite`, lucide-vue, shadcn-style primitives.
 - Tests are colocated `src/**/*.test.ts`; command is `vitest run`.
 - Prompt Context UI is presentation and local preview only. The renderer calls Gateway APIs mirrored in `src/api.ts`; Core owns fragment selection, context pack handling, token estimates, and warnings.
+- Model Center keeps Core provider/catalog readiness authoritative while presenting it as a compact health overview, native collapsible diagnostics, and a locally searched/filtered union of configured instances plus unconfigured templates. View-model sorting must preserve Core `blocked` / `warning` / `ready` meanings.
 - Code-suite UI is presentation-only: group/filter tool descriptors and project template summaries from Gateway/Core, but keep approval and execution ownership outside Desktop.
 - Git UI is presentation plus Core-approved execution: request Tool-layer previews from Gateway, show blockers/diffs/worktrees, create Core approval records when needed, and only call approved `stage` / `unstage` / `commit` / `push` tool executions with Core-verified approval ids; do not run Git directly or mint approval ids in Desktop.
 - Tool search UI must consume Core/Gateway `/api/v1/tools/search` results. Do not invent provider-layer, matched-field, or human-checkpoint semantics in the renderer.
