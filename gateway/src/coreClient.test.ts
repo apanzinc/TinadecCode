@@ -28,6 +28,7 @@ test('Code tools expose programming-domain execution contracts', async () => {
     'git_checkout',
     'git_commit',
     'git_conflict_preview',
+    'git_conflict_resolve',
     'git_diff',
     'git_fetch',
     'git_file_at_revision',
@@ -830,6 +831,43 @@ test('git rebase lifecycle supports abort skip and non-interactive continue', as
   const continued = await executeCodeTool('git_rebase', { cwd, approval_id: 'approval-test', arguments: { operation: 'continue', confirm_rebase: true } });
   assert.equal(continued?.status, 'completed');
   assert.equal((await readFile(path.join(cwd, 'shared.txt'), 'utf8')).replace(/\r\n/g, '\n'), 'resolved\n');
+});
+
+test('git conflict preview and resolution share the three-way text merge engine', async (t) => {
+  const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-conflict-'));
+  t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
+    await rm(cwd, { recursive: true, force: true });
+  });
+  await initGitRepo(cwd);
+  await runGit(cwd, ['config', 'user.name', 'Tinadec Test']);
+  await runGit(cwd, ['config', 'user.email', 'tinadec@example.invalid']);
+  await writeFile(path.join(cwd, 'shared.txt'), 'base\n', 'utf8');
+  await runGit(cwd, ['add', 'shared.txt']);
+  await runGit(cwd, ['commit', '-m', 'initial']);
+  await runGit(cwd, ['checkout', '-b', 'feature']);
+  await writeFile(path.join(cwd, 'shared.txt'), 'feature\n', 'utf8');
+  await runGit(cwd, ['add', 'shared.txt']);
+  await runGit(cwd, ['commit', '-m', 'feature change']);
+  await runGit(cwd, ['checkout', 'main']);
+  await writeFile(path.join(cwd, 'shared.txt'), 'main\n', 'utf8');
+  await runGit(cwd, ['add', 'shared.txt']);
+  await runGit(cwd, ['commit', '-m', 'main change']);
+  await assert.rejects(() => runGit(cwd, ['merge', 'feature']));
+
+  const preview = await executeCodeTool('git_conflict_preview', { cwd, approval_id: 'approval-test', arguments: { path: 'shared.txt' } });
+  assert.equal(preview?.status, 'completed');
+  const blocks = ((preview?.data.files as Array<{ blocks: Array<{ base: string; ours: string; theirs: string }> }>)[0]?.blocks ?? []);
+  assert.deepEqual(blocks.map(block => ({ base: block.base.trim(), ours: block.ours.trim(), theirs: block.theirs.trim() })), [{ base: 'base', ours: 'main', theirs: 'feature' }]);
+
+  const resolved = await executeCodeTool('git_conflict_resolve', {
+    cwd,
+    approval_id: 'approval-test',
+    arguments: { path: 'shared.txt', strategy: 'both', confirm_resolve: true }
+  });
+  assert.equal(resolved?.status, 'completed');
+  assert.equal(resolved?.data.all_resolved, true);
+  assert.equal((await readFile(path.join(cwd, 'shared.txt'), 'utf8')).replace(/\r\n/g, '\n'), 'main\nfeature\n');
 });
 
 test('git worktree manager fetches from a remote and reports tracking info', async (t) => {

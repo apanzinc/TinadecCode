@@ -42,6 +42,7 @@ public sealed class ToolLayerReadinessService(
             ["git.pull"] = ["git_pull"],
             ["git.merge"] = ["git_merge"],
             ["git.rebase"] = ["git_rebase"],
+            ["conflict.resolve"] = ["git_conflict_resolve"],
             ["review.format"] = ["review_format"]
         };
 

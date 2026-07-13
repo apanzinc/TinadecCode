@@ -206,6 +206,7 @@ public sealed class CodeCapabilityProvider : ICapabilityProvider
         GitWrite("git_pull", "Git Pull", "git.pull", "git.remote.write"),
         GitWrite("git_merge", "Git Merge", "git.merge"),
         GitWrite("git_rebase", "Git Rebase", "git.rebase", "git.history.rewrite"),
+        GitWrite("git_conflict_resolve", "Git Conflict Resolve", "git.conflict.resolve", "git.index.write"),
         .. GitReadTools
     ];
 
@@ -544,6 +545,17 @@ public sealed class ToolRegistryService : IToolRegistry
                     ["confirm_merge"] = new Dictionary<string, object?> { ["type"] = "boolean" },
                     ["confirm_rebase"] = new Dictionary<string, object?> { ["type"] = "boolean" }
                 }
+            },
+            "git_conflict_resolve" => new Dictionary<string, object?>
+            {
+                ["type"] = "object",
+                ["properties"] = new Dictionary<string, object?>
+                {
+                    ["path"] = new Dictionary<string, object?> { ["type"] = "string" },
+                    ["strategy"] = new Dictionary<string, object?> { ["type"] = "string", ["description"] = "auto, ours, theirs, or both." },
+                    ["confirm_resolve"] = new Dictionary<string, object?> { ["type"] = "boolean" }
+                },
+                ["required"] = new[] { "path", "strategy", "confirm_resolve" }
             },
             _ => new Dictionary<string, object?>
             {

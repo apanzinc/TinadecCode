@@ -51,8 +51,8 @@ src/TinadecCore/
   templates, runtime probes, bash-like env, debugging, editor, and Git worktree management.
 - `ToolRegistryService` publishes a canonical tool catalog and registry summary: duplicate tool ids are resolved inside
   Core before search, manifest, policy, or execution lookup can consume them.
-- `executor_git_manager` is the dedicated Git Manager Subagent. Bind read goals plus index, commit, branch,
-  managed worktree, remote sync, merge, and rebase tools to approval-gated TinadecTools descriptors; keep `git_worktree_manager` for conflict resolution,
+- `executor_git_manager` is the dedicated Git Manager Subagent. Bind the complete read and mutation surface, including
+  conflict preview/resolve, to approval-gated TinadecTools descriptors; keep `git_worktree_manager` only for legacy compatibility.
   and legacy compatibility.
 - Tool discovery is Core-owned. `/api/v1/tools/search` must derive provider layer, matched fields, and human-checkpoint
   summaries from Core descriptors and policy semantics.

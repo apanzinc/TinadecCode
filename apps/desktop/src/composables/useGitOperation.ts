@@ -814,7 +814,7 @@ export function useGitOperation(
     feedback.value = null
     try {
       const branch = mergeApproval.value.command?.replace('git merge ', '').trim() ?? ''
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_conflict_resolve', {
         session_id: sid.value,
         approval_id: mergeApproval.value.id,
         cwd: cwd.value,
@@ -924,7 +924,6 @@ export function useGitOperation(
         approval_id: resolveConflictApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'resolve_conflict',
           confirm_resolve: true,
           path: resolveConflictPath.value,
           strategy: resolveConflictStrategy.value,

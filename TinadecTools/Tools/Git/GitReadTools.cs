@@ -455,9 +455,11 @@ internal static class GitReadTools
             var file = new GitConflictFile { Path = path, Stages = stages.Distinct().Order().ToList(), IsBinary = isBinary };
             if (!isBinary)
             {
-                var blocks = ConflictBlocks(ours ?? string.Empty, baseText, theirs ?? string.Empty, path);
-                foreach (var block in blocks)
+                var merge = ThreeWayTextMerge.Merge(baseText ?? string.Empty, ours ?? string.Empty, theirs ?? string.Empty);
+                var counter = 0;
+                foreach (var conflict in merge.Conflicts)
                 {
+                    var block = new GitConflictBlock { Id = $"{path}:{++counter}", StartLine = conflict.StartLine, EndLine = conflict.EndLine, Base = conflict.Base, Ours = conflict.Ours, Theirs = conflict.Theirs };
                     var bytes = Encoding.UTF8.GetByteCount((block.Base ?? "") + block.Ours + block.Theirs);
                     if (bytes > remaining) { truncated = true; break; }
                     remaining -= bytes;
@@ -531,24 +533,6 @@ internal static class GitReadTools
     {
         var content = await GitCli.RunAsync(repo, ["show", $":{stage}:{path}"], cancellationToken: ct, maxOutputChars: 1_000_000).ConfigureAwait(false);
         return content.Ok ? content.Stdout : null;
-    }
-
-    // Git writes the working-file conflict markers. They delimit the observable
-    // unresolved regions; stage 1/2/3 provide the exact base/ours/theirs values.
-    private static List<GitConflictBlock> ConflictBlocks(string oursWorkingText, string? baseText, string theirsText, string path)
-    {
-        var lines = oursWorkingText.Replace("\r\n", "\n").Split('\n'); var result = new List<GitConflictBlock>();
-        var start = -1; var counter = 0;
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (lines[i].StartsWith("<<<<<<<", StringComparison.Ordinal)) start = i;
-            else if (start >= 0 && lines[i].StartsWith(">>>>>>>", StringComparison.Ordinal))
-            {
-                result.Add(new GitConflictBlock { Id = $"{path}:{++counter}", StartLine = start + 1, EndLine = i + 1, Base = baseText, Ours = string.Join('\n', lines[(start + 1)..i]), Theirs = theirsText });
-                start = -1;
-            }
-        }
-        return result;
     }
 
     private static async Task<string?> DetectOperationAsync(string repo, CancellationToken ct)

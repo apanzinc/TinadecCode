@@ -307,6 +307,7 @@ const TOOL_SPECS: Record<string, CodeToolSpec> = {
   git_pull: { id: 'git_pull', summary: 'Fast-forward an approved branch through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Fast-forward from a Git remote.' },
   git_merge: { id: 'git_merge', summary: 'Run an approved Git merge lifecycle operation through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Start, continue, or abort a Git merge.' },
   git_rebase: { id: 'git_rebase', summary: 'Run an approved Git rebase lifecycle operation through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Start, continue, abort, or skip a Git rebase.' },
+  git_conflict_resolve: { id: 'git_conflict_resolve', summary: 'Resolve an approved text conflict through the shared three-way merge engine.', category: 'git', requiresApproval: true, approvalSummary: 'Resolve and stage a Git conflict.' },
   git_status: { id: 'git_status', summary: 'Inspect repository status, conflicts, upstream, and ahead/behind state through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git repository status.' },
   git_log_list: { id: 'git_log_list', summary: 'List Git commits through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit history.' },
   git_log_detail: { id: 'git_log_detail', summary: 'Read Git commit or range details through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit details.' },
@@ -420,6 +421,7 @@ function extractActionFromApprovalCommand(command: string): string | null {
   }
   const parts = normalized.slice('git '.length).split(/\s+/);
   const base = parts[0] ?? '';
+  if (base === 'checkout' && parts.some(part => part === '--ours' || part === '--theirs' || part === '--both')) return 'resolve_conflict';
   if (base === 'checkout' && parts.includes('-b')) {
     return 'create_branch';
   }
@@ -451,6 +453,7 @@ function gitApprovalAction(toolId: string, args?: Record<string, unknown> | null
   if (toolId === 'git_pull') return 'pull';
   if (toolId === 'git_merge') return 'merge';
   if (toolId === 'git_rebase') return 'rebase';
+  if (toolId === 'git_conflict_resolve') return 'resolve_conflict';
   return null;
 }
 
@@ -685,6 +688,9 @@ export async function executeCodeTool(toolId: string, request: CodeToolExecuteRe
   }
   if (spec.id === 'git_merge' || spec.id === 'git_rebase') {
     return executeGitIntegrationViaToolLayer(spec, request, args);
+  }
+  if (spec.id === 'git_conflict_resolve') {
+    return executeGitConflictResolveViaToolLayer(spec, request, args);
   }
   if (spec.id.startsWith('git_') && spec.id !== 'git_worktree_manager') {
     return executeGitReadViaToolLayer(spec, request, args);
@@ -987,6 +993,11 @@ function gitIntegrationCompatibilityTool(action: string, args: Record<string, un
   return null;
 }
 
+function gitConflictCompatibilityTool(action: string, args: Record<string, unknown>): { toolId: string; params: Record<string, unknown> } | null {
+  if (action !== 'resolve_conflict') return null;
+  return { toolId: 'git_conflict_resolve', params: { path: args.path, strategy: args.strategy, confirm_resolve: args.confirm_resolve } };
+}
+
 async function executeGitBranchViaToolLayer(spec: CodeToolSpec, request: CodeToolExecuteRequest, args: Record<string, unknown>, overrideToolId?: string, legacyAction?: string): Promise<CodeToolExecuteResult> {
   if (!request.cwd) return failedResult(spec, `${spec.id} requires a cwd.`, args, ['git:branch', 'cwd:required']);
   if (!request.approval_id) return resultFor(spec, 'blocked', `${overrideToolId ?? spec.id} requires a Core-approved Git invocation.`, { cwd: request.cwd, required_approval: true }, ['git:branch', 'approval:required']);
@@ -1043,6 +1054,20 @@ async function executeGitIntegrationViaToolLayer(spec: CodeToolSpec, request: Co
     if (result.success !== true) return resultFor(spec, 'failed', typeof result.error === 'string' ? result.error : `${toolId} failed.`, data, ['git:integration', 'tool-layer-rejected', `tool_id:${toolId}`]);
     return resultFor(spec, 'completed', legacyAction ? `Completed Git ${legacyAction}.` : spec.summary, data, ['git:integration', 'tool-layer', `tool_id:${toolId}`]);
   } catch (error) { return failedResult(spec, error instanceof Error ? error.message : String(error), args, ['git:integration', 'tool-layer-failed', `tool_id:${toolId}`]); }
+}
+
+async function executeGitConflictResolveViaToolLayer(spec: CodeToolSpec, request: CodeToolExecuteRequest, args: Record<string, unknown>, overrideToolId?: string, legacyAction?: string): Promise<CodeToolExecuteResult> {
+  if (!request.cwd) return failedResult(spec, `${spec.id} requires a cwd.`, args, ['git:conflict', 'cwd:required']);
+  if (!request.approval_id) return resultFor(spec, 'blocked', `${overrideToolId ?? spec.id} requires a Core-approved Git invocation.`, { cwd: request.cwd, required_approval: true }, ['git:conflict', 'approval:required']);
+  const toolId = overrideToolId ?? spec.id;
+  if (!booleanArg(args, 'confirm_resolve')) return resultFor(spec, 'blocked', 'resolve_conflict requires confirm_resolve: true after Core approval.', { cwd: request.cwd, required_confirmation: 'confirm_resolve' }, ['git:conflict', 'approval:supplied', 'confirmation:required']);
+  try {
+    const result = await callToolLayer(request.cwd, toolId, { ...args, repository_path: '.' }, { approved: true, sessionId: request.session_id }) as Record<string, unknown>;
+    if (result.success !== true) return failedResult(spec, typeof result.error === 'string' ? result.error : `${toolId} failed.`, args, ['git:conflict', 'tool-layer-rejected', `tool_id:${toolId}`]);
+    const status = recordArg(result.status);
+    const remaining = Array.isArray(result.remaining_conflicts) ? result.remaining_conflicts : [];
+    return resultFor(spec, 'completed', legacyAction ? 'Completed Git conflict resolution.' : spec.summary, { ...result, ...(legacyAction ? { action: legacyAction } : {}), cwd: path.resolve(request.cwd), all_resolved: remaining.length === 0, branch: status.branch ?? null }, ['git:conflict', 'tool-layer', `tool_id:${toolId}`]);
+  } catch (error) { return failedResult(spec, error instanceof Error ? error.message : String(error), args, ['git:conflict', 'tool-layer-failed', `tool_id:${toolId}`]); }
 }
 
 async function executeGitIndexViaToolLayer(
@@ -1332,6 +1357,11 @@ async function executeGitWorktreeManager(
   const integrationTool = gitIntegrationCompatibilityTool(action, args);
   if (integrationTool) {
     return executeGitIntegrationViaToolLayer(spec, request, integrationTool.params, integrationTool.toolId, action);
+  }
+
+  const conflictTool = gitConflictCompatibilityTool(action, args);
+  if (conflictTool) {
+    return executeGitConflictResolveViaToolLayer(spec, request, conflictTool.params, conflictTool.toolId, action);
   }
 
   const compatibilityTool = gitReadCompatibilityTool(action, args);
