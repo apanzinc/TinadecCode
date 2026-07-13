@@ -293,6 +293,9 @@ const TOOL_SPECS: Record<string, CodeToolSpec> = {
     requiresApproval: true,
     approvalSummary: 'Create or modify Git branches/worktrees.'
   },
+  git_stage: { id: 'git_stage', summary: 'Stage complete files or selected text hunks into the Git index through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Update the Git index with approved file or line selections.' },
+  git_unstage: { id: 'git_unstage', summary: 'Remove complete files or selected text hunks from the Git index through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Update the Git index with approved file or line selections.' },
+  git_commit: { id: 'git_commit', summary: 'Create an approved Git commit through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Create a Git commit from approved staged, complete, or selected paths.' },
   git_status: { id: 'git_status', summary: 'Inspect repository status, conflicts, upstream, and ahead/behind state through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git repository status.' },
   git_log_list: { id: 'git_log_list', summary: 'List Git commits through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit history.' },
   git_log_detail: { id: 'git_log_detail', summary: 'Read Git commit or range details through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit details.' },
@@ -379,10 +382,9 @@ export function codeToolApprovalBlockFor(
     }, ['approval:context-mismatch', 'state_owner: core']);
   }
 
-  if (approval.command && request.arguments) {
-    const requestedAction = stringArg(request.arguments, 'action') ?? '';
-    const commandAction = extractActionFromApprovalCommand(approval.command);
-    if (commandAction && requestedAction !== commandAction) {
+  if ((toolId === 'git_worktree_manager' || toolId === 'git_commit') && approval.command && request.arguments) {
+    const requestedAction = toolId === 'git_commit' ? 'commit' : stringArg(request.arguments, 'action') ?? '';
+    if (!approvalCommandMatchesGitAction(approval.command, requestedAction)) {
       return resultFor(spec, 'blocked', 'Core approval command does not match the requested Git action.', {
         approval_id: request.approval_id,
         approval_command: approval.command,
@@ -414,6 +416,14 @@ function extractActionFromApprovalCommand(command: string): string | null {
     return 'checkout';
   }
   return base || null;
+}
+
+function approvalCommandMatchesGitAction(command: string, action: string): boolean {
+  if (action === 'commit') {
+    return /(?:^|(?:&&|\|\||;)\s*)git\s+commit(?:\s|$)/i.test(command.trim());
+  }
+  const commandAction = extractActionFromApprovalCommand(command);
+  return !commandAction || commandAction === action;
 }
 
 export function codeToolApprovalUnavailableBlock(toolId: string, request: CodeToolExecuteRequest): CodeToolExecuteResult | null {
@@ -622,6 +632,12 @@ export async function executeCodeTool(toolId: string, request: CodeToolExecuteRe
   }
 
   const args = request.arguments ?? {};
+  if (spec.id === 'git_stage' || spec.id === 'git_unstage') {
+    return executeGitIndexViaToolLayer(spec, request, args);
+  }
+  if (spec.id === 'git_commit') {
+    return executeGitCommitViaToolLayer(spec, request, args);
+  }
   if (spec.id.startsWith('git_') && spec.id !== 'git_worktree_manager') {
     return executeGitReadViaToolLayer(spec, request, args);
   }
@@ -872,8 +888,122 @@ function gitReadCompatibilityTool(action: string, args: Record<string, unknown>)
     case 'branch_list': return { toolId: 'git_branch_list', params: { include_remote: args.all !== false } };
     case 'log': return { toolId: 'git_log_list', params: { limit: args.limit, revs: stringArg(args, 'ref') ? [stringArg(args, 'ref') as string] : undefined } };
     case 'diff_compare': return { toolId: 'git_diff', params: { target: 'ref_range', base_ref: args.base_ref, head_ref: args.head_ref, paths: args.paths, max_diff_bytes: args.max_diff_bytes } };
-    case 'diff_preview': return { toolId: 'git_diff', params: { target: args.target ?? 'all', base_ref: args.base_ref, head_ref: args.head_ref, paths: args.paths, max_files: args.max_files, max_diff_bytes: args.max_diff_bytes } };
+    case 'diff_preview': return { toolId: 'git_diff', params: { target: args.target === 'branch_range' ? 'ref_range' : args.target ?? 'all', base_ref: args.base_ref, head_ref: args.head_ref, paths: args.paths, max_files: args.max_files, max_diff_bytes: args.max_diff_bytes } };
     default: return null;
+  }
+}
+
+function gitIndexCompatibilityTool(action: string, args: Record<string, unknown>): { toolId: string; params: Record<string, unknown> } | null {
+  if (action === 'stage') return { toolId: 'git_stage', params: { paths: args.paths, patch: args.patch, max_patch_bytes: args.max_patch_bytes } };
+  if (action === 'unstage') return { toolId: 'git_unstage', params: { paths: args.paths, patch: args.patch, max_patch_bytes: args.max_patch_bytes } };
+  return null;
+}
+
+function gitCommitCompatibilityTool(action: string, args: Record<string, unknown>): Record<string, unknown> | null {
+  if (action !== 'commit') return null;
+  return {
+    message: stringArg(args, 'message') ?? stringArg(args, 'commit_message'),
+    paths: args.paths,
+    include_all: args.include_all,
+    commit_staged_only: args.commit_staged_only,
+    confirm_commit: args.confirm_commit
+  };
+}
+
+async function executeGitIndexViaToolLayer(
+  spec: CodeToolSpec,
+  request: CodeToolExecuteRequest,
+  args: Record<string, unknown>,
+  overrideToolId?: string,
+  legacyAction?: string
+): Promise<CodeToolExecuteResult> {
+  if (!request.cwd) return failedResult(spec, `${spec.id} requires a cwd.`, args, ['git:index', 'cwd:required']);
+  if (!request.approval_id) {
+    return resultFor(spec, 'blocked', `${overrideToolId ?? spec.id} requires a Core-approved Git invocation.`, {
+      cwd: request.cwd,
+      required_approval: true
+    }, ['git:index', 'approval:required']);
+  }
+  const toolId = overrideToolId ?? spec.id;
+  try {
+    const result = await callToolLayer(request.cwd, toolId, { ...args, repository_path: '.' }, {
+      approved: true,
+      sessionId: request.session_id
+    }) as Record<string, unknown>;
+    if (result.success !== true) {
+      return failedResult(spec, typeof result.error === 'string' ? result.error : `${toolId} failed.`, args, ['git:index', 'tool-layer-rejected', `tool_id:${toolId}`]);
+    }
+    const status = recordArg(result.status);
+    return resultFor(spec, 'completed', legacyAction ? `Completed Git ${legacyAction}.` : spec.summary, {
+      ...result,
+      ...(legacyAction ? { action: legacyAction } : {}),
+      cwd: path.resolve(request.cwd),
+      branch: status.branch ?? null,
+      upstream: status.upstream ?? null,
+      ahead: status.ahead ?? null,
+      behind: status.behind ?? null,
+      has_uncommitted_changes: status.has_uncommitted_changes ?? null,
+      files: status.files ?? []
+    }, ['git:index', 'tool-layer', `tool_id:${toolId}`]);
+  } catch (error) {
+    return failedResult(spec, error instanceof Error ? error.message : String(error), args, ['git:index', 'tool-layer-failed', `tool_id:${toolId}`]);
+  }
+}
+
+async function executeGitCommitViaToolLayer(
+  spec: CodeToolSpec,
+  request: CodeToolExecuteRequest,
+  args: Record<string, unknown>,
+  legacyAction?: string
+): Promise<CodeToolExecuteResult> {
+  if (!request.cwd) return failedResult(spec, `${spec.id} requires a cwd.`, args, ['git:commit', 'cwd:required']);
+  if (!request.approval_id) {
+    return resultFor(spec, 'blocked', 'git_commit requires a Core-approved Git invocation.', {
+      cwd: request.cwd,
+      required_approval: true
+    }, ['git:commit', 'approval:required']);
+  }
+  if (!booleanArg(args, 'confirm_commit')) {
+    return resultFor(spec, 'blocked', 'commit requires confirm_commit: true after Core approval.', {
+      cwd: request.cwd,
+      required_confirmation: 'confirm_commit'
+    }, ['git:commit', 'approval:supplied', 'confirmation:required']);
+  }
+
+  try {
+    const result = await callToolLayer(request.cwd, 'git_commit', {
+      message: stringArg(args, 'message') ?? stringArg(args, 'commit_message'),
+      paths: args.paths,
+      include_all: args.include_all,
+      commit_staged_only: args.commit_staged_only,
+      repository_path: '.'
+    }, {
+      approved: true,
+      sessionId: request.session_id
+    }) as Record<string, unknown>;
+    if (result.success !== true) {
+      return failedResult(spec, typeof result.error === 'string' ? result.error : 'git_commit failed.', args, ['git:commit', 'tool-layer-rejected', 'tool_id:git_commit']);
+    }
+
+    const status = recordArg(result.status);
+    const commitHash = typeof result.commit_hash === 'string' ? result.commit_hash : null;
+    return resultFor(spec, 'completed', commitHash ? `Created commit ${commitHash.slice(0, 12)}.` : 'Created commit.', {
+      ...result,
+      ...(legacyAction ? { action: legacyAction } : {}),
+      cwd: path.resolve(request.cwd),
+      git_root: path.resolve(request.cwd),
+      approval_id: request.approval_id,
+      include_all: args.include_all === true,
+      commit_staged_only: args.commit_staged_only === true,
+      paths: stringListArg(args, 'paths'),
+      branch: status.branch ?? null,
+      upstream: status.upstream ?? null,
+      ahead: status.ahead ?? null,
+      behind: status.behind ?? null,
+      has_uncommitted_changes: status.has_uncommitted_changes ?? null
+    }, ['git:commit', 'tool-layer', 'tool_id:git_commit', 'approval:supplied', 'confirmation:supplied']);
+  } catch (error) {
+    return failedResult(spec, error instanceof Error ? error.message : String(error), args, ['git:commit', 'tool-layer-failed', 'tool_id:git_commit']);
   }
 }
 
@@ -913,14 +1043,34 @@ async function executeGitReadViaToolLayer(
 }
 
 function adaptLegacyGitReadResult(result: Record<string, unknown>, action: string): Record<string, unknown> {
+  if (action === 'status') {
+    return {
+      ...result,
+      files: adaptLegacyGitStatusFiles(result.files)
+    };
+  }
   if (action === 'push_plan') {
     const status = recordArg(result.status);
     return {
       ...status,
       push_ready: result.ready === true,
-      push_blockers: Array.isArray(result.blockers) ? result.blockers : [],
-      needs_push: result.needs_push === true
+      push_blockers: Array.isArray(result.blockers) ? result.blockers.map(legacyPushBlocker) : [],
+      needs_push: result.needs_push === true,
+      suggested_commands: ['git status --short --branch']
     };
+  }
+  if (action === 'branch_list') {
+    const branches = Array.isArray(result.branches) ? result.branches.map((value) => {
+      const branch = recordArg(value);
+      const isRemote = branch.is_remote === true;
+      const name = typeof branch.name === 'string' ? branch.name : '';
+      return {
+        ...branch,
+        name: isRemote ? `remotes/${name}` : name,
+        commit_hash: branch.commit ?? null
+      };
+    }) : [];
+    return { ...result, branches };
   }
   if (action === 'log') {
     const commits = Array.isArray(result.commits) ? result.commits.map((value) => {
@@ -936,9 +1086,13 @@ function adaptLegacyGitReadResult(result: Record<string, unknown>, action: strin
   if (action === 'diff_preview' || action === 'diff_compare') {
     const sections: Record<string, unknown>[] = Array.isArray(result.sections) ? result.sections.map((value) => {
       const section = recordArg(value);
-      const files = Array.isArray(section.files) ? section.files : [];
-      return { ...section, id: section.kind ?? null, file_count: files.length, additions: null, deletions: null, notices: [] };
+      const files = Array.isArray(section.files) ? section.files.map(adaptLegacyDiffFile) : [];
+      const id = section.kind === 'ref_range' ? 'branch_range' : section.kind ?? null;
+      return { ...section, id, files, file_count: files.length, additions: null, deletions: null, notices: [] };
     }) : [];
+    if (action === 'diff_preview' && sections.length === 0) {
+      sections.push({ id: 'branch_range', kind: 'ref_range', files: [], file_count: 0, additions: null, deletions: null, notices: ['No upstream branch is configured.'] });
+    }
     const refRange = sections.find((section) => section.kind === 'ref_range') ?? sections[0] ?? {};
     if (action === 'diff_compare') {
       return {
@@ -956,6 +1110,35 @@ function adaptLegacyGitReadResult(result: Record<string, unknown>, action: strin
     return { ...result, sections };
   }
   return result;
+}
+
+function adaptLegacyGitStatusFiles(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.map((item) => {
+    const file = recordArg(item);
+    return { ...file, is_renamed: typeof file.previous_path === 'string' };
+  }) : [];
+}
+
+function legacyPushBlocker(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  if (value.startsWith('No upstream')) return 'no upstream';
+  if (value.startsWith('Working tree has')) return 'uncommitted changes';
+  if (value.startsWith('HEAD is detached')) return 'detached HEAD';
+  if (value.startsWith('Branch is behind')) return 'behind upstream';
+  return value;
+}
+
+function adaptLegacyDiffFile(value: unknown): Record<string, unknown> {
+  const file = recordArg(value);
+  const status = typeof file.status === 'string' ? file.status : '';
+  const changeType: Record<string, string> = { A: 'added', D: 'deleted', M: 'modified', R: 'renamed', C: 'copied', T: 'type_changed', U: 'unmerged' };
+  return {
+    ...file,
+    path: file.new_path ?? null,
+    previous_path: file.old_path ?? null,
+    change_type: changeType[status] ?? status,
+    binary: file.is_binary === true
+  };
 }
 
 function recordArg(value: unknown): Record<string, unknown> {
@@ -986,6 +1169,16 @@ async function executeGitWorktreeManager(
     return failedResult(spec, 'Git worktree manager requires a cwd.', args);
   }
 
+  const indexTool = gitIndexCompatibilityTool(action, args);
+  if (indexTool) {
+    return executeGitIndexViaToolLayer(spec, request, indexTool.params, indexTool.toolId, action);
+  }
+
+  const commitTool = gitCommitCompatibilityTool(action, args);
+  if (commitTool) {
+    return executeGitCommitViaToolLayer(spec, request, commitTool, action);
+  }
+
   const compatibilityTool = gitReadCompatibilityTool(action, args);
   if (compatibilityTool) {
     return executeGitReadViaToolLayer(spec, request, compatibilityTool.params, compatibilityTool.toolId, action);
@@ -999,9 +1192,6 @@ async function executeGitWorktreeManager(
   const gitRoot = root.stdout.trim();
   if (action === 'stage' || action === 'unstage') {
     return executeGitIndexUpdate(spec, request, args, gitRoot, action);
-  }
-  if (action === 'commit') {
-    return executeGitCommit(spec, request, args, gitRoot);
   }
   if (action === 'push') {
     return executeGitPush(spec, request, args, gitRoot);
@@ -1187,128 +1377,6 @@ async function executeGitIndexUpdate(
     has_uncommitted_changes: statusSummary?.hasUncommittedChanges ?? null,
     files: statusSummary?.files ?? null
   }, [`git:${action}`, 'approval:supplied', 'confirmation:supplied', 'git:index']);
-}
-
-async function executeGitCommit(
-  spec: CodeToolSpec,
-  request: CodeToolExecuteRequest,
-  args: Record<string, unknown>,
-  gitRoot: string
-): Promise<CodeToolExecuteResult> {
-  if (!booleanArg(args, 'confirm_commit')) {
-    return resultFor(spec, 'blocked', 'commit requires confirm_commit: true after Core approval.', {
-      cwd: request.cwd,
-      git_root: gitRoot,
-      action: 'commit',
-      approval_id: request.approval_id,
-      argument_keys: Object.keys(args).sort(),
-      required_confirmation: 'confirm_commit'
-    }, ['git:commit', 'approval:supplied', 'confirmation:required']);
-  }
-
-  const message = stringArg(args, 'message') ?? stringArg(args, 'commit_message');
-  if (!message) {
-    return resultFor(spec, 'blocked', 'commit requires a non-empty message.', {
-      cwd: request.cwd,
-      git_root: gitRoot,
-      action: 'commit',
-      approval_id: request.approval_id,
-      argument_keys: Object.keys(args).sort(),
-      required_argument: 'message'
-    }, ['git:commit', 'approval:supplied', 'message:required']);
-  }
-
-  const includeAll = booleanArg(args, 'include_all');
-  const commitStagedOnly = booleanArg(args, 'commit_staged_only');
-  const rawPaths = stringListArg(args, 'paths');
-
-  if (!includeAll && !commitStagedOnly && rawPaths.length === 0) {
-    return resultFor(spec, 'blocked', 'commit requires paths, include_all: true, or commit_staged_only: true.', {
-      cwd: request.cwd,
-      git_root: gitRoot,
-      action: 'commit',
-      approval_id: request.approval_id,
-      argument_keys: Object.keys(args).sort(),
-      required_argument: 'paths'
-    }, ['git:commit', 'approval:supplied', 'paths:required']);
-  }
-
-  if (!commitStagedOnly) {
-    const pathspecs: string[] = [];
-    if (!includeAll) {
-      for (const rawPath of rawPaths) {
-        const normalized = normalizeGitPathspec(gitRoot, rawPath);
-        if (!normalized.ok) {
-          return resultFor(spec, 'blocked', normalized.message, {
-            cwd: request.cwd,
-            git_root: gitRoot,
-            action: 'commit',
-            approval_id: request.approval_id,
-            argument_keys: Object.keys(args).sort()
-          }, ['git:commit', 'approval:supplied', 'path:blocked']);
-        }
-        pathspecs.push(normalized.pathspec);
-      }
-    }
-
-    const add = await git(gitRoot, includeAll ? ['add', '-A'] : ['add', '--', ...pathspecs]);
-    if (add.code !== 0) {
-      return gitCommandFailedResult(spec, 'git add failed.', args, gitRoot, 'commit', add, ['git:commit', 'git:add']);
-    }
-  }
-
-  const staged = await git(gitRoot, ['diff', '--cached', '--name-only']);
-  if (staged.code !== 0) {
-    return gitCommandFailedResult(spec, 'Unable to inspect staged files.', args, gitRoot, 'commit', staged, ['git:commit', 'git:diff-cached']);
-  }
-
-  const stagedFiles = nonEmptyLines(staged.stdout);
-  if (stagedFiles.length === 0) {
-    return resultFor(spec, 'blocked', 'No staged changes are available to commit after git add.', {
-      cwd: request.cwd,
-      git_root: gitRoot,
-      action: 'commit',
-      approval_id: request.approval_id,
-      include_all: includeAll,
-      paths: rawPaths,
-      argument_keys: Object.keys(args).sort()
-    }, ['git:commit', 'approval:supplied', 'git:add', 'staged:none']);
-  }
-
-  const commit = await git(gitRoot, ['commit', '-m', message]);
-  if (commit.code !== 0) {
-    return gitCommandFailedResult(spec, 'git commit failed.', args, gitRoot, 'commit', commit, ['git:commit']);
-  }
-
-  const [head, status] = await Promise.all([
-    git(gitRoot, ['rev-parse', 'HEAD']),
-    git(gitRoot, ['status', '--porcelain=v1', '--branch'])
-  ]);
-  const commitHash = head.code === 0 ? head.stdout.trim() : null;
-  const statusSummary = status.code === 0 ? parseGitStatus(status.stdout) : null;
-
-  const evidenceTags = ['git:commit', 'approval:supplied', 'confirmation:supplied'];
-  if (!commitStagedOnly) {
-    evidenceTags.push('git:add');
-  }
-
-  return resultFor(spec, 'completed', commitHash ? `Created commit ${commitHash.slice(0, 12)}.` : 'Created commit.', {
-    cwd: request.cwd,
-    git_root: gitRoot,
-    action: 'commit',
-    approval_id: request.approval_id,
-    include_all: includeAll,
-    commit_staged_only: commitStagedOnly,
-    paths: rawPaths,
-    staged_files: stagedFiles,
-    commit_hash: commitHash,
-    commit_output: commit.stdout.trim(),
-    branch: statusSummary?.branch ?? null,
-    upstream: statusSummary?.upstream ?? null,
-    ahead: statusSummary?.ahead ?? null,
-    behind: statusSummary?.behind ?? null,
-    has_uncommitted_changes: statusSummary?.hasUncommittedChanges ?? null
-  }, evidenceTags);
 }
 
 async function executeGitPush(

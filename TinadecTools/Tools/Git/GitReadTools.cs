@@ -323,11 +323,11 @@ internal static class GitReadTools
     {
         var repo = GitCli.ResolveRepo(args.RepositoryPath ?? string.Empty, out var error);
         if (repo is null) return Fail<GitBranchListResult>(error);
-        var branchArgs = new List<string> { "for-each-ref", "--format=%(HEAD)\t%(refname:short)\t%(upstream:short)\t%(objectname)", "refs/heads" };
+        var branchArgs = new List<string> { "for-each-ref", "--format=%(HEAD)\t%(refname)\t%(refname:short)\t%(upstream:short)\t%(objectname)", "refs/heads" };
         if (args.IncludeRemote) branchArgs.Add("refs/remotes");
         var exec = await GitCli.RunAsync(repo, branchArgs, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!exec.Ok) return Fail<GitBranchListResult>(exec.Stderr, exec.ExitCode);
-        return new GitBranchListResult { Success = true, Branches = exec.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Split('\t')).Where(fields => fields.Length == 4).Select(fields => new GitBranch { IsCurrent = fields[0] == "*", Name = fields[1], Upstream = NullIfEmpty(fields[2]), Commit = NullIfEmpty(fields[3]), IsRemote = fields[1].Contains('/') }).ToList() };
+        return new GitBranchListResult { Success = true, Branches = exec.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Split('\t')).Where(fields => fields.Length == 5).Select(fields => new GitBranch { IsCurrent = fields[0] == "*", Name = fields[2], Upstream = NullIfEmpty(fields[3]), Commit = NullIfEmpty(fields[4]), IsRemote = fields[1].StartsWith("refs/remotes/", StringComparison.Ordinal) }).ToList() };
     }
 
     [ToolFunction("git_worktree_list", RequiresApproval = true)]

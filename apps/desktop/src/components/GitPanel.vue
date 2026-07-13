@@ -137,9 +137,10 @@ const { mode: responsiveMode } = useResponsiveMode(panelRef)
 const isCompact = computed(() => responsiveMode.value !== 'normal')
 
 // ---- Active diff section ----
-const activeSection = computed(() => sections.value[0] ?? null)
-const activeDiffText = computed(() => activeSection.value?.diff ?? '')
-const activeDiffFiles = computed(() => activeSection.value?.files ?? [])
+const workingSection = computed(() => sections.value.find((section) => section.kind === 'working_tree') ?? null)
+const stagedSection = computed(() => sections.value.find((section) => section.kind === 'staged') ?? null)
+const activeDiffText = computed(() => workingSection.value?.diff ?? '')
+const activeDiffFiles = computed(() => workingSection.value?.files ?? [])
 
 // ---- Tab config ----
 const tabs = computed(() => [
@@ -275,6 +276,8 @@ const canSync = computed(() => canRequestPullApproval.value || canRequestPushApp
           :select-all-indeterminate="selectAllIndeterminate"
           :diff-text="activeDiffText"
           :diff-files="activeDiffFiles"
+          :staged-diff-text="stagedSection?.diff ?? ''"
+          :staged-diff-files="stagedSection?.files ?? []"
           :push-ready="pushReady"
           :push-blockers="pushBlockers"
           :has-push-candidate="hasPushCandidate"
@@ -296,8 +299,8 @@ const canSync = computed(() => canRequestPullApproval.value || canRequestPushApp
           @refresh="loadStatus"
           @toggle-path="togglePath"
           @toggle-select-all="toggleSelectAll"
-          @request-stage="requestIndexApproval('stage', emitApproval)"
-          @request-unstage="requestIndexApproval('unstage', emitApproval)"
+          @request-stage="(selection) => requestIndexApproval('stage', emitApproval, selection)"
+          @request-unstage="(selection) => requestIndexApproval('unstage', emitApproval, selection)"
           @execute-index="executeApprovedIndexUpdate"
           @request-commit="requestCommitApproval(emitApproval)"
           @execute-commit="executeApprovedCommit"

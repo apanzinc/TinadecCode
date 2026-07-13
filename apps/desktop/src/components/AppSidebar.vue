@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import {
   Bug,
   ChevronRight,
-  Diamond,
   FolderOpen,
   LayoutGrid,
   MessageSquare,
@@ -14,6 +13,7 @@ import {
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import type { ProjectDto, SessionDto } from '../api'
+import BrandLogo from '@/components/BrandLogo.vue'
 import { UiButton, UiDropdownMenu, UiSeparator } from '@/components/ui'
 
 const { t } = useI18n()
@@ -109,7 +109,7 @@ function openDebugStudio() {
   <aside class="sidebar" :style="panelStyle" v-bind="panelDataAttrs">
     <div class="sidebar-topbar">
       <div class="brand">
-        <Diamond :size="18" />
+        <BrandLogo :size="18" />
         <span>Tinadec</span>
       </div>
     </div>

@@ -59,6 +59,7 @@ public sealed class AgentWorkflowRuntime(IToolRegistry tools) : IAgentWorkflowRu
         {
             requested.Add("git_worktree_manager");
             requested.AddRange([
+                "git_stage", "git_unstage", "git_commit",
                 "git_status", "git_push_readiness", "git_diff", "git_log_list", "git_log_detail", "git_file_history",
                 "git_branch_list", "git_worktree_list", "git_ref_list", "git_remote_list", "git_blame", "git_file_at_revision",
                 "git_conflict_preview"

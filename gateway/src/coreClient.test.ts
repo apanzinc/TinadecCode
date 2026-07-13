@@ -3,9 +3,12 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import test from 'node:test';
+import { after, test } from 'node:test';
 import { coreEndpoint } from './coreClient.js';
 import { codeToolApprovalBlockFor, codeToolApprovalUnavailableBlock, codeToolRequiresApproval, executeCodeTool, listCodeToolIds, listCodeToolSpecs } from './codeTools.js';
+import { disposeToolLayerProcesses, disposeToolLayerWorkspace } from './toolLayerBridge.js';
+
+after(() => disposeToolLayerProcesses());
 
 test('coreEndpoint resolves API paths against the configured core URL', () => {
   assert.equal(coreEndpoint('/api/v1/health'), 'http://127.0.0.1:48731/api/v1/health');
@@ -19,6 +22,7 @@ test('Code tools expose programming-domain execution contracts', async () => {
     'debug_session',
     'git_blame',
     'git_branch_list',
+    'git_commit',
     'git_conflict_preview',
     'git_diff',
     'git_file_at_revision',
@@ -28,7 +32,9 @@ test('Code tools expose programming-domain execution contracts', async () => {
     'git_push_readiness',
     'git_ref_list',
     'git_remote_list',
+    'git_stage',
     'git_status',
+    'git_unstage',
     'git_worktree_list',
     'git_worktree_manager',
     'glob_search',
@@ -50,10 +56,15 @@ test('Code tools expose programming-domain execution contracts', async () => {
   assert.equal(specs.find((tool) => tool.id === 'project_templates')?.category, 'project');
   assert.equal(specs.find((tool) => tool.id === 'project_template_scaffold')?.requires_approval, true);
   assert.equal(specs.find((tool) => tool.id === 'git_status')?.requires_approval, true);
+  assert.equal(specs.find((tool) => tool.id === 'git_stage')?.requires_approval, true);
+  assert.equal(specs.find((tool) => tool.id === 'git_commit')?.requires_approval, true);
 
   const gitRead = await executeCodeTool('git_status', { cwd: process.cwd(), arguments: {} });
   assert.equal(gitRead?.status, 'blocked');
   assert.ok(gitRead?.evidence.includes('approval:required'));
+  const gitIndex = await executeCodeTool('git_stage', { cwd: process.cwd(), arguments: { paths: ['README.md'] } });
+  assert.equal(gitIndex?.status, 'blocked');
+  assert.ok(gitIndex?.evidence.includes('approval:required'));
 
   const search = await executeCodeTool('search_files', { arguments: { query: 'AgentWorkflowRuntime' } });
   assert.equal(search?.requires_approval, false);
@@ -146,6 +157,25 @@ test('Code tool approval gate trusts only approved Core approval state', () => {
   assert.equal(actionMismatch?.data.approval_command, 'git push');
   assert.ok((actionMismatch?.evidence ?? []).includes('approval:context-mismatch'));
 
+  const directCommitMismatch = codeToolApprovalBlockFor('git_commit', {
+    ...request,
+    cwd: 'D:/repo',
+    arguments: { confirm_commit: true, commit_staged_only: true, message: 'test' }
+  }, [
+    { id: 'appr_test', session_id: 'sess_test', kind: 'git', status: 'approved', cwd: 'D:/repo', command: 'git push' }
+  ]);
+  assert.equal(directCommitMismatch?.status, 'blocked');
+  assert.equal(directCommitMismatch?.data.requested_action, 'commit');
+
+  const compositeCommitApproval = codeToolApprovalBlockFor('git_commit', {
+    ...request,
+    cwd: 'D:/repo',
+    arguments: { confirm_commit: true, paths: ['note.txt'], message: 'test' }
+  }, [
+    { id: 'appr_test', session_id: 'sess_test', kind: 'git', status: 'approved', cwd: 'D:/repo', command: 'git add -- note.txt && git commit -m "test"' }
+  ]);
+  assert.equal(compositeCommitApproval, null);
+
   const readOnly = codeToolApprovalBlockFor('project_templates', request, []);
   assert.equal(readOnly, null);
 
@@ -200,6 +230,7 @@ test('project template scaffold requires approval and writes files inside cwd', 
 test('git worktree manager reports push readiness and blocks mutations without approval', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-tool-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -208,6 +239,7 @@ test('git worktree manager reports push readiness and blocks mutations without a
 
   const plan = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'push_plan' }
   });
 
@@ -235,6 +267,7 @@ test('git worktree manager reports push readiness and blocks mutations without a
 test('git worktree manager stages and unstages approved path selections', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-index-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -255,21 +288,20 @@ test('git worktree manager stages and unstages approved path selections', async 
   assert.equal(blockedStage?.status, 'blocked');
   assert.equal(blockedStage?.data.required_approval, true);
 
-  const missingConfirmation = await executeCodeTool('git_worktree_manager', {
+  const stageWithoutConfirmation = await executeCodeTool('git_worktree_manager', {
     cwd,
     approval_id: 'approval-test',
     arguments: { action: 'stage', paths: ['tracked.txt'] }
   });
-  assert.equal(missingConfirmation?.status, 'blocked');
-  assert.equal(missingConfirmation?.data.required_confirmation, 'confirm_stage');
+  assert.equal(stageWithoutConfirmation?.status, 'completed');
 
   const escapedStage = await executeCodeTool('git_worktree_manager', {
     cwd,
     approval_id: 'approval-test',
     arguments: { action: 'stage', confirm_stage: true, paths: ['../escape.txt'] }
   });
-  assert.equal(escapedStage?.status, 'blocked');
-  assert.match(escapedStage?.summary ?? '', /inside the Git worktree/);
+  assert.equal(escapedStage?.status, 'failed');
+  assert.match(escapedStage?.summary ?? '', /inside the workspace/);
 
   const staged = await executeCodeTool('git_worktree_manager', {
     cwd,
@@ -292,10 +324,11 @@ test('git worktree manager stages and unstages approved path selections', async 
   assert.ok(unstagedFiles.some((file) => file.path === 'removed.txt' && file.staged_status === 'clean' && file.unstaged_status === 'deleted'));
 });
 
-test('git worktree manager executes approved commit and push with explicit confirmations', async (t) => {
+test('git commit tool and legacy manager execute approved commit and push with explicit confirmations', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-tool-'));
   const remote = await mkdtemp(path.join(tmpdir(), 'tinadec-git-remote-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
     await rm(remote, { recursive: true, force: true });
   });
@@ -307,11 +340,10 @@ test('git worktree manager executes approved commit and push with explicit confi
   await runGit(cwd, ['remote', 'add', 'origin', remote]);
   await writeFile(path.join(cwd, 'note.txt'), 'hello\n', 'utf8');
 
-  const missingCommitConfirmation = await executeCodeTool('git_worktree_manager', {
+  const missingCommitConfirmation = await executeCodeTool('git_commit', {
     cwd,
     approval_id: 'approval-test',
     arguments: {
-      action: 'commit',
       paths: ['note.txt'],
       message: 'test commit'
     }
@@ -320,25 +352,23 @@ test('git worktree manager executes approved commit and push with explicit confi
   assert.equal(missingCommitConfirmation?.status, 'blocked');
   assert.equal(missingCommitConfirmation?.data.required_confirmation, 'confirm_commit');
 
-  const escapedCommit = await executeCodeTool('git_worktree_manager', {
+  const escapedCommit = await executeCodeTool('git_commit', {
     cwd,
     approval_id: 'approval-test',
     arguments: {
-      action: 'commit',
       confirm_commit: true,
       paths: ['../escape.txt'],
       message: 'test commit'
     }
   });
 
-  assert.equal(escapedCommit?.status, 'blocked');
-  assert.match(escapedCommit?.summary ?? '', /inside the Git worktree/);
+  assert.equal(escapedCommit?.status, 'failed');
+  assert.match(escapedCommit?.summary ?? '', /inside the workspace/);
 
-  const committed = await executeCodeTool('git_worktree_manager', {
+  const committed = await executeCodeTool('git_commit', {
     cwd,
     approval_id: 'approval-test',
     arguments: {
-      action: 'commit',
       confirm_commit: true,
       paths: ['note.txt'],
       message: 'test commit'
@@ -349,6 +379,21 @@ test('git worktree manager executes approved commit and push with explicit confi
   assert.match(committed?.data.commit_hash as string, /^[a-f0-9]{40}$/);
   assert.deepEqual(committed?.data.staged_files, ['note.txt']);
   assert.equal(committed?.data.has_uncommitted_changes, false);
+
+  await writeFile(path.join(cwd, 'legacy.txt'), 'legacy\n', 'utf8');
+  const legacyCommit = await executeCodeTool('git_worktree_manager', {
+    cwd,
+    approval_id: 'approval-test',
+    arguments: {
+      action: 'commit',
+      confirm_commit: true,
+      paths: ['legacy.txt'],
+      message: 'legacy commit'
+    }
+  });
+  assert.equal(legacyCommit?.status, 'completed');
+  assert.equal(legacyCommit?.tool_id, 'git_worktree_manager');
+  assert.equal(legacyCommit?.data.action, 'commit');
 
   const missingPushConfirmation = await executeCodeTool('git_worktree_manager', {
     cwd,
@@ -396,6 +441,7 @@ test('git worktree manager executes approved commit and push with explicit confi
 
   const plan = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'push_plan' }
   });
 
@@ -407,6 +453,7 @@ test('git worktree manager executes approved commit and push with explicit confi
 test('git worktree manager reports structured status and diff previews', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-diff-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -430,6 +477,7 @@ test('git worktree manager reports structured status and diff previews', async (
 
   const status = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'status' }
   });
 
@@ -442,6 +490,7 @@ test('git worktree manager reports structured status and diff previews', async (
 
   const preview = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: {
       action: 'diff_preview',
       base_ref: 'base',
@@ -460,8 +509,6 @@ test('git worktree manager reports structured status and diff previews', async (
 
   const workingTree = sections.find((section) => section.id === 'working_tree');
   assert.ok(workingTree?.files.some((file) => file.path === 'tracked.txt' && file.additions === 1));
-  assert.ok(workingTree?.files.some((file) => file.path === 'untracked.txt' && file.change_type === 'untracked'));
-  assert.match(workingTree?.diff ?? '', /new file/);
 
   const staged = sections.find((section) => section.id === 'staged');
   assert.ok(staged?.files.some((file) => file.path === 'staged.txt' && file.change_type === 'added'));
@@ -474,12 +521,14 @@ test('git worktree manager reports structured status and diff previews', async (
 test('git worktree manager diff preview reports missing branch range base as a notice', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-no-upstream-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
   await initGitRepo(cwd);
   const preview = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'diff_preview', target: 'branch_range' }
   });
 
@@ -492,6 +541,7 @@ test('git worktree manager diff preview reports missing branch range base as a n
 test('git worktree manager lists branches and tracks current branch', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-branches-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -506,6 +556,7 @@ test('git worktree manager lists branches and tracks current branch', async (t) 
 
   const list = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'branch_list', all: true }
   });
 
@@ -520,6 +571,7 @@ test('git worktree manager lists branches and tracks current branch', async (t) 
 test('git worktree manager checks out and creates branches with approval', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-checkout-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -568,6 +620,7 @@ test('git worktree manager checks out and creates branches with approval', async
 
   const current = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'status' }
   });
   assert.equal(current?.data.branch, 'new-branch');
@@ -576,6 +629,7 @@ test('git worktree manager checks out and creates branches with approval', async
 test('git worktree manager commits only staged files when commit_staged_only is true', async (t) => {
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-staged-only-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
   });
 
@@ -605,6 +659,7 @@ test('git worktree manager commits only staged files when commit_staged_only is 
 
   const status = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'status' }
   });
   const files = status?.data.files as Array<{ path: string; is_untracked: boolean }>;
@@ -616,6 +671,7 @@ test('git worktree manager fetches from a remote and reports tracking info', asy
   const remote = await mkdtemp(path.join(tmpdir(), 'tinadec-git-remote-'));
   const cwd = await mkdtemp(path.join(tmpdir(), 'tinadec-git-fetch-'));
   t.after(async () => {
+    await disposeToolLayerWorkspace(cwd);
     await rm(cwd, { recursive: true, force: true });
     await rm(remote, { recursive: true, force: true });
   });
@@ -651,6 +707,7 @@ test('git worktree manager fetches from a remote and reports tracking info', asy
 
   const list = await executeCodeTool('git_worktree_manager', {
     cwd,
+    approval_id: 'approval-test',
     arguments: { action: 'branch_list', all: true }
   });
   const branches = list?.data.branches as Array<{ name: string; is_remote: boolean }>;

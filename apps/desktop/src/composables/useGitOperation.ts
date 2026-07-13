@@ -38,6 +38,11 @@ export interface GitDiffSection {
   notices: string[]
 }
 
+export interface GitIndexSelection {
+  paths?: string[]
+  patch?: string
+}
+
 export interface GitPreviewData {
   git_root?: string
   branch?: string
@@ -179,6 +184,7 @@ export function useGitOperation(
   // Approval tracking
   const indexApprovalId = ref<string | null>(null)
   const indexAction = ref<'stage' | 'unstage' | null>(null)
+  const indexSelection = ref<GitIndexSelection | null>(null)
   const commitApprovalId = ref<string | null>(null)
   const pushApprovalId = ref<string | null>(null)
   const pullApprovalId = ref<string | null>(null)
@@ -432,22 +438,30 @@ export function useGitOperation(
 
   // ---- Approval-gated operations ----
 
-  async function requestIndexApproval(action: 'stage' | 'unstage', emitApproval: (a: ApprovalDto) => void) {
-    if (!cwd.value || !sid.value || !canRequestIndexApproval.value) return
+  async function requestIndexApproval(action: 'stage' | 'unstage', emitApproval: (a: ApprovalDto) => void, selection?: GitIndexSelection) {
+    const selected = selection?.patch
+      ? { patch: selection.patch }
+      : { paths: selection?.paths?.length ? selection.paths : selectedCommitPaths.value }
+    const paths = selected.paths ?? []
+    if (!cwd.value || !sid.value || (!selected.patch && paths.length === 0)) return
     operationLoading.value = true
     feedback.value = null
     try {
-      const paths = selectedCommitPaths.value
       const isStage = action === 'stage'
       const approval = await api.createApproval({
         session_id: sid.value,
         kind: 'git',
-        summary: `${isStage ? 'Stage' : 'Unstage'} ${paths.length} file${paths.length === 1 ? '' : 's'} on ${previewData.value.branch ?? 'HEAD'}`,
-        command: `${isStage ? 'git add' : 'git restore --staged'} -- ${paths.join(' ')}`,
+        summary: selected.patch
+          ? `${isStage ? 'Stage' : 'Unstage'} selected text hunks on ${previewData.value.branch ?? 'HEAD'}`
+          : `${isStage ? 'Stage' : 'Unstage'} ${paths.length} file${paths.length === 1 ? '' : 's'} on ${previewData.value.branch ?? 'HEAD'}`,
+        command: selected.patch
+          ? `${isStage ? 'git apply --cached' : 'git apply --cached --reverse'} <approved patch>`
+          : `${isStage ? 'git add' : 'git restore --staged'} -- ${paths.join(' ')}`,
         cwd: cwd.value,
       })
       indexApprovalId.value = approval.id
       indexAction.value = action
+      indexSelection.value = selected
       feedback.value = t('context.gitIndexApprovalRequested')
       emitApproval(approval)
     } catch (err) {
@@ -462,20 +476,18 @@ export function useGitOperation(
     operationLoading.value = true
     feedback.value = null
     try {
-      const confirmKey = indexAction.value === 'stage' ? 'confirm_stage' : 'confirm_unstage'
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool(indexAction.value === 'stage' ? 'git_stage' : 'git_unstage', {
         session_id: sid.value,
         approval_id: indexApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: indexAction.value,
-          [confirmKey]: true,
-          paths: selectedCommitPaths.value,
+          ...(indexSelection.value?.patch ? { patch: indexSelection.value.patch } : { paths: indexSelection.value?.paths ?? selectedCommitPaths.value }),
         },
       })
       feedback.value = result.summary
       indexApprovalId.value = null
       indexAction.value = null
+      indexSelection.value = null
       await loadStatus()
     } catch (err) {
       feedback.value = err instanceof Error ? err.message : t('context.gitIndexUpdateFailed')
@@ -512,12 +524,11 @@ export function useGitOperation(
     operationLoading.value = true
     feedback.value = null
     try {
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_commit', {
         session_id: sid.value,
         approval_id: commitApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'commit',
           confirm_commit: true,
           commit_staged_only: true,
           message: commitMessage.value.trim(),

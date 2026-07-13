@@ -29,9 +29,11 @@ try
         if (line is null)
             break;
 
+        ToolCallRequest<JsonElement>? req = null;
         try
         {
-            var req = JsonSerializer.Deserialize(line, ToolCallJsonContext.Default.ToolCallRequestJsonElement)!;
+            req = JsonSerializer.Deserialize(line, ToolCallJsonContext.Default.ToolCallRequestJsonElement)
+                ?? throw new JsonException("Tool call request was null.");
             var resp = await ToolRegistry.DispatchAsync(req);
             lock (Console.Out)
             {
@@ -44,7 +46,7 @@ try
         {
             var error = new ToolCallErrorResponse
             {
-                CallId = -1,
+                CallId = req?.ToolCallId ?? -1,
                 IsSuccess = false,
                 Error = ex.Message
             };

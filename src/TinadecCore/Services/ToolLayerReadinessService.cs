@@ -32,11 +32,11 @@ public sealed class ToolLayerReadinessService(
             ["file.write.approved"] = ["apply_patch"],
             ["git.diff"] = ["git_diff"],
             ["git.status"] = ["git_status"],
-            ["git.stage"] = ["git_worktree_manager"],
-            ["git.unstage"] = ["git_worktree_manager"],
+            ["git.stage"] = ["git_stage"],
+            ["git.unstage"] = ["git_unstage"],
             ["git.branch"] = ["git_branch_list"],
             ["git.worktree"] = ["git_worktree_list"],
-            ["git.commit"] = ["git_worktree_manager"],
+            ["git.commit"] = ["git_commit", "git_worktree_manager"],
             ["git.push"] = ["git_worktree_manager"],
             ["review.format"] = ["review_format"]
         };

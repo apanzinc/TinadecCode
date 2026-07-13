@@ -61,7 +61,19 @@ internal static class RipgrepRunner
             return fromEnv;
 
         var exe = OperatingSystem.IsWindows() ? "rg.exe" : "rg";
-        return Path.Combine(AppContext.BaseDirectory, exe);
+        var bundled = Path.Combine(AppContext.BaseDirectory, exe);
+        if (File.Exists(bundled)) return bundled;
+
+        var pathEntries = Environment.GetEnvironmentVariable("PATH")?.Split(Path.PathSeparator)
+            ?? Array.Empty<string>();
+        foreach (var entry in pathEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry)) continue;
+            var candidate = Path.Combine(entry.Trim(), exe);
+            if (File.Exists(candidate)) return candidate;
+        }
+
+        return bundled;
     }
 
     public static async ValueTask<FileSearchResponse> RunAsync(
