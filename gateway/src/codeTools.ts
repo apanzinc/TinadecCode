@@ -296,6 +296,10 @@ const TOOL_SPECS: Record<string, CodeToolSpec> = {
   git_stage: { id: 'git_stage', summary: 'Stage complete files or selected text hunks into the Git index through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Update the Git index with approved file or line selections.' },
   git_unstage: { id: 'git_unstage', summary: 'Remove complete files or selected text hunks from the Git index through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Update the Git index with approved file or line selections.' },
   git_commit: { id: 'git_commit', summary: 'Create an approved Git commit through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Create a Git commit from approved staged, complete, or selected paths.' },
+  git_checkout: { id: 'git_checkout', summary: 'Checkout an approved Git branch through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Checkout a Git branch.' },
+  git_branch_create: { id: 'git_branch_create', summary: 'Create and checkout an approved Git branch through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Create and checkout a Git branch.' },
+  git_branch_delete: { id: 'git_branch_delete', summary: 'Delete an approved Git branch through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Delete a Git branch.' },
+  git_branch_rename: { id: 'git_branch_rename', summary: 'Rename the current Git branch through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Rename the current Git branch.' },
   git_status: { id: 'git_status', summary: 'Inspect repository status, conflicts, upstream, and ahead/behind state through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git repository status.' },
   git_log_list: { id: 'git_log_list', summary: 'List Git commits through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit history.' },
   git_log_detail: { id: 'git_log_detail', summary: 'Read Git commit or range details through TinadecTools.', category: 'git', requiresApproval: true, approvalSummary: 'Read Git commit details.' },
@@ -382,8 +386,8 @@ export function codeToolApprovalBlockFor(
     }, ['approval:context-mismatch', 'state_owner: core']);
   }
 
-  if ((toolId === 'git_worktree_manager' || toolId === 'git_commit') && approval.command && request.arguments) {
-    const requestedAction = toolId === 'git_commit' ? 'commit' : stringArg(request.arguments, 'action') ?? '';
+  const requestedAction = gitApprovalAction(toolId, request.arguments);
+  if (requestedAction && approval.command) {
     if (!approvalCommandMatchesGitAction(approval.command, requestedAction)) {
       return resultFor(spec, 'blocked', 'Core approval command does not match the requested Git action.', {
         approval_id: request.approval_id,
@@ -415,7 +419,23 @@ function extractActionFromApprovalCommand(command: string): string | null {
   if (base === 'checkout') {
     return 'checkout';
   }
+  if (base === 'branch' && parts.includes('-d')) {
+    return 'delete_branch';
+  }
+  if (base === 'branch' && parts.includes('-m')) {
+    return 'rename_branch';
+  }
   return base || null;
+}
+
+function gitApprovalAction(toolId: string, args?: Record<string, unknown> | null): string | null {
+  if (toolId === 'git_worktree_manager') return args ? stringArg(args, 'action') ?? null : null;
+  if (toolId === 'git_commit') return 'commit';
+  if (toolId === 'git_checkout') return 'checkout';
+  if (toolId === 'git_branch_create') return 'create_branch';
+  if (toolId === 'git_branch_delete') return 'delete_branch';
+  if (toolId === 'git_branch_rename') return 'rename_branch';
+  return null;
 }
 
 function approvalCommandMatchesGitAction(command: string, action: string): boolean {
@@ -637,6 +657,9 @@ export async function executeCodeTool(toolId: string, request: CodeToolExecuteRe
   }
   if (spec.id === 'git_commit') {
     return executeGitCommitViaToolLayer(spec, request, args);
+  }
+  if (spec.id === 'git_checkout' || spec.id.startsWith('git_branch_')) {
+    return executeGitBranchViaToolLayer(spec, request, args);
   }
   if (spec.id.startsWith('git_') && spec.id !== 'git_worktree_manager') {
     return executeGitReadViaToolLayer(spec, request, args);
@@ -910,6 +933,31 @@ function gitCommitCompatibilityTool(action: string, args: Record<string, unknown
   };
 }
 
+function gitBranchCompatibilityTool(action: string, args: Record<string, unknown>): { toolId: string; params: Record<string, unknown> } | null {
+  switch (action) {
+    case 'checkout': return { toolId: 'git_checkout', params: { branch: args.branch, confirm_checkout: args.confirm_checkout } };
+    case 'create_branch': return { toolId: 'git_branch_create', params: { branch: args.branch, confirm_create_branch: args.confirm_create_branch } };
+    case 'delete_branch': return { toolId: 'git_branch_delete', params: { branch: args.branch, force: args.force, confirm_delete_branch: args.confirm_delete_branch } };
+    case 'rename_branch': return { toolId: 'git_branch_rename', params: { new_name: args.new_name, confirm_rename_branch: args.confirm_rename_branch } };
+    default: return null;
+  }
+}
+
+async function executeGitBranchViaToolLayer(spec: CodeToolSpec, request: CodeToolExecuteRequest, args: Record<string, unknown>, overrideToolId?: string, legacyAction?: string): Promise<CodeToolExecuteResult> {
+  if (!request.cwd) return failedResult(spec, `${spec.id} requires a cwd.`, args, ['git:branch', 'cwd:required']);
+  if (!request.approval_id) return resultFor(spec, 'blocked', `${overrideToolId ?? spec.id} requires a Core-approved Git invocation.`, { cwd: request.cwd, required_approval: true }, ['git:branch', 'approval:required']);
+  const toolId = overrideToolId ?? spec.id;
+  const confirmation = toolId === 'git_checkout' ? 'confirm_checkout' : toolId === 'git_branch_create' ? 'confirm_create_branch' : toolId === 'git_branch_delete' ? 'confirm_delete_branch' : 'confirm_rename_branch';
+  if (!booleanArg(args, confirmation)) return resultFor(spec, 'blocked', `${legacyAction ?? toolId} requires ${confirmation}: true after Core approval.`, { cwd: request.cwd, required_confirmation: confirmation }, ['git:branch', 'approval:supplied', 'confirmation:required']);
+  try {
+    const result = await callToolLayer(request.cwd, toolId, { ...args, repository_path: '.' }, { approved: true, sessionId: request.session_id }) as Record<string, unknown>;
+    if (result.success !== true) return failedResult(spec, typeof result.error === 'string' ? result.error : `${toolId} failed.`, args, ['git:branch', 'tool-layer-rejected', `tool_id:${toolId}`]);
+    const status = recordArg(result.status);
+    const legacyFlags = legacyAction === 'checkout' ? { checked_out: true } : legacyAction === 'create_branch' ? { created: true } : legacyAction === 'delete_branch' ? { deleted: true } : legacyAction === 'rename_branch' ? { renamed: true } : {};
+    return resultFor(spec, 'completed', legacyAction ? `Completed Git ${legacyAction}.` : spec.summary, { ...result, ...legacyFlags, ...(legacyAction ? { action: legacyAction } : {}), cwd: path.resolve(request.cwd), branch: status.branch ?? result.branch ?? null, upstream: status.upstream ?? null, ahead: status.ahead ?? null, behind: status.behind ?? null, has_uncommitted_changes: status.has_uncommitted_changes ?? null }, ['git:branch', 'tool-layer', `tool_id:${toolId}`]);
+  } catch (error) { return failedResult(spec, error instanceof Error ? error.message : String(error), args, ['git:branch', 'tool-layer-failed', `tool_id:${toolId}`]); }
+}
+
 async function executeGitIndexViaToolLayer(
   spec: CodeToolSpec,
   request: CodeToolExecuteRequest,
@@ -1179,6 +1227,11 @@ async function executeGitWorktreeManager(
     return executeGitCommitViaToolLayer(spec, request, commitTool, action);
   }
 
+  const branchTool = gitBranchCompatibilityTool(action, args);
+  if (branchTool) {
+    return executeGitBranchViaToolLayer(spec, request, branchTool.params, branchTool.toolId, action);
+  }
+
   const compatibilityTool = gitReadCompatibilityTool(action, args);
   if (compatibilityTool) {
     return executeGitReadViaToolLayer(spec, request, compatibilityTool.params, compatibilityTool.toolId, action);
@@ -1201,13 +1254,6 @@ async function executeGitWorktreeManager(
     return executeGitPull(spec, request, args, gitRoot);
   }
 
-  if (action === 'checkout') {
-    return executeGitCheckout(spec, request, args, gitRoot);
-  }
-
-  if (action === 'create_branch') {
-    return executeGitCreateBranch(spec, request, args, gitRoot);
-  }
 
   if (action === 'fetch') {
     return executeGitFetch(spec, request, args, gitRoot);
@@ -1229,13 +1275,6 @@ async function executeGitWorktreeManager(
     return executeGitResolveConflict(spec, request, args, gitRoot);
   }
 
-  if (action === 'delete_branch') {
-    return executeGitDeleteBranch(spec, request, args, gitRoot);
-  }
-
-  if (action === 'rename_branch') {
-    return executeGitRenameBranch(spec, request, args, gitRoot);
-  }
 
   if (mutatingActions.has(action)) {
     return resultFor(spec, 'blocked', `${action} is approved but not executed by the preview manager yet.`, {

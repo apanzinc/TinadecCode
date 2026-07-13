@@ -195,6 +195,10 @@ public sealed class CodeCapabilityProvider : ICapabilityProvider
         GitWrite("git_stage", "Git Stage", "git.stage", "git.index.write"),
         GitWrite("git_unstage", "Git Unstage", "git.unstage", "git.index.write"),
         GitWrite("git_commit", "Git Commit", "git.commit"),
+        GitWrite("git_checkout", "Git Checkout", "git.checkout", "git.branch.write"),
+        GitWrite("git_branch_create", "Git Branch Create", "git.branch.create", "git.branch.write"),
+        GitWrite("git_branch_delete", "Git Branch Delete", "git.branch.delete", "git.branch.write"),
+        GitWrite("git_branch_rename", "Git Branch Rename", "git.branch.rename", "git.branch.write"),
         .. GitReadTools
     ];
 

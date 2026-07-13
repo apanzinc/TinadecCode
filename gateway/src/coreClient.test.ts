@@ -21,7 +21,11 @@ test('Code tools expose programming-domain execution contracts', async () => {
     'code_editor',
     'debug_session',
     'git_blame',
+    'git_branch_create',
+    'git_branch_delete',
     'git_branch_list',
+    'git_branch_rename',
+    'git_checkout',
     'git_commit',
     'git_conflict_preview',
     'git_diff',
@@ -166,6 +170,16 @@ test('Code tool approval gate trusts only approved Core approval state', () => {
   ]);
   assert.equal(directCommitMismatch?.status, 'blocked');
   assert.equal(directCommitMismatch?.data.requested_action, 'commit');
+
+  const directBranchMismatch = codeToolApprovalBlockFor('git_branch_delete', {
+    ...request,
+    cwd: 'D:/repo',
+    arguments: { branch: 'feature', confirm_delete_branch: true }
+  }, [
+    { id: 'appr_test', session_id: 'sess_test', kind: 'git', status: 'approved', cwd: 'D:/repo', command: 'git push' }
+  ]);
+  assert.equal(directBranchMismatch?.status, 'blocked');
+  assert.equal(directBranchMismatch?.data.requested_action, 'delete_branch');
 
   const compositeCommitApproval = codeToolApprovalBlockFor('git_commit', {
     ...request,
@@ -606,7 +620,7 @@ test('git worktree manager checks out and creates branches with approval', async
     approval_id: 'approval-test',
     arguments: { action: 'create_branch', branch: 'existing-branch', confirm_create_branch: true }
   });
-  assert.equal(createExisting?.status, 'blocked');
+  assert.equal(createExisting?.status, 'failed');
   assert.match(createExisting?.summary ?? '', /already exists/);
 
   const created = await executeCodeTool('git_worktree_manager', {
@@ -624,6 +638,24 @@ test('git worktree manager checks out and creates branches with approval', async
     arguments: { action: 'status' }
   });
   assert.equal(current?.data.branch, 'new-branch');
+
+  const renamed = await executeCodeTool('git_worktree_manager', {
+    cwd,
+    approval_id: 'approval-test',
+    arguments: { action: 'rename_branch', new_name: 'renamed-branch', confirm_rename_branch: true }
+  });
+  assert.equal(renamed?.status, 'completed');
+  assert.equal(renamed?.data.branch, 'renamed-branch');
+
+  await runGit(cwd, ['checkout', 'main']);
+  const deleted = await executeCodeTool('git_worktree_manager', {
+    cwd,
+    approval_id: 'approval-test',
+    arguments: { action: 'delete_branch', branch: 'renamed-branch', confirm_delete_branch: true }
+  });
+  assert.equal(deleted?.status, 'completed');
+  assert.equal(deleted?.data.deleted, true);
+  await assert.rejects(() => runGit(cwd, ['rev-parse', '--verify', 'renamed-branch']));
 });
 
 test('git worktree manager commits only staged files when commit_staged_only is true', async (t) => {
@@ -716,6 +748,7 @@ test('git worktree manager fetches from a remote and reports tracking info', asy
 
 async function initGitRepo(cwd: string): Promise<void> {
   await runGit(cwd, ['init']);
+  await runGit(cwd, ['config', 'commit.gpgSign', 'false']);
   // Normalize default branch to 'main' regardless of git version/local config.
   try {
     await runGit(cwd, ['checkout', '-b', 'main']);

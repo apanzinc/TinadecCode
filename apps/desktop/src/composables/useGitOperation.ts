@@ -576,7 +576,7 @@ export function useGitOperation(
     operationLoading.value = true
     feedback.value = null
     try {
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_checkout', {
         session_id: sid.value,
         approval_id: pushApproval.value.id,
         cwd: cwd.value,
@@ -683,7 +683,6 @@ export function useGitOperation(
         approval_id: checkoutApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'checkout',
           confirm_checkout: true,
           branch,
         },
@@ -726,12 +725,11 @@ export function useGitOperation(
     feedback.value = null
     try {
       const branchName = branchApproval.value.command?.replace('git checkout -b ', '').trim() ?? ''
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_branch_create', {
         session_id: sid.value,
         approval_id: branchApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'create_branch',
           confirm_create_branch: true,
           branch: branchName,
         },
@@ -773,7 +771,7 @@ export function useGitOperation(
     operationLoading.value = true
     feedback.value = null
     try {
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_branch_delete', {
         session_id: sid.value,
         approval_id: fetchApproval.value.id,
         cwd: cwd.value,
@@ -986,7 +984,6 @@ export function useGitOperation(
         approval_id: deleteBranchApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'delete_branch',
           confirm_delete_branch: true,
           branch,
           force,
@@ -1031,12 +1028,11 @@ export function useGitOperation(
     feedback.value = null
     try {
       const newName = renameBranchApproval.value.command?.replace('git branch -m ', '').trim() ?? ''
-      const result = await api.executeCodeTool('git_worktree_manager', {
+      const result = await api.executeCodeTool('git_branch_rename', {
         session_id: sid.value,
         approval_id: renameBranchApproval.value.id,
         cwd: cwd.value,
         arguments: {
-          action: 'rename_branch',
           confirm_rename_branch: true,
           new_name: newName,
         },
